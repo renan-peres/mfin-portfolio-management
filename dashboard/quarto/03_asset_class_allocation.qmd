@@ -1,6 +1,6 @@
 <!-- # Asset Class Allocation -->
 
-::: {.panel-tabset style="height: calc(100vh - 450px); min-height: 400px; overflow-y: auto;"}
+::: {.panel-tabset}
 
 ## Asset Class Distribution
 

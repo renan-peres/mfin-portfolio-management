@@ -829,3 +829,355 @@ export function generatePortfolioData(rf_rate, er_risky, std_dev_risky, market_v
     };
   }
 }
+
+// ========== DATA PROCESSING UTILITIES ==========
+
+/**
+ * Process quotes data to extract first and last prices
+ * @param {Object} daily_quotes - Daily quotes data object
+ * @param {Array} equity_tickers - Array of equity ticker information
+ * @returns {Object} Processed ticker price data
+ */
+export function processQuotesData(daily_quotes, equity_tickers) {
+  if (!daily_quotes || !daily_quotes.Ticker || !daily_quotes.Date || !daily_quotes.Close) {
+    console.error("Invalid daily_quotes data structure");
+    return null;
+  }
+  
+  // Create a structured mapping of ticker data
+  const tickerData = {};
+  
+  for (let i = 0; i < daily_quotes.Ticker.length; i++) {
+    const ticker = daily_quotes.Ticker[i];
+    const date = new Date(daily_quotes.Date[i]);
+    const close = daily_quotes.Close[i];
+    const type = daily_quotes.Type[i];
+    
+    // Skip entries with null prices or type "Other"
+    if (close === null || isNaN(close) || type === "Other") continue;
+    
+    if (!tickerData[ticker]) {
+      tickerData[ticker] = {
+        dates: [],
+        prices: [],
+        types: []
+      };
+    }
+    
+    tickerData[ticker].dates.push(date);
+    tickerData[ticker].prices.push(close);
+    tickerData[ticker].types.push(type);
+  }
+  
+  // For each ticker, find first and last valid prices
+  const processedData = {};
+  
+  for (const [ticker, data] of Object.entries(tickerData)) {
+    if (data.prices.length === 0) continue;
+    
+    // Sort dates and prices together
+    const sorted = data.dates.map((date, i) => ({
+      date,
+      price: data.prices[i],
+      type: data.types[i]
+    })).sort((a, b) => a.date - b.date);
+    
+    // Get first and last valid prices
+    const firstPrice = sorted[0].price;
+    const lastPrice = sorted[sorted.length - 1].price;
+    const type = sorted[0].type;
+    
+    // Find weight from equity_tickers if available
+    let weight = 1;
+    if (Array.isArray(equity_tickers)) {
+      const tickerInfo = equity_tickers.find(t => t.Ticker === ticker);
+      if (tickerInfo && typeof tickerInfo.Weight === 'string') {
+        // Handle percentage strings like "10.00%"
+        weight = parseFloat(tickerInfo.Weight.replace('%', '')) / 100;
+      } else if (tickerInfo && !isNaN(tickerInfo.Weight)) {
+        weight = tickerInfo.Weight;
+      }
+    }
+    
+    processedData[ticker] = {
+      firstPrice,
+      lastPrice,
+      weight,
+      type
+    };
+  }
+  
+  return processedData;
+}
+
+/**
+ * Calculate asset class weights from ticker prices
+ * @param {Object} tickerPrices - Ticker price data
+ * @returns {Object} Object with equity and bond totals and tickers
+ */
+export function calculateAssetClassWeights(tickerPrices) {
+  let equityTotal = 0;
+  let bondTotal = 0;
+  let equityTickers = [];
+  let bondTickers = [];
+  
+  for (const [ticker, priceData] of Object.entries(tickerPrices)) {
+    const type = priceData.type || "Equity";
+    
+    if (type === "Equity") {
+      equityTotal += priceData.weight;
+      equityTickers.push(ticker);
+    } else if (type === "Bond") {
+      bondTotal += priceData.weight;
+      bondTickers.push(ticker);
+    }
+  }
+  
+  return { 
+    equityTotal, 
+    bondTotal,
+    equityTickers,
+    bondTickers
+  };
+}
+
+/**
+ * Calculate ticker weights within asset classes and portfolio
+ * @param {string} ticker - Ticker symbol
+ * @param {string} type - Asset type (Equity/Bond)
+ * @param {Object} priceData - Price data for ticker
+ * @param {Object} assetClassTotals - Asset class weight totals
+ * @param {number} equity_weight - Overall equity weight
+ * @param {number} bond_weight - Overall bond weight
+ * @param {number} fixed_optimal_weight - Complete portfolio weight
+ * @returns {Object} Calculated weights for the ticker
+ */
+export function calculateTickerWeights(ticker, type, priceData, assetClassTotals, equity_weight = 0.6, bond_weight = 0.4, fixed_optimal_weight = 1.0) {
+  const { equityTotal, bondTotal } = assetClassTotals;
+  
+  // Calculate normalized weight within asset class
+  const assetClassWeight = 
+    type === "Equity" ? 
+      (equityTotal > 0 ? priceData.weight / equityTotal : 0) : 
+      (bondTotal > 0 ? priceData.weight / bondTotal : 0);
+  
+  // Calculate weight in risky portfolio
+  const riskyPfWeight = 
+    type === "Equity" ?
+      assetClassWeight * equity_weight :
+      assetClassWeight * bond_weight;
+      
+  // Calculate weight in complete portfolio
+  const completeWeight = riskyPfWeight * fixed_optimal_weight;
+  
+  return {
+    assetClassWeight,
+    riskyPfWeight,
+    completeWeight
+  };
+}
+
+/**
+ * Generate sample portfolio data when real data is unavailable
+ * @param {Array} tickers - Array of ticker information
+ * @param {number} initialAmount - Initial investment amount
+ * @returns {Array} Sample portfolio data
+ */
+export function generateSamplePortfolioData(tickers, initialAmount) {
+  if (!Array.isArray(tickers) || tickers.length === 0) return [];
+  
+  const sampleData = [];
+  const today = new Date();
+  
+  // Generate data for each ticker
+  tickers.forEach(ticker => {
+    const weight = ticker.Weight || 0.2;
+    let price = 100; // Starting price
+    
+    // Generate 6 months of daily data
+    for (let i = 180; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      price *= 1 + (Math.random() - 0.5) * 0.015; // Add random volatility
+      
+      sampleData.push({
+        Date: date,
+        Close: price * weight * initialAmount / 100,
+        Ticker: ticker.Ticker,
+        Portfolio: ticker.Ticker,
+        Type: ticker.Type
+      });
+    }
+  });
+  
+  // Add total portfolio value by date
+  const dateGroups = d3.group(sampleData, d => d.Date.toISOString().split('T')[0]);
+  for (const [date, values] of dateGroups) {
+    sampleData.push({
+      Date: new Date(date),
+      Close: d3.sum(values, d => d.Close),
+      Portfolio: "Total Portfolio",
+      Ticker: "TOTAL",
+      Type: "Portfolio"
+    });
+  }
+  
+  return sampleData;
+}
+
+/**
+ * Calculate portfolio returns from quotes data
+ * @param {Object} quotes - Quotes data
+ * @param {Array} tickers - Array of ticker information
+ * @param {number} initialAmount - Initial investment amount
+ * @returns {Array} Portfolio returns data
+ */
+export function calculatePortfolioReturns(quotes, tickers, initialAmount) {
+  // Validate inputs
+  if (!quotes?.Date?.length || !quotes.Ticker || !quotes.Close || !Array.isArray(tickers)) {
+    console.error("Invalid input data for portfolio returns calculation");
+    return [];
+  }
+  
+  // Process weight data
+  const weights = processWeights(tickers);
+  
+  // Convert columnar data to row format
+  const rowData = convertToRowData(quotes);
+  
+  // Calculate ticker performance
+  const { tickerPerformance, tickerFirstLastPrices } = calculateTickerPerformance(
+    rowData, weights, initialAmount
+  );
+  
+  // Calculate portfolio totals
+  const portfolioTotal = calculatePortfolioTotals(tickerPerformance);
+  
+  // Combine and sort all data
+  const sortedPortfolioData = [...tickerPerformance, ...portfolioTotal]
+    .sort((a, b) => a.Date - b.Date);
+  
+  // Add metadata
+  const dates = quotes.Date.map(d => new Date(d));
+  sortedPortfolioData.datasetDateRange = {
+    startDate: new Date(Math.min(...dates)),
+    endDate: new Date(Math.max(...dates))
+  };
+  sortedPortfolioData.tickerFirstLastPrices = tickerFirstLastPrices;
+  
+  return sortedPortfolioData;
+}
+
+/**
+ * Process ticker weights
+ * @param {Array} tickers - Array of ticker information
+ * @returns {Object} Processed weights by ticker
+ */
+export function processWeights(tickers) {
+  const weights = {};
+  tickers.forEach(d => {
+    let weight = d.Weight;
+    if (typeof weight === "string") {
+      weight = parseFloat(weight.replace("%", "")) / 100;
+    }
+    weights[d.Ticker] = weight;
+  });
+  return weights;
+}
+
+/**
+ * Convert columnar data to row-based format
+ * @param {Object} quotes - Quotes data in columnar format
+ * @returns {Array} Row-based data
+ */
+export function convertToRowData(quotes) {
+  const rowData = [];
+  for (let i = 0; i < quotes.Date.length; i++) {
+    rowData.push({
+      Date: new Date(quotes.Date[i]),
+      Ticker: quotes.Ticker[i],
+      Close: quotes.Close[i],
+      Type: quotes.Type?.[i] || 'Equity'
+    });
+  }
+  return rowData;
+}
+
+/**
+ * Calculate performance for each ticker
+ * @param {Array} rowData - Row-based data
+ * @param {Object} weights - Ticker weights
+ * @param {number} initialAmount - Initial investment amount
+ * @returns {Object} Ticker performance and price data
+ */
+export function calculateTickerPerformance(rowData, weights, initialAmount) {
+  const tickerGroups = d3.group(rowData, d => d.Ticker);
+  const tickerPerformance = [];
+  const tickerFirstLastPrices = {};
+  
+  for (const [ticker, values] of tickerGroups) {
+    if (!weights[ticker]) continue;
+    
+    // Sort values by date
+    const sortedValues = [...values].sort((a, b) => a.Date - b.Date);
+    if (sortedValues.length === 0) continue;
+    
+    // Store price data
+    tickerFirstLastPrices[ticker] = {
+      firstPrice: sortedValues[0].Close,
+      lastPrice: sortedValues[sortedValues.length - 1].Close,
+      weight: weights[ticker]
+    };
+    
+    // Calculate share count and performance
+    const numberOfShares = initialAmount * weights[ticker] / sortedValues[0].Close;
+    
+    sortedValues.forEach(d => {
+      tickerPerformance.push({
+        Date: d.Date,
+        Close: d.Close * numberOfShares,
+        RawClose: d.Close,
+        Portfolio: ticker,
+        Ticker: ticker,
+        Type: d.Type
+      });
+    });
+  }
+  
+  return { tickerPerformance, tickerFirstLastPrices };
+}
+
+/**
+ * Calculate total portfolio value by date
+ * @param {Array} tickerPerformance - Ticker performance data
+ * @returns {Array} Portfolio total data
+ */
+export function calculatePortfolioTotals(tickerPerformance) {
+  const dateGroups = d3.group(tickerPerformance, d => d.Date.toISOString().split('T')[0]);
+  const portfolioTotal = [];
+  
+  for (const [date, values] of dateGroups) {
+    portfolioTotal.push({
+      Date: new Date(date),
+      Close: d3.sum(values, d => d.Close),
+      Portfolio: "Total Portfolio",
+      Ticker: "TOTAL",
+      Type: "Portfolio"
+    });
+  }
+  
+  return portfolioTotal;
+}
+
+/**
+ * Create an allocation table for displaying portfolio options
+ * @param {Object} dynamicAllocations - Allocation data
+ * @param {number} fixed_optimal_weight - Optimal weight
+ * @param {number} rf_rate - Risk-free rate
+ * @param {number} bond_ret - Bond return
+ * @param {number} calc_equity_return - Equity return
+ * @param {number} bond_vol - Bond volatility
+ * @param {number} calc_equity_std - Equity standard deviation
+ * @param {number} corr_eq_bd - Correlation between equity and bonds
+ * @returns {HTMLElement} Allocation table
+ */

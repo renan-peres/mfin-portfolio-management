@@ -39,86 +39,14 @@ viewof time_horizon = createNumericInput({
 
 :::: {.columns}
 
-#### Performance Summary Table {width=40%}
+#### Performance Summary Table
 
 ```{ojs}
 //| echo: false
 //| output: false
 
-// Helper function to pre-process daily_quotes data
-processedQuotesData = {
-  if (!daily_quotes || !daily_quotes.Ticker || !daily_quotes.Date || !daily_quotes.Close) {
-    console.error("Invalid daily_quotes data structure:", daily_quotes);
-    return null;
-  }
-  
-  // Create a structured mapping of ticker data
-  const tickerData = {};
-  
-  for (let i = 0; i < daily_quotes.Ticker.length; i++) {
-    const ticker = daily_quotes.Ticker[i];
-    const date = new Date(daily_quotes.Date[i]);
-    const close = daily_quotes.Close[i];
-    const type = daily_quotes.Type[i];
-    
-    // Skip entries with null prices or type "Other"
-    if (close === null || isNaN(close) || type === "Other") continue;
-    
-    if (!tickerData[ticker]) {
-      tickerData[ticker] = {
-        dates: [],
-        prices: [],
-        types: []
-      };
-    }
-    
-    tickerData[ticker].dates.push(date);
-    tickerData[ticker].prices.push(close);
-    tickerData[ticker].types.push(type);
-  }
-  
-  // For each ticker, find first and last valid prices
-  const processedData = {};
-  
-  for (const [ticker, data] of Object.entries(tickerData)) {
-    if (data.prices.length === 0) continue;
-    
-    // Sort dates and prices together
-    const sorted = data.dates.map((date, i) => ({
-      date,
-      price: data.prices[i],
-      type: data.types[i]
-    })).sort((a, b) => a.date - b.date);
-    
-    // Get first and last valid prices
-    const firstPrice = sorted[0].price;
-    const lastPrice = sorted[sorted.length - 1].price;
-    const type = sorted[0].type;
-    
-    // Find weight from equity_tickers if available
-    let weight = 1;
-    if (Array.isArray(equity_tickers)) {
-      const tickerInfo = equity_tickers.find(t => t.Ticker === ticker);
-      if (tickerInfo && typeof tickerInfo.Weight === 'string') {
-        // Handle percentage strings like "10.00%"
-        weight = parseFloat(tickerInfo.Weight.replace('%', '')) / 100;
-      } else if (tickerInfo && !isNaN(tickerInfo.Weight)) {
-        weight = tickerInfo.Weight;
-      }
-    }
-    
-    processedData[ticker] = {
-      firstPrice,
-      lastPrice,
-      weight,
-      type
-    };
-    
-    console.log(`Processed ${ticker}: firstPrice=${firstPrice}, lastPrice=${lastPrice}, weight=${weight}, type=${type}`);
-  }
-  
-  return processedData;
-}
+// Use the imported processQuotesData function
+processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
 ```
 
 ```{ojs}
@@ -141,33 +69,13 @@ portfolioMetricsDisplay = {
   const startDate = dateRange.startDate || new Date();
   const endDate = dateRange.endDate || new Date();
   
-  // Calculate time difference in years - fixed division operator
+  // Calculate time difference in years
   const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
   
-  // First, calculate total weights by asset type
-  let equityTotal = 0;
-  let bondTotal = 0;
-  let equityTickers = [];
-  let bondTickers = [];
+  // Calculate asset class totals
+  const assetClassTotals = calculateAssetClassWeights(tickerPrices);
   
-  // First pass: gather all tickers and their types, calculate totals by type
-  for (const [ticker, priceData] of Object.entries(tickerPrices)) {
-    // Find ticker info from equity_tickers or use type from processed data
-    const tickerInfo = Array.isArray(equity_tickers) ? 
-      equity_tickers.find(t => t.Ticker === ticker) : null;
-    
-    const type = tickerInfo?.Type || priceData.type || "Equity";
-    
-    if (type === "Equity") {
-      equityTotal += priceData.weight;
-      equityTickers.push(ticker);
-    } else if (type === "Bond") {
-      bondTotal += priceData.weight;
-      bondTickers.push(ticker);
-    }
-  }
-  
-  // Process ticker data from portfolio data with correct weights
+  // Process ticker data with correct weights
   const tickerData = {};
   let totalValidTickers = 0;
     
@@ -178,47 +86,24 @@ portfolioMetricsDisplay = {
     
     const type = tickerInfo?.Type || priceData.type || "Equity";
     
-    // Add debug logging to inspect price data
-    console.log(`Ticker ${ticker} price data:`, priceData);
-    
     // Skip tickers with invalid price data
     if (!priceData.firstPrice || !priceData.lastPrice || 
         priceData.firstPrice <= 0 || priceData.lastPrice <= 0) {
-      console.warn(`Skipping ticker ${ticker} due to invalid price data`);
       continue;
     }
     
     totalValidTickers++;
     
-    // Calculate normalized weight within asset class
-    const assetClassWeight = 
-      type === "Equity" ? 
-        (equityTotal > 0 ? priceData.weight / equityTotal : 0) : 
-        (bondTotal > 0 ? priceData.weight / bondTotal : 0);
-    
-    // Calculate weight in risky portfolio
-    const riskyPfWeight = 
-      type === "Equity" ?
-        assetClassWeight * (typeof equity_weight !== 'undefined' ? equity_weight : 0.6) :
-        assetClassWeight * (typeof bond_weight !== 'undefined' ? bond_weight : 0.4);
-        
-    // Calculate weight in complete portfolio
-    const completeWeight = riskyPfWeight * (typeof fixed_optimal_weight !== 'undefined' ? fixed_optimal_weight : 1.0);
+    // Calculate weights for this ticker
+    const weights = calculateTickerWeights(ticker, type, priceData, assetClassTotals, 
+                                         equity_weight, bond_weight, fixed_optimal_weight);
     
     // Use the complete weight for initializing the portfolio
-    const initialValue = investment_amount * completeWeight;
+    const initialValue = investment_amount * weights.completeWeight;
     
-    // Debug log values before calculation
-    console.log(`${ticker} - firstPrice: ${priceData.firstPrice}, lastPrice: ${priceData.lastPrice}`);
-    
-    // Calculate number of shares
+    // Calculate number of shares and current value
     const numberOfShares = initialValue / priceData.firstPrice;
-    console.log(`${ticker} - initialValue: ${initialValue}, shares: ${numberOfShares}`);
-    
-    // Calculate current value
     const currentValue = numberOfShares * priceData.lastPrice;
-    console.log(`${ticker} - currentValue calculation: ${numberOfShares} shares * ${priceData.lastPrice} price = ${currentValue}`);
-    
     const dollarReturn = currentValue - initialValue;
     
     // Calculate total return percentage
@@ -227,18 +112,14 @@ portfolioMetricsDisplay = {
       totalReturn = currentValue / initialValue - 1;
     }
     
-    // Log calculation results
-    console.log(`${ticker} final values - initial: ${initialValue}, current: ${currentValue}, return: ${totalReturn}`);
-    
     // Calculate annualized return
     let annualizedReturn = 0;
     if (yearsDiff > 0 && totalReturn >= -1 && isFinite(totalReturn)) {
       try {
         annualizedReturn = Math.pow(1 + totalReturn, 1 / yearsDiff) - 1;
-        // Double-check the result is valid
         if (!isFinite(annualizedReturn)) annualizedReturn = 0;
       } catch (e) {
-        console.error(`Error calculating annualized return for ${ticker}:`, e);
+        console.error(`Error calculating annualized return for ${ticker}`);
       }
     }
     
@@ -246,9 +127,9 @@ portfolioMetricsDisplay = {
       type: type,
       name: tickerInfo?.Name || ticker,
       sector: tickerInfo?.Sector || "N/A",
-      assetClassWeight: assetClassWeight,
-      riskyPfWeight: riskyPfWeight,
-      completeWeight: completeWeight,
+      assetClassWeight: weights.assetClassWeight,
+      riskyPfWeight: weights.riskyPfWeight,
+      completeWeight: weights.completeWeight,
       initialValue,
       currentValue,
       dollarReturn,
@@ -256,8 +137,6 @@ portfolioMetricsDisplay = {
       annualizedReturn
     };
   }
-  
-  console.log("Total valid tickers processed:", totalValidTickers);
   
   if (totalValidTickers === 0) {
     return html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>`;
@@ -272,28 +151,20 @@ portfolioMetricsDisplay = {
     
   const totalDollarReturn = totalCurrentValue - totalInitialValue;
   
-  // Fix: Guard against division by zero
+  // Guard against division by zero
   const totalReturnPct = totalInitialValue > 0 ? 
     (totalCurrentValue / totalInitialValue) - 1 : 0;
     
-  // Fix: Guard against invalid power calculations
+  // Calculate annualized return
   let annualizedReturnPct = 0;
   if (yearsDiff > 0 && totalReturnPct >= -1 && isFinite(totalReturnPct)) {
     try {
       annualizedReturnPct = Math.pow(1 + totalReturnPct, 1 / yearsDiff) - 1;
       if (!isFinite(annualizedReturnPct)) annualizedReturnPct = 0;
     } catch (e) {
-      console.error("Error calculating portfolio annualized return:", e);
+      console.error("Error calculating portfolio annualized return");
     }
   }
-  
-  console.log("Portfolio summary:", {
-    totalInitialValue,
-    totalCurrentValue,
-    totalDollarReturn,
-    totalReturnPct,
-    annualizedReturnPct
-  });
   
   return html`
     <div class="card">
@@ -311,10 +182,10 @@ portfolioMetricsDisplay = {
             </tr>
             <tr>
               <th>Holding Period Return:</th>
-              <td>${formatPercent(totalReturnPct)} (${formatCurrency(totalDollarReturn)})</td>
+              <td>${formatPercent(totalReturnPct)}</td>
             </tr>
             <tr>
-              <th>Annualized Return:</th>
+              <th>IRR (Annualized Return):</th>
               <td>${formatPercent(annualizedReturnPct)}</td>
             </tr>
             <tr>
@@ -370,93 +241,149 @@ portfolioMetricsDisplay = {
 #### Performance Over Time Chart
 
 ```{ojs}
-// Create portfolio value chart with Plot - using the same data from metrics calculation
 portfolioValueChart = {
-  // Filter for just the Total Portfolio data points
-  const portfolioValueData = portfolioData.filter(d => d.Portfolio === "Total Portfolio");
-  
-  if (portfolioValueData.length === 0) {
-    return html`<div class="alert alert-warning">No portfolio value data available for charting</div>`;
+  // Check if we have ticker price time series data
+  if (!daily_quotes || !daily_quotes.Ticker || !daily_quotes.Date || !daily_quotes.Close) {
+    return html`<div class="alert alert-warning">No price time series data available for charting</div>`;
   }
   
-  // Use our pre-processed quotes data or the data from portfolioData
-  const tickerPrices = processedQuotesData || portfolioData.tickerFirstLastPrices;
-  const dateRange = portfolioData.datasetDateRange || {};
-  const startDate = dateRange.startDate || new Date();
-  const endDate = dateRange.endDate || new Date();
+  // Get ticker information and weights from processedQuotesData
+  const tickerPrices = processedQuotesData || {};
+  if (!tickerPrices || Object.keys(tickerPrices).length === 0) {
+    return html`<div class="alert alert-warning">No ticker price information available</div>`;
+  }
   
-  // Calculate total initial value the same way as in the metrics display
-  let totalInitialValue = 0;
-  let tempTickerData = {};
+  // Calculate asset class totals
+  const assetClassTotals = calculateAssetClassWeights(tickerPrices);
+  
+  // Calculate weights and shares for each ticker
+  const tickerWeights = {};
   
   for (const [ticker, priceData] of Object.entries(tickerPrices)) {
+    const tickerInfo = Array.isArray(equity_tickers) ? 
+      equity_tickers.find(t => t.Ticker === ticker) : null;
+    
+    const type = tickerInfo?.Type || priceData.type || "Equity";
+    
     // Skip tickers with invalid price data
     if (!priceData.firstPrice || !priceData.lastPrice || 
         priceData.firstPrice <= 0 || priceData.lastPrice <= 0) {
       continue;
     }
     
-    // Calculate weight factors with fallbacks
-    const basicWeight = priceData.weight || 0;
-    const equityWeightFactor = typeof equity_weight !== 'undefined' ? equity_weight : 0.6;
-    const bondWeightFactor = typeof bond_weight !== 'undefined' ? bond_weight : 0.4; 
-    const riskyWeight = typeof fixed_optimal_weight !== 'undefined' ? fixed_optimal_weight : 1.0;
+    // Calculate weights for this ticker
+    const weights = calculateTickerWeights(ticker, type, priceData, assetClassTotals, 
+                                          equity_weight, bond_weight, fixed_optimal_weight);
     
-    // Find ticker type
-    const tickerInfo = Array.isArray(equity_tickers) ? 
-      equity_tickers.find(t => t.Ticker === ticker) : null;
-    const type = tickerInfo?.Type || priceData.type || "Equity";
-    
-    // Calculate complete weight
-    const weightFactor = type === "Equity" ? equityWeightFactor : bondWeightFactor;
-    const completeWeight = basicWeight * weightFactor * riskyWeight;
-    
-    const initialValue = investment_amount * completeWeight;
-    totalInitialValue += initialValue;
-    
-    tempTickerData[ticker] = {
-      weight: completeWeight,
-      initialValue
+    tickerWeights[ticker] = {
+      weight: weights.completeWeight,
+      type
     };
   }
   
-  // Sort by date to ensure proper line order
-  const sortedData = portfolioValueData.sort((a, b) => a.Date - b.Date);
+  // Create a map of date to ticker prices
+  const dateTickerPrices = {};
   
-  // Calculate adjusted values for each data point
-  const adjustedData = sortedData.map(d => {
-    // If this is sample data, just use it directly
-    if (!tickerPrices || Object.keys(tickerPrices).length === 0) {
-      return {
-        Date: d.Date,
-        Close: d.Close
-      };
+  for (let i = 0; i < daily_quotes.Date.length; i++) {
+    const date = new Date(daily_quotes.Date[i]).toISOString().split('T')[0];
+    const ticker = daily_quotes.Ticker[i];
+    const close = daily_quotes.Close[i];
+    
+    if (!dateTickerPrices[date]) {
+      dateTickerPrices[date] = {};
     }
     
-    // Get the raw portfolio value for this date
-    const rawValue = d.Close;
-    
-    // Calculate the adjustment ratio (if first point has different value)
-    const firstRawValue = sortedData[0]?.Close || 1;
-    const adjustmentRatio = totalInitialValue / firstRawValue;
-    
-    return {
-      Date: d.Date,
-      Close: rawValue * adjustmentRatio  // Scale all values proportionally
-    };
-  });
+    dateTickerPrices[date][ticker] = close;
+  }
   
-  // Get initial and final values from adjusted data
-  const initialValue = adjustedData[0]?.Close || 0;
-  const currentValue = adjustedData[adjustedData.length - 1]?.Close || 0;
+  // Sort dates to ensure chronological order
+  const sortedDates = Object.keys(dateTickerPrices).sort();
+  
+  // Find the earliest date with valid data for all tickers
+  let earliestCompleteDataDate = null;
+  for (const date of sortedDates) {
+    let allTickersHaveData = true;
+    for (const ticker of Object.keys(tickerWeights)) {
+      if (!(ticker in dateTickerPrices[date]) || 
+          dateTickerPrices[date][ticker] === null || 
+          isNaN(dateTickerPrices[date][ticker])) {
+        allTickersHaveData = false;
+        break;
+      }
+    }
+    if (allTickersHaveData) {
+      earliestCompleteDataDate = date;
+      break;
+    }
+  }
+  
+  if (!earliestCompleteDataDate) {
+    return html`<div class="alert alert-warning">Cannot find a date where all tickers have valid price data</div>`;
+  }
+  
+  // Calculate number of shares for each ticker based on initial weights and prices
+  const tickerShares = {};
+  for (const ticker of Object.keys(tickerWeights)) {
+    const initialPrice = dateTickerPrices[earliestCompleteDataDate][ticker];
+    const initialInvestment = investment_amount * tickerWeights[ticker].weight;
+    tickerShares[ticker] = initialInvestment / initialPrice;
+  }
+  
+  // Calculate portfolio value for each date
+  const portfolioTimeSeries = [];
+  
+  for (const date of sortedDates) {
+    let portfolioValue = 0;
+    let allTickersHaveData = true;
+    
+    for (const ticker of Object.keys(tickerWeights)) {
+      // Skip if this ticker doesn't have data for this date
+      if (!(ticker in dateTickerPrices[date]) || 
+          dateTickerPrices[date][ticker] === null || 
+          isNaN(dateTickerPrices[date][ticker])) {
+        allTickersHaveData = false;
+        continue;
+      }
+      
+      const price = dateTickerPrices[date][ticker];
+      const shares = tickerShares[ticker];
+      
+      portfolioValue += price * shares;
+    }
+    
+    // Only add dates where we have data for all tickers
+    if (allTickersHaveData) {
+      portfolioTimeSeries.push({
+        Date: new Date(date),
+        Close: portfolioValue
+      });
+    }
+  }
+  
+  // Sort the time series by date
+  portfolioTimeSeries.sort((a, b) => a.Date - b.Date);
+  
+  if (portfolioTimeSeries.length === 0) {
+    return html`<div class="alert alert-warning">Not enough data points to generate chart</div>`;
+  }
+  
+  // Get initial and final values
+  const initialValue = portfolioTimeSeries[0]?.Close || investment_amount;
+  const currentValue = portfolioTimeSeries[portfolioTimeSeries.length - 1]?.Close || initialValue;
   const totalReturn = initialValue > 0 ? (currentValue / initialValue) - 1 : 0;
+  
+  // Calculate time span in years
+  const startDate = portfolioTimeSeries[0]?.Date || new Date();
+  const endDate = portfolioTimeSeries[portfolioTimeSeries.length - 1]?.Date || new Date();
+  const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
   
   // Determine performance color based on return
   const performanceColor = totalReturn >= 0 ? "#28a745" : "#dc3545";
   
+  // Create the chart using Plot
   return Plot.plot({
-    marginLeft: 70,
-    marginRight: 30,
+    marginLeft: 80,
+    marginRight: 20,
     style: {
       fontSize: "14px",
       background: "transparent",
@@ -469,26 +396,28 @@ portfolioValueChart = {
       tickFormat: d => {
         const date = new Date(d);
         const month = date.getMonth();
-        const year = date.getFullYear().toString().slice(-2); // Get just the last two digits
+        const year = date.getFullYear().toString().slice(-2);
+        // const year = date.getFullYear().toString();
         const quarter = Math.floor(month / 3) + 1;
-        return `Q${quarter} '${year}`; // Format as Q2 '20
+        return `Q${quarter}'${year}`;
       }
     },
     y: {
       grid: true,
       label: "Portfolio Value ($)",
       labelOffset: 45,
-      domain: [0, Math.max(d3.max(adjustedData, d => d.Close) * 1.05, initialValue * 1.05)]
+      domain: [0, Math.max(d3.max(portfolioTimeSeries, d => d.Close) * 1.05, initialValue * 1.05)],
+      tickFormat: d => `$${d3.format(",")(d.toFixed(0))}`
     },
     marks: [
-      // Reference line for initial investment amount
+      // Reference line for initial investment
       Plot.ruleY([initialValue], { 
         stroke: "#888", 
         strokeDasharray: "4 4",
         strokeWidth: 1
       }),
       
-      // Label for initial investment
+      // Initial investment label
       Plot.text([{x: startDate, y: initialValue}], {
         text: `Initial Investment: ${formatCurrency(initialValue)}`,
         dy: -8,
@@ -497,8 +426,8 @@ portfolioValueChart = {
         textAnchor: "start"
       }),
       
-      // Area below the line for visual emphasis
-      Plot.areaY(adjustedData, {
+      // Area fill
+      Plot.areaY(portfolioTimeSeries, {
         x: "Date",
         y: "Close",
         fill: performanceColor,
@@ -506,18 +435,22 @@ portfolioValueChart = {
         curve: "natural"
       }),
       
-      // Main line showing portfolio value over time
-      Plot.lineY(adjustedData, {
+      // Portfolio value line
+      Plot.lineY(portfolioTimeSeries, {
         x: "Date",
         y: "Close",
         stroke: performanceColor,
         strokeWidth: 3,
         curve: "natural",
-        tip: true
+        tip: {
+          format: {
+            y: d => formatCurrency(d)
+          }
+        }
       }),
       
-      // Dot at current value
-      Plot.dot(adjustedData.slice(-1), {
+      // End point
+      Plot.dot(portfolioTimeSeries.slice(-1), {
         x: "Date",
         y: "Close",
         r: 6,
@@ -526,7 +459,7 @@ portfolioValueChart = {
       }),
       
       // Current value label
-      Plot.text(adjustedData.slice(-1), {
+      Plot.text(portfolioTimeSeries.slice(-1), {
         x: "Date",
         y: "Close",
         text: d => `Current Value: ${formatCurrency(currentValue)}`,
@@ -536,8 +469,8 @@ portfolioValueChart = {
         fontWeight: "bold"
       }),
       
-      // Performance indicator
-      Plot.text(adjustedData.slice(-1), {
+      // Return percentage
+      Plot.text(portfolioTimeSeries.slice(-1), {
         x: "Date",
         y: "Close",
         text: d => {
@@ -552,7 +485,7 @@ portfolioValueChart = {
       })
     ]
   });
-}
+};
 ```
 
 :::
@@ -574,14 +507,8 @@ capitalAlocation = html`
 ```
 
 ```{ojs}
- html`
-    <div class="card">
-      <div class="card-body">
-        <h5 class="mt-4">Asset Class Allocation</h5>
-        ${createAllocationTable()}
-      </div>
-    </div>
-`;
+// Use the imported allocation table function
+createAllocationTable()
 ```
 
 ### Quotes

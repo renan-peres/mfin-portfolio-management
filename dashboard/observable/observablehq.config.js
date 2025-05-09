@@ -1,6 +1,6 @@
 // See https://observablehq.com/framework/config for documentation.
 
-const FOOTER = "<a href='https://github.com/renan-peres' target='_blank'>Copyright 2025, Renan Peres</a>.";
+const FOOTER = `<style>#observablehq-footer { margin-top: 1rem; }</style><a href='https://github.com/renan-peres' target='_blank'>Copyright 2025, Renan Peres</a>.`;
 const SOURCE_REPO = "https://github.com/renan-peres/website/blob/main/src";
 
 const VIEW_SOURCE = !SOURCE_REPO

@@ -118,8 +118,8 @@ bond_tk        = [bond_pf["Price Change Sensitivity"].idxmax()]  # highest Px‑
 daily_px.index   = pd.to_datetime(daily_px.index)
 monthly_px.index = pd.to_datetime(monthly_px.index)
 
-daily_px = daily_px.loc[daily_px.index.notna()]
-monthly_px = monthly_px.loc[monthly_px.index.notna()]
+daily_px = daily_px.loc[daily_px.index.notna()].dropna(how='any')
+monthly_px = monthly_px.loc[monthly_px.index.notna()].dropna(how='any')
 
 # --------------------------------------------------------------------------- #
 # Daily returns, correlation, volatility                                     #
@@ -191,8 +191,6 @@ print(f"Sharpe ratio          : {opt_sr:.4f}")
 # If you still need long‑format prices:
 daily_long   = melt_price(daily_px,   equity_tk, bond_tk)
 monthly_long = melt_price(monthly_px, equity_tk, bond_tk)
-
-RISK_FREE
 ```
 
 ```{python}
@@ -402,6 +400,15 @@ calculateRiskBasedAllocation = utils.calculateRiskBasedAllocation
 calculateRiskyPortfolioMetrics = utils.calculateRiskyPortfolioMetrics
 categorizeValue = utils.categorizeValue
 calculateData = utils.generatePortfolioData
+processQuotesData = utils.processQuotesData
+calculateAssetClassWeights = utils.calculateAssetClassWeights
+calculateTickerWeights = utils.calculateTickerWeights
+generateSamplePortfolioData = utils.generateSamplePortfolioData
+calculatePortfolioReturns = utils.calculatePortfolioReturns
+processWeights = utils.processWeights
+convertToRowData = utils.convertToRowData
+calculateTickerPerformance = utils.calculateTickerPerformance
+calculatePortfolioTotals = utils.calculatePortfolioTotals
 ```
 
 ```{ojs}
@@ -430,168 +437,11 @@ portfolioData = {
   }
   return calculatePortfolioReturns(daily_quotes, equity_tickers, investment_amount);
 };
+```
 
-// Generate sample portfolio data when real data is unavailable
-function generateSamplePortfolioData(tickers, initialAmount) {
-  if (!Array.isArray(tickers) || tickers.length === 0) return [];
-  
-  const sampleData = [];
-  const today = new Date();
-  
-  // Generate data for each ticker
-  tickers.forEach(ticker => {
-    const weight = ticker.Weight || 0.2;
-    let price = 100; // Starting price
-    
-    // Generate 6 months of daily data
-    for (let i = 180; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      price *= 1 + (Math.random() - 0.5) * 0.015; // Add random volatility
-      
-      sampleData.push({
-        Date: date,
-        Close: price * weight * initialAmount / 100,
-        Ticker: ticker.Ticker,
-        Portfolio: ticker.Ticker,
-        Type: ticker.Type
-      });
-    }
-  });
-  
-  // Add total portfolio value by date
-  const dateGroups = d3.group(sampleData, d => d.Date.toISOString().split('T')[0]);
-  for (const [date, values] of dateGroups) {
-    sampleData.push({
-      Date: new Date(date),
-      Close: d3.sum(values, d => d.Close),
-      Portfolio: "Total Portfolio",
-      Ticker: "TOTAL",
-      Type: "Portfolio"
-    });
-  }
-  
-  return sampleData;
-}
-
-function calculatePortfolioReturns(quotes, tickers, initialAmount) {
-  // Validate inputs
-  if (!quotes?.Date?.length || !quotes.Ticker || !quotes.Close || !Array.isArray(tickers)) {
-    console.error("Invalid input data for portfolio returns calculation");
-    return [];
-  }
-  
-  // Process weight data
-  const weights = processWeights(tickers);
-  
-  // Convert columnar data to row format
-  const rowData = convertToRowData(quotes);
-  
-  // Calculate ticker performance
-  const { tickerPerformance, tickerFirstLastPrices } = calculateTickerPerformance(
-    rowData, weights, initialAmount
-  );
-  
-  // Calculate portfolio totals
-  const portfolioTotal = calculatePortfolioTotals(tickerPerformance);
-  
-  // Combine and sort all data
-  const sortedPortfolioData = [...tickerPerformance, ...portfolioTotal]
-    .sort((a, b) => a.Date - b.Date);
-  
-  // Add metadata
-  const dates = quotes.Date.map(d => new Date(d));
-  sortedPortfolioData.datasetDateRange = {
-    startDate: new Date(Math.min(...dates)),
-    endDate: new Date(Math.max(...dates))
-  };
-  sortedPortfolioData.tickerFirstLastPrices = tickerFirstLastPrices;
-  
-  return sortedPortfolioData;
-}
-
-// Helper function to process ticker weights
-function processWeights(tickers) {
-  const weights = {};
-  tickers.forEach(d => {
-    let weight = d.Weight;
-    if (typeof weight === "string") {
-      weight = parseFloat(weight.replace("%", "")) / 100;
-    }
-    weights[d.Ticker] = weight;
-  });
-  return weights;
-}
-
-// Convert columnar data to row-based format
-function convertToRowData(quotes) {
-  const rowData = [];
-  for (let i = 0; i < quotes.Date.length; i++) {
-    rowData.push({
-      Date: new Date(quotes.Date[i]),
-      Ticker: quotes.Ticker[i],
-      Close: quotes.Close[i],
-      Type: quotes.Type?.[i] || 'Equity'
-    });
-  }
-  return rowData;
-}
-
-// Calculate performance for each ticker
-function calculateTickerPerformance(rowData, weights, initialAmount) {
-  const tickerGroups = d3.group(rowData, d => d.Ticker);
-  const tickerPerformance = [];
-  const tickerFirstLastPrices = {};
-  
-  for (const [ticker, values] of tickerGroups) {
-    if (!weights[ticker]) continue;
-    
-    // Sort values by date
-    const sortedValues = [...values].sort((a, b) => a.Date - b.Date);
-    if (sortedValues.length === 0) continue;
-    
-    // Store price data
-    tickerFirstLastPrices[ticker] = {
-      firstPrice: sortedValues[0].Close,
-      lastPrice: sortedValues[sortedValues.length - 1].Close,
-      weight: weights[ticker]
-    };
-    
-    // Calculate share count and performance
-    const numberOfShares = initialAmount * weights[ticker] / sortedValues[0].Close;
-    
-    sortedValues.forEach(d => {
-      tickerPerformance.push({
-        Date: d.Date,
-        Close: d.Close * numberOfShares,
-        RawClose: d.Close,
-        Portfolio: ticker,
-        Ticker: ticker,
-        Type: d.Type
-      });
-    });
-  }
-  
-  return { tickerPerformance, tickerFirstLastPrices };
-}
-
-// Calculate total portfolio value by date
-function calculatePortfolioTotals(tickerPerformance) {
-  const dateGroups = d3.group(tickerPerformance, d => d.Date.toISOString().split('T')[0]);
-  const portfolioTotal = [];
-  
-  for (const [date, values] of dateGroups) {
-    portfolioTotal.push({
-      Date: new Date(date),
-      Close: d3.sum(values, d => d.Close),
-      Portfolio: "Total Portfolio",
-      Ticker: "TOTAL",
-      Type: "Portfolio"
-    });
-  }
-  
-  return portfolioTotal;
-}
+```{ojs}
+//| echo: false
+//| output: false
 
 function createAllocationTable() {
   const allocations = dynamicAllocations.allocations;

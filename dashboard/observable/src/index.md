@@ -1,5 +1,4 @@
 ---
-theme: report
 title: Investment Portfolio Construction
 toc: true
 ---
@@ -87,8 +86,8 @@ const investmentPortfolioDashboard = html`
       }}>
       Fullscreen
     </button>
-    <div style="width: 100%; height: 1200px; position: relative;">
-    <iframe height=1200px width="100%" 
+    <div style="width: 100%; height: 600x; position: relative;">
+    <iframe height=600x width="100%" 
         id="investmentPortfolioDashboard-embed" 
         title="investmentPortfolioDashboard Embed"
         src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/quarto/index.html"
@@ -131,13 +130,14 @@ function embedSpreadsheet(url) {
             Fullscreen
           </button>
         </div>
-        <div style="width: 100%; height: 1000px; position: relative;">
+        <div style="width: 100%; height: 600px; position: relative;">
           <iframe 
             width="100%" 
-            height="1000px" 
+            scrolling="no" 
+            height="600px" 
             src="${url}" 
             frameborder="0" 
-            scrolling="yes"
+            scrolling="no"
             allowfullscreen
           ></iframe>
           <!-- Cover element to hide footer -->
@@ -185,10 +185,10 @@ display(html`
       }}>
       Fullscreen
     </button>
-    <div style="width: 100%; height: 1200px; position: relative;">
+    <div style="width: 100%; height: 800px; position: relative;">
       <iframe 
         width="100%" 
-        height="1200px" 
+        height="800px" 
         src="${embedUrl}"
         frameborder="0"
         allowfullscreen
