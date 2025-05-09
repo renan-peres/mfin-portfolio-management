@@ -272,10 +272,10 @@ export function createAssetAllocationSlider({
     // Create optimize button
     const optimizeButton = document.createElement("button");
     optimizeButton.className = "btn btn-sm";
-    optimizeButton.style.marginBottom = "8px";
-    optimizeButton.style.backgroundColor = "#007bff";
+    optimizeButton.style.marginBottom = "12px";
+    optimizeButton.style.backgroundColor = "#0b3040";
     optimizeButton.style.color = "white";
-    optimizeButton.style.borderColor = "#0069d9";
+    optimizeButton.style.borderColor = "#0b3040";
     optimizeButton.textContent = "Maximize Sharpe";
     buttonDiv.appendChild(optimizeButton);
     container.appendChild(buttonDiv);

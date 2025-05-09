@@ -39,7 +39,7 @@ viewof time_horizon = createNumericInput({
 
 :::: {.columns}
 
-#### Performance Summary Table
+#### Performance Summary Table {width=40%}
 
 ```{ojs}
 //| echo: false
@@ -354,7 +354,7 @@ portfolioMetricsDisplay = {
                   <td>${formatPercent(data.completeWeight)}</td>
                   <td>${formatCurrency(data.initialValue)}</td>
                   <td>${formatCurrency(data.currentValue)}</td>
-                  <td>${formatPercent(data.totalReturn)} (${formatCurrency(data.dollarReturn)})</td>
+                  <td>${formatPercent(data.totalReturn)}</td>
                   <td>${formatPercent(data.annualizedReturn)}</td>
                 </tr>
               `)}

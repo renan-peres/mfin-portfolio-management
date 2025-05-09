@@ -1,5 +1,5 @@
 ---
-theme: dashboard
+theme: report
 title: Investment Portfolio Construction
 toc: true
 ---

@@ -1,5 +1,5 @@
 /*-- scss:defaults --*/
-$navbar-bg: #040548 !default;
+$navbar-bg: #01090c !default;
 $navbar-fg: #ffffff !default;
 
 // Plot visualization settings
@@ -7,6 +7,18 @@ $plot-margin-left: 60px !default;
 $plot-margin-right: 20px !default;
 $plot-margin-top: 20px !default;
 $plot-margin-bottom: 30px !default;
+
+// Table Style Variables
+$table-breakpoint: 480px !default;
+$table-background-color: #FFF !default;
+$table-text-color: #1c1c1c !default;
+$table-outer-border: 1px solid #167F92 !default;
+$table-cell-border: 1px solid #D9E4E6 !default;
+$table-border-radius: 10px !default;
+$table-highlight-color: #EAF3F3 !default;
+$table-header-background-color: #0b3040 !default;
+$table-header-text-color: #FFF !default;
+$table-header-border: 1px solid #FFF !default;
 
 /*-- scss:rules --*/
 // Base Extensions
@@ -20,6 +32,121 @@ h4 {
 
 h5 {
   font-weight: 700 !important;
+}
+
+p {
+  margin-bottom: 0.2rem !important; 
+}
+
+/* Reduce left margin of bullet points */
+ul, ol {
+  padding-left: 1.5rem !important; 
+  margin-left: 0 !important; 
+}
+
+/* Target specifically the Observable output areas in the sidebar */
+.ojs-in-a-box-waiting-for-module-import ul,
+.ojs-in-a-box-waiting-for-module-import ol {
+  padding-left: 1rem !important; /* Make even tighter in Observable outputs */
+}
+
+/* Custom Table Styles targeting .panel-tabset .card-body.html-fill-container tables */
+.panel-tabset .card-body.html-fill-container table {
+  margin: 1em 0;
+  width: 100%;
+  overflow: hidden;
+  background: $table-background-color;
+  color: $table-text-color;
+  border-radius: $table-border-radius;
+  border: $table-outer-border;
+  
+  tr {
+    border: $table-cell-border;
+    &:nth-child(odd) {
+      background-color: $table-highlight-color;
+    }
+  }
+  
+  th {
+    border: $table-header-border;
+    background-color: $table-header-background-color;
+    color: $table-header-text-color;
+    padding: 0.8em;
+    text-align: left;
+    vertical-align: top !important; /* Align header text to the top */
+  }
+  
+  td {
+    padding: 0.8em;
+    border: $table-cell-border;
+    text-align: left;
+    word-wrap: break-word;
+  }
+}
+
+/* Sticky table headers with top-aligned text */
+.panel-tabset .card-body.html-fill-container table thead th,
+table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: $table-header-background-color;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  vertical-align: top !important; /* Align header text to the top */
+}
+
+/* Ensure proper positioning for nested tables inside scrollable containers */
+div[style*="overflow-y: auto"] table thead th,
+div[style*="overflow: auto"] table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  vertical-align: top !important;
+}
+
+/* Support for horizontally scrollable tables */
+.table-responsive table thead th,
+.dt-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  vertical-align: top !important;
+}
+
+/* Specifically target OJS tables */
+.ojs-in-a-box-waiting-for-module-import table thead th {
+  vertical-align: top !important;
+}
+
+/* Responsive behavior for tables */
+@media (max-width: 767px) {
+  .panel-tabset .card-body.html-fill-container table {
+    border: 0;
+    
+    thead {
+      display: none; /* Hide table headers on mobile */
+    }
+    
+    tr {
+      margin-bottom: 1em;
+      display: block;
+      border-bottom: 2px solid $table-header-background-color;
+    }
+    
+    td {
+      display: block;
+      text-align: right;
+      font-size: 0.9em;
+      border-bottom: 1px dotted #ccc;
+      
+      /* Add attribute labels before each cell */
+      &:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+      }
+    }
+  }
 }
 
 // Panel Tabset Styles
@@ -68,6 +195,7 @@ h5 {
     }
   }
 }
+
 
 // Chart Container
 .chart-container {
