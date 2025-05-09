@@ -1,0 +1,233 @@
+<!-- # Capital Allocation  -->
+
+::: {.panel-tabset style="height: calc(100vh - 450px); min-height: 400px; overflow-y: auto;"}
+
+## Capital Allocation Line 
+
+```{ojs}
+//| echo: false
+//| output: false
+// Generate dynamic Capital Market Line based on current risky portfolio
+generateCMLPoints = () => {
+  // Create points from risk-free rate to slightly beyond risky portfolio
+  const numPoints = 100;
+  const maxStdDev = std_dev_risky * 1.2; // Extend slightly beyond risky portfolio
+  
+  // Generate equally spaced points along the line
+  return Array.from({length: numPoints}, (_, i) => {
+    // Standard deviation spans from 0 to maxStdDev
+    const sd = (i / (numPoints - 1)) * maxStdDev;
+    
+    // Calculate corresponding expected return using the CML equation
+    // CML: E(R) = Rf + (E(Rm) - Rf) / σm * σ
+    const er = rf_rate + (er_risky - rf_rate) / std_dev_risky * sd;
+    
+    return {
+      Standard_Deviation: sd,
+      Expected_Return: er
+    };
+  });
+};
+
+// Calculate dynamic optimal portfolio position using fixed weight and current risky portfolio
+calculateDynamicOptimalPoint = () => {
+  // Use fixed risk-aversion weight with current risky portfolio characteristics
+  const dynamic_std_dev_optimal = fixed_optimal_weight * std_dev_risky;
+  const dynamic_er_optimal = (fixed_optimal_weight * er_risky) + ((1 - fixed_optimal_weight) * rf_rate);
+  
+  return {
+    std_dev: dynamic_std_dev_optimal,
+    er: dynamic_er_optimal
+  };
+};
+
+// Get dynamic CML points and optimal portfolio position
+cmlPoints = generateCMLPoints();
+dynamicOptimalPoint = calculateDynamicOptimalPoint();
+```
+
+```{ojs}
+// Create plot as a variable
+capitalAllocationPlot = Plot.plot({
+  marginLeft: 60,
+  x: {
+    label: "Risk (Standard Deviation)",
+    tickFormat: d => d3.format(".1%")(d),
+    grid: true
+  },
+  y: {
+    label: "Expected Return", 
+    tickFormat: d => d3.format(".1%")(d),
+    grid: true
+  },
+  marks: [
+    // Use dynamically generated CML line based on current risky portfolio
+    Plot.line(cmlPoints, {
+      x: "Standard_Deviation", 
+      y: "Expected_Return",
+      stroke: "orange",
+      strokeWidth: 2.5,
+      strokeDasharray: "4 4"
+    }),
+    // Add vertical dashed line from bottom to optimal portfolio point
+    Plot.ruleX([std_dev_optimal], {
+      stroke: "red", 
+      strokeDasharray: "4 4",
+      strokeWidth: 1.5,
+      y1: 0,
+      y2: er_optimal
+    }),
+    // Add horizontal dashed line from left to optimal portfolio point
+    Plot.ruleY([er_optimal], {
+      stroke: "red", 
+      strokeDasharray: "4 4",
+      strokeWidth: 1.5,
+      x1: 0,
+      x2: std_dev_optimal
+    }),
+    Plot.dot([{
+      x: 0, 
+      y: rf_rate
+    }], {
+      x: "x",
+      y: "y",
+      fill: "black",
+      r: 6,
+      tip: true,
+      title: d => `Risk-Free Asset\nReturn: ${formatPercent(d.y)}`
+    }),
+    // Dynamic risky portfolio (changes with equity/bond slider)
+    Plot.dot([{
+      x: std_dev_risky, 
+      y: er_risky
+    }], {
+      x: "x",
+      y: "y",
+      fill: "green",
+      r: 6,
+      tip: true,
+      title: d => `Risky Portfolio\nReturn: ${formatPercent(d.y)}\nRisk: ${formatPercent(d.x)}`
+    }),
+    // Dynamic optimal portfolio (uses fixed weight but current risky portfolio characteristics)
+    Plot.dot([{
+      x: std_dev_optimal, 
+      y: er_optimal
+    }], {
+      x: "x",
+      y: "y",
+      fill: "red",
+      r: 8,
+      tip: true,
+      title: d => `Optimal Portfolio\nRisky Pf Weight: ${formatPercent(fixed_optimal_weight)}\nRisk-Free Weight: ${formatPercent(1- fixed_optimal_weight)}\nReturn: ${formatPercent(d.y)}\nRisk: ${formatPercent(d.x)}`
+    }),
+    // Add legend text
+    Plot.text([
+      {x: std_dev_risky, y: er_risky, text: "Risky Portfolio", dx: 10, dy: -40},
+      {x: std_dev_optimal, y: er_optimal, text: "Optimal Portfolio", dx: 10, dy: -40},
+      {x: 0.005, y: rf_rate, text: "Risk-Free", dx: 10, dy: -30}
+    ], {
+      x: "x",
+      y: "y",
+      text: "text",
+      fontWeight: "bold"
+    })
+  ]
+})
+```
+
+### Overview
+
+```{ojs}
+html`
+<table class="table table-striped">
+  <tbody>
+    <tr>
+      <td>Sharpe Ratio</td>
+      <td>${sharpe_ratio.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td>Optimal Weight of Risky Portfolio</td>
+      <td>${formatPercent(fixed_optimal_weight)}</td>
+    </tr>
+    <tr>
+      <td>Expected Return at Optimal Weight</td>
+      <td>${formatPercent(er_optimal)}</td>
+    </tr>
+    <tr>
+      <td>Standard Deviation at Optimal Weight</td>
+      <td>${formatPercent(std_dev_optimal)}</td>
+    </tr>
+    <tr>
+      <td>Utility at Optimal Weight</td>
+      <td>${formatPercent(fixed_utility_optimal)}</td>
+    </tr>
+  </tbody>
+</table>
+`
+```
+
+## Utility vs. Weight (Risky Assets)
+
+```{ojs}
+Plot.plot({
+  marginLeft: 60,
+  x: {
+    label: "Weight of Risky Portfolio", 
+    domain: [0, 1],
+    grid: true,
+    tickFormat: d => d3.format(".1%")(d)
+    },
+  y: {
+    label: "Utility", 
+    grid: true,
+    tickFormat: d => d3.format(".1%")(d)
+    },
+  marks: [
+    Plot.line(fixed_chart_data, {
+      x: "Weight", 
+      y: "Utility",
+      stroke: "steelblue",
+      strokeWidth: 2
+    }),
+    Plot.ruleX([fixed_optimal_weight], {stroke: "red", strokeDasharray: "4 4"}),
+    Plot.dot([{
+      x: fixed_optimal_weight, 
+      y: fixed_utility_optimal
+    }], {
+      x: "x",
+      y: "y",
+      fill: "red",
+      r: 8,
+      tip: true,
+      title: d => `Optimal Weight: ${formatPercent(d.x)}\nUtility: ${formatPercent(d.y)}`
+    })
+  ]
+})
+```
+
+
+```{ojs}
+// Simple HTML table approach (more reliable than Inputs.table)
+html`
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Risky Pf Weight</th>
+      <th>Expected Return</th>
+      <th>Standard Deviation</th>
+      <th>Utility</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${fixed_allocation_data.map((d, i) => html`
+      <tr ${i === fixed_max_utility_idx ? 'style="background-color: #ffff9980;"' : ''}>
+        <td>${d.Weight_Pct}</td>
+        <td>${formatPercent(d.Expected_Return)}</td>
+        <td>${formatPercent(d.Standard_Deviation)}</td>
+        <td>${formatPercent(d.Utility)}${i === fixed_max_utility_idx ? ' ★' : ''}</td>
+      </tr>
+    `)}
+  </tbody>
+</table>
+`
+```

@@ -1,0 +1,209 @@
+<!-- # Security Allocation -->
+
+::: {.panel-tabset}
+
+## Security Distribution
+
+```{ojs}
+//| echo: false
+viewof equityTickersBarChart = {
+  // Only proceed if we have equity tickers data
+  if (!equity_tickers || equity_tickers.length === 0) 
+    return html`<div>No ticker data available</div>`;
+  
+  // First, calculate total weights by asset type (same as in table)
+  let equityTotal = 0;
+  let bondTotal = 0;
+  
+  equity_tickers.forEach(t => {
+    if (t.Type === "Equity") {
+      equityTotal += t.Risky_Pf_Weight;
+    } else if (t.Type === "Bond") {
+      bondTotal += t.Risky_Pf_Weight;
+    }
+  });
+  
+  // Prepare data for the bar chart - top 10 holdings by weight
+  const barData = equity_tickers
+    .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+    .slice(0, 10)
+    .map(t => {
+      // Calculate normalized weight within asset class
+      const assetClassWeight = 
+        t.Type === "Equity" ? 
+          (equityTotal > 0 ? t.Risky_Pf_Weight / equityTotal : 0) : 
+          (bondTotal > 0 ? t.Risky_Pf_Weight / bondTotal : 0);
+      
+      // Calculate weight in risky portfolio
+      const riskyPfWeight = 
+        t.Type === "Equity" ?
+          assetClassWeight * equity_weight :
+          assetClassWeight * bond_weight;
+          
+      // Calculate weight in complete portfolio (matches table)
+      const completePfWeight = riskyPfWeight * fixed_optimal_weight;
+      
+      return {
+        ticker: t.Ticker,
+        weight: completePfWeight * 100 // Convert to percentage
+      };
+    });
+
+  // Create the bar chart
+  return Plot.plot({
+    marginLeft: 80,
+    x: {
+      label: "",
+      domain: barData.map(d => d.ticker),
+      padding: 0.3
+    },
+    y: {
+      label: "Portfolio Weight (%)",
+      domain: [0, Math.max(...barData.map(d => d.weight)) * 1.1], // Add some padding at the top
+      grid: true,
+      tickFormat: d => d.toFixed(1) + "%"
+    },
+    marks: [
+      Plot.barY(barData, {
+        x: "ticker", 
+        y: "weight",
+        fill: "ticker", 
+        tip: true,
+        title: d => `${d.ticker}: ${d.weight.toFixed(2)}%`
+      }),
+      Plot.text(barData, {
+        x: "ticker",
+        y: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dy: -10,
+        fontWeight: "bold",
+        fontSize: 16 
+      })
+    ],
+    color: {
+      legend: false
+    }
+  });
+};
+```
+
+### Allocation Table
+
+```{ojs}
+//| echo: false
+//| output: false
+// Process and display equity ticker weights
+
+equity_ticker_weights = () => {
+  if (!equity_tickers || equity_tickers.length === 0) 
+    return html`<div>No ticker data available</div>`;
+  
+  // First, calculate total weights by asset type
+  let equityTotal = 0;
+  let bondTotal = 0;
+  
+  equity_tickers.forEach(t => {
+    if (t.Type === "Equity") {
+      equityTotal += t.Risky_Pf_Weight;
+    } else if (t.Type === "Bond") {
+      bondTotal += t.Risky_Pf_Weight;
+    }
+  });
+  
+  return html`
+    <div style="margin-top: 5px;">
+      <div style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-sm" style="font-size: 0.85rem;">
+          <thead>
+            <tr>
+              <th>Asset Class</th>
+              <th>Ticker</th>
+              <th>Name</th>
+              <th>Sector</th>
+              <th>Asset Class Weight</th>
+              <th>Risky Pf Weight</th>
+              <th>Complete Pf Weight</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${equity_tickers
+              .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+              .slice(0, 10)
+              .map(t => {
+                // Calculate normalized weight within asset class
+                const assetClassWeight = 
+                  t.Type === "Equity" ? 
+                    (equityTotal > 0 ? t.Risky_Pf_Weight / equityTotal : 0) : 
+                    (bondTotal > 0 ? t.Risky_Pf_Weight / bondTotal : 0);
+                
+                // Calculate weight in risky portfolio
+                const riskyPfWeight = 
+                  t.Type === "Equity" ?
+                    assetClassWeight * equity_weight :
+                    assetClassWeight * bond_weight;
+                    
+                // Calculate weight in complete portfolio
+                const completePfWeight = riskyPfWeight * fixed_optimal_weight;
+                    
+                return html`
+                  <tr>
+                    <td>${t.Type}</td>
+                    <td>${t.Ticker}</td>
+                    <td>${t.Name}</td>
+                    <td>${t.Sector}</td>
+                    <td>${formatPercent(assetClassWeight)}</td>
+                    <td>${formatPercent(riskyPfWeight)}</td>
+                    <td>${formatPercent(completePfWeight)}</td>
+                  </tr>
+                `
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+```
+
+```{ojs}
+// Display the ticker weights
+equity_ticker_weights();
+```
+
+<!-- 
+## Equity Securities
+
+::: {.panel-tabset style="height: calc(100vh - 450px); overflow-y: auto;"} -->
+
+## Efficient Frontier
+
+```{ojs}
+equityEfficientFrontier = html`
+  <div>
+    <div style="width: 100%; height: 100%; position: absolute;">
+    <iframe height="100%" width="100%" 
+        id="equityEfficientFrontier-embed" 
+        title="equityEfficientFrontier Embed"
+        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier_2025-04-26.html"
+        frameborder="0" allow="clipboard-write" allowfullscreen 
+        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"></iframe>
+    </div>
+  </div>
+`;
+```
+
+### Optimal Equity Weight
+
+```{python}
+# Order Columns
+ef_desired_order = ['Ticker', 'Weight', 'Expected Return', 'Standard Deviation', 'Sharpe Ratio']
+optimal_portfolio_ef = equity_disp.copy()  # Don't drop those columns
+all_columns = optimal_portfolio_ef.columns.tolist()
+first_columns = [col for col in ef_desired_order if col in all_columns]
+optimal_portfolio_ef = optimal_portfolio_ef[first_columns].sort_values(by="Weight", ascending=False).transpose()
+
+# Display the result
+display(optimal_portfolio_ef)
+```
+
+<!-- ## Bond Securities -->

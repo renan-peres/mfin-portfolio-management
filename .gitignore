@@ -1,0 +1,15 @@
+.DS_Store
+/dist/
+*/dist/
+**/dist/
+node_modules/
+yarn-error.log
+package-lock.json
+.env
+/__pycache__/
+*/__pycache__/
+**/__pycache__/
+/venv/
+.venv/
+/.venv/
+.ruff_cache
