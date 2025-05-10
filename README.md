@@ -57,7 +57,7 @@ This repository contains investment portfolio models designed for optimal asset 
   - Portfolio performance tracking
 
 - **Dashboard Files**:
-  - [`index.qmd`](dashboard/quarto/index.qmd): Main dashboard configuration and layout
+  - [`index.qmd`](dashboard/index.qmd): Main dashboard configuration and layout
   - [`01_capital_allocation_utility.qmd`](dashboard/quarto/01_capital_allocation_utility.qmd): Capital Allocation Line
   - [`02_asset_class_allocation.qmd`](dashboard/quarto/02_asset_class_allocation.qmd): Asset class Allocation and Portfolio Composition
   - [`03_security_allocation.qmd`](dashboard/quarto/03_security_allocation.qmd): Security-level allocation and efficient frontier

@@ -1,0 +1,322 @@
+<!-- # Asset Class Allocation -->
+
+::: {.panel-tabset}
+
+## Asset Class Distribution 
+
+```{ojs}
+viewof portfolioBarChart = {
+  const data = dynamicAllocations;
+
+  // Bar‑chart data
+  const barData = [
+    { asset: "Risk‑Free", weight: (1 - fixed_optimal_weight) * 100 },
+    { asset: "Bond",      weight:  fixed_optimal_weight * bond_weight   * 100 },
+    { asset: "Equity",    weight:  fixed_optimal_weight * equity_weight * 100 },
+  ];
+
+  /* NEW: sort a fresh copy in descending order of weight */
+  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
+
+  return Plot.plot({
+    marginLeft: 60,
+    x: {
+      label: "",
+      domain: barDataSorted.map(d => d.asset),   // use sorted order on the x‑axis
+      padding: 0.3
+    },
+    y: {
+      label: "Weight (%)",
+      domain: [0, 100],
+      grid: true,
+      tickFormat: d => d + "%"
+    },
+    marks: [
+      Plot.barY(barDataSorted, {
+        x: "asset",
+        y: "weight",
+        fill: "asset",
+        tip: true,
+        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
+      }),
+      Plot.text(barDataSorted, {
+        x: "asset",
+        y: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dy: -10,
+        fontWeight: "bold",
+        fontSize: 16
+      })
+    ]
+  });
+}
+```
+
+:::: {.columns style="height: calc(100vh - 650px); width: 100%;"}
+
+### Allocation Table
+
+```{ojs}
+assetClassAllocationTable()
+```
+
+### Key Portfolios
+
+```{ojs}
+function displayKeyPortfolios() {
+  const { min_variance: minVar, max_sharpe: maxSharpe, complete_portfolio: complete } = dynamicAllocations;
+
+  /* pct helpers */
+  const pct = v => (v * 100).toFixed(1) + "%";
+
+  /* common factor: risky‑portfolio share of the complete portfolio */
+  const riskyShare = fixed_optimal_weight;     // y in earlier code
+  const rfSharePct = pct(1 - riskyShare);
+
+  /* convert risky‑only weights into complete‑portfolio weights */
+  const minVarBondPct     = pct(minVar.Weights[0] * riskyShare);
+  const minVarEquityPct   = pct(minVar.Weights[1] * riskyShare);
+  const maxSharpeBondPct  = pct(maxSharpe.Weights[0] * riskyShare);
+  const maxSharpeEquityPct= pct(maxSharpe.Weights[1] * riskyShare);
+
+  return html`
+    <!-- Portfolio 1: Optimal (max Sharpe) -->
+    <div class="card mb-3">
+      <div class="card-header bg-success text-white">Portfolio&nbsp;1 – Optimal (Maximum Sharpe, Risky Assets with Risk‑Free)</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Risk‑Free Weight:</strong> ${rfSharePct}</p>
+            <p><strong>Risky Portfolio Weight:</strong> ${pct(riskyShare)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Expected Return:</strong> ${formatPercent(complete.er_complete)}</p>
+            <p><strong>Standard Deviation:</strong> ${formatPercent(complete.std_dev_complete)}</p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <p><strong>Bond Weight:</strong> ${pct(complete.bond_weight)}</p>
+            <p><strong>Equity Weight:</strong> ${pct(complete.equity_weight)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Sharpe Ratio:</strong> ${complete.sharpe.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio 2: Minimum Variance -->
+    <div class="card mb-3">
+      <div class="card-header bg-primary text-white">Portfolio&nbsp;2 – Minimum Variance (Risky Assets)</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Expected Return:</strong> ${formatPercent(minVar.Return)}</p>
+            <p><strong>Standard Deviation:</strong> ${formatPercent(minVar.Risk)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Bond Weight:</strong> ${minVarBondPct}</p>
+            <p><strong>Equity Weight:</strong> ${minVarEquityPct}</p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-12">
+            <p><strong>Sharpe Ratio:</strong> ${minVar.Sharpe.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+displayKeyPortfolios()
+```
+
+:::
+
+## Efficient Frontier
+
+```{ojs}
+// Efficient Frontier Plot
+viewof efficientFrontierPlot = {
+  // Check if data is available
+  if (!dynamicAllocations || !dynamicAllocations.efficient_frontier) {
+    return html`<div class="alert alert-warning">Loading data...</div>`;
+  }
+  
+  // Get data from dynamic calculations
+  const frontier = dynamicAllocations.efficient_frontier;
+  const minVar = dynamicAllocations.min_variance;
+  const maxSharpe = dynamicAllocations.max_sharpe;
+  const allocations = dynamicAllocations.allocations;
+  
+  // Instead of specifying fixed dimensions, create a simple plot object
+  // that will inherit dimensions from its container
+  return Plot.plot({
+    marginLeft: 60,
+    style: {
+      fontSize: "14px",
+      background: "transparent"
+    },
+    x: {
+      label: "Risk (Standard Deviation)",
+      domain: [0, Math.max(...frontier.map(d => d.Risk)) * 1.1],
+      grid: true,
+      tickFormat: d => d3.format(".1%")(d)
+    },
+    y: {
+      label: "Expected Return",
+      domain: [rf_rate * 0.9, Math.max(...frontier.map(d => d.Return)) * 1.1],
+      grid: true,
+      tickFormat: d => d3.format(".1%")(d)
+    },
+    marks: [
+      // Capital Allocation Line (CAL)
+      Plot.line([
+        {x: 0, y: rf_rate},
+        {x: maxSharpe.Risk * 1.5, y: rf_rate + (maxSharpe.Return - rf_rate) / maxSharpe.Risk * (maxSharpe.Risk * 1.5)}
+      ], {
+        x: "x",
+        y: "y",
+        stroke: "orange",
+        strokeWidth: 2.5,
+        strokeDasharray: "4 4"
+      }),
+      
+      // Efficient frontier
+      Plot.line(frontier, {
+        x: "Risk", 
+        y: "Return",
+        stroke: "green",
+        strokeWidth: 3,
+        curve: "basis"
+      }),
+      
+      // Individual allocations
+      Plot.dot(allocations, {
+        x: d => d.std_dev,
+        y: d => d.expected_return,
+        r: 6,
+        fill: "steelblue",
+        stroke: "white",
+        strokeWidth: 1,
+        tip: true,
+        title: d => `Bond: ${d.bond_weight}%, Equity: ${d.equity_weight}%\nReturn: ${formatPercent(d.expected_return)}\nRisk: ${formatPercent(d.std_dev)}\nSharpe: ${d.sharpe.toFixed(2)}`
+      }),
+      
+      // Min variance portfolio
+      Plot.dot([minVar], {
+        x: "Risk",
+        y: "Return",
+        fill: "purple",
+        r: 8,
+        stroke: "white",
+        strokeWidth: 1.5,
+        tip: true,
+        title: d => `Min Variance Portfolio\nBond: ${(d.Weights[0]*100).toFixed(1)}%, Equity: ${(d.Weights[1]*100).toFixed(1)}%\nReturn: ${formatPercent(d.Return)}\nRisk: ${formatPercent(d.Risk)}\nSharpe: ${d.Sharpe.toFixed(2)}`
+      }),
+
+      // Max Sharpe portfolio
+      Plot.dot([maxSharpe], {
+        x: "Risk",
+        y: "Return",
+        fill: "red",
+        r: 10,
+        stroke: "white", 
+        strokeWidth: 1.5,
+        tip: true,
+        title: d => `Max Sharpe Portfolio\nBond: ${(d.Weights[0]*100).toFixed(1)}%, Equity: ${(d.Weights[1]*100).toFixed(1)}%\nReturn: ${formatPercent(d.Return)}\nRisk: ${formatPercent(d.Risk)}\nSharpe: ${d.Sharpe.toFixed(2)}`
+      }),
+      
+      // Risk-free asset
+      Plot.dot([{x: 0, y: rf_rate}], {
+        x: "x",
+        y: "y",
+        fill: "black",
+        r: 7,
+        stroke: "white",
+        strokeWidth: 1.5,
+        tip: true,
+        title: `Risk-Free Asset\nReturn: ${formatPercent(rf_rate)}`
+      }),
+      
+      // Add interactive rule to follow mouse
+      Plot.ruleY(Plot.pointer({y: "y"}), {
+        stroke: "gray", 
+        strokeWidth: 1,
+        strokeDasharray: "3,3"
+      }),
+      
+      // Add legend text
+      Plot.text([
+        {x: minVar.Risk, y: minVar.Return, text: "Min Variance", dx: 10, dy: -10},
+        {x: maxSharpe.Risk, y: maxSharpe.Return, text: "Max Sharpe", dx: 10, dy: -10},
+        {x: 0.005, y: rf_rate, text: "Risk-Free", dx: 10, dy: 10}
+      ], {
+        x: "x",
+        y: "y",
+        text: "text",
+        dx: "dx",
+        dy: "dy",
+        fontSize: 12,
+        fontWeight: "bold"
+      })
+    ]
+  });
+}
+```
+
+### Efficient Frontier Table
+
+```{ojs}
+// Create allocation table from dynamic data with highlighted max Sharpe row
+function createEfficientFrontierTable() {
+  const allocations = dynamicAllocations.allocations;
+  const complete = dynamicAllocations.complete_portfolio;
+  const rfWeight = (1 - fixed_optimal_weight);
+  
+  // Find index of maximum Sharpe ratio
+  const maxSharpeIdx = allocations.reduce((maxIdx, curr, idx, arr) => 
+    curr.sharpe > arr[maxIdx].sharpe ? idx : maxIdx, 0);
+  
+  return html`
+    <div style="height: 400px; overflow-y: auto;">
+      <table class="table table-striped table-sm">
+        <thead>
+          <tr>
+            <th>Risk-Free Weight</th>
+            <th>Bond Weight</th>
+            <th>Equity Weight</th>
+            <th>Expected Return</th>
+            <th>Standard Deviation</th>
+            <th>Sharpe Ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allocations.map((d, i) => {
+            // Calculate weights in the complete portfolio context
+            const completeRfWeight = rfWeight * 100;
+            const completeBondWeight = (1 - rfWeight) * d.bond_weight;
+            const completeEquityWeight = (1 - rfWeight) * d.equity_weight;
+            
+            return html`
+              <tr ${i === maxSharpeIdx ? 'style="background-color: #ffff9980;"' : ''}>
+                <td>${completeRfWeight.toFixed(1)}%</td>
+                <td>${completeBondWeight.toFixed(1)}% (${d.bond_weight}% of Risky Pf)</td>
+                <td>${completeEquityWeight.toFixed(1)}% (${d.equity_weight}% of Risky Pf)</td>
+                <td>${formatPercent(d.expected_return)}</td>
+                <td>${formatPercent(d.std_dev)}</td>
+                <td>${d.sharpe.toFixed(2)}${i === maxSharpeIdx ? ' ★' : ''}</td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Display the table
+createEfficientFrontierTable()
+``` 

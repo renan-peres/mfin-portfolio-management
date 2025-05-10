@@ -307,7 +307,7 @@ main() {
     fi
     
     log "Step 10/10: Generate Quarto Dashboard..."
-    quarto render "dashboard/quarto/index.qmd" --verbose || exit 1
+    quarto render "dashboard/index.qmd" --verbose || exit 1
     
     log "===== Pipeline completed successfully! ====="
 }

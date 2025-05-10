@@ -1,0 +1,63 @@
+<!-- # Data -->
+
+::: {.panel-tabset}
+
+## Stock Quotes
+
+```{python}
+#| echo: False
+#| display: False
+
+from itables import options, show
+options.lengthMenu = [20, 50, 100]
+options.classes = "display nowrap compact"
+options.language = dict(info = "Showing _TOTAL_ entries")
+options.paging = True
+options.searching = False
+options.ordering = True
+options.info = True
+options.lengthChange = True
+options.autoWidth = True
+options.responsive = True
+options.scrollCollapse = True
+options.keys = True
+options.buttons = ['copy', 'excel', 'csv', 'pdf']
+options.style = "width:100%;margin:auto"
+options.columnDefs = [{"className": "dt-center", "targets": "_all"}]
+```
+
+::: {.panel-tabset style="height: calc(100vh - 450px); min-height: 400px; overflow-y: auto;"}
+
+### Daily
+
+```{python}
+# Display historical price data
+show(daily_px.round(2).sort_values(by='Date', ascending=False).reset_index(), "Adjusted Closing Price (5Y Daily)", buttons = True)
+```
+
+### Monthly
+
+```{python}
+show(monthly_px.round(2).sort_values(by='Date', ascending=False).reset_index(), "Adjusted Closing Price (5Y Monthly)", buttons = True)
+```
+
+:::
+
+## Stock Fundamentals
+
+```{python}
+# Order Columns
+desired_order = ['Ticker', 'Weight', 'Date']
+optimal_portfolio_fundamentals = equity_disp.drop(['Sharpe Ratio', 'Expected Return', 'Standard Deviation'], axis=1)
+all_columns = optimal_portfolio_fundamentals.columns.tolist()
+first_columns = [col for col in desired_order if col in all_columns]
+remaining_columns = [col for col in all_columns if col not in first_columns]
+new_order = first_columns + remaining_columns
+optimal_portfolio_fundamentals = optimal_portfolio_fundamentals[new_order]
+
+# Create transposed view
+transposed_df = optimal_portfolio_fundamentals.sort_values(by="Weight", ascending=False).transpose()
+
+# Display the result
+display(transposed_df)
+```

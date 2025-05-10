@@ -1,0 +1,117 @@
+<!-- # Security Allocation -->
+
+::: {.panel-tabset}
+
+## Security Distribution
+
+```{ojs}
+viewof equityTickersBarChart = {
+  // Grab the source array and short‑circuit if it’s empty
+  const data = equity_tickers ?? [];
+  if (data.length === 0) return html`<div>No ticker data available</div>`;
+
+  // Totals by asset class
+  let equityTotal = 0, bondTotal = 0;
+  data.forEach(d => {
+    if (d.Type === "Equity")      equityTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Bond")   bondTotal  += d.Risky_Pf_Weight;
+  });
+
+  // Top‑10 tickers, converted to complete‑portfolio weights
+  const barData = data
+    .slice()                                       // don’t mutate the source
+    .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+    .slice(0, 10)
+    .map(d => {
+      const classTotal      = d.Type === "Equity" ? equityTotal : bondTotal;
+      const classWeight     = classTotal > 0 ? d.Risky_Pf_Weight / classTotal : 0;
+      const riskyPfWeight   = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+      const completeWeight  = riskyPfWeight * fixed_optimal_weight;
+      return {
+        asset:  d.Ticker,          // use the same “asset” key as the other chart
+        weight: completeWeight * 100   // %
+      };
+    });
+
+  // Bar chart
+  return Plot.plot({
+    marginLeft: 60,
+    x: {
+      label: "",
+      domain: barData.map(d => d.asset),
+      padding: 0.3
+    },
+    y: {
+      label: "Weight (%)",
+      domain: [0, Math.max(...barData.map(d => d.weight)) * 1.1],
+      grid: true,
+      tickFormat: d => d + "%"
+    },
+    marks: [
+      Plot.barY(barData, {
+        x: "asset",
+        y: "weight",
+        fill: "asset",
+        tip: true,
+        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
+      }),
+      Plot.text(barData, {
+        x: "asset",
+        y: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dy: -10,
+        fontWeight: "bold",
+        fontSize: 16
+      })
+    ],
+    color: { legend: false }
+  });
+}
+```
+
+### Allocation Table
+
+```{ojs}
+securityAllocationTable()
+```
+
+<!-- 
+## Equity Securities
+
+::: {.panel-tabset style="height: calc(100vh - 450px); overflow-y: auto;"} -->
+
+## Equity Efficient Frontier
+
+```{ojs}
+html`
+  <div style="display: flex; flex-direction: column; height: 100%;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 96%;">
+      <iframe 
+        width="100%" 
+        height="90%" 
+        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier_2025-04-26.html"
+        frameborder="0"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </div>
+`;
+```
+
+### Optimal Equity Weight
+
+```{python}
+# Order Columns
+ef_desired_order = ['Ticker', 'Weight', 'Expected Return', 'Standard Deviation', 'Sharpe Ratio']
+optimal_portfolio_ef = equity_disp.copy()  # Don't drop those columns
+all_columns = optimal_portfolio_ef.columns.tolist()
+first_columns = [col for col in ef_desired_order if col in all_columns]
+optimal_portfolio_ef = optimal_portfolio_ef[first_columns].sort_values(by="Weight", ascending=False).transpose()
+
+# Display the result
+display(optimal_portfolio_ef)
+```
+
+## Bond Securities
+
+## Covariances
