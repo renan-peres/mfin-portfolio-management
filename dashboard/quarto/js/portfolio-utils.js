@@ -119,13 +119,19 @@ export function createRangeInput({
     
     // Create container and elements
     const container = document.createElement("div");
-    container.style.marginBottom = "8px";
+    container.style.marginBottom = "12px";
+    container.style.background = "rgba(255, 255, 255, 0.08)";
+    container.style.borderRadius = "6px";
+    container.style.padding = "10px";
+    container.style.border = "1px solid rgba(255, 255, 255, 0.15)";
     
     // Create label
     const labelEl = document.createElement("label");
     labelEl.style.display = "block";
-    labelEl.style.marginBottom = "4px";
+    labelEl.style.marginBottom = "6px";
     labelEl.style.fontWeight = "500";
+    labelEl.style.color = "#cce6ff";
+    labelEl.style.fontSize = "0.9rem";
     labelEl.textContent = label;
     container.appendChild(labelEl);
     
@@ -137,31 +143,63 @@ export function createRangeInput({
     input.step = step;
     input.value = value;
     input.style.width = "100%";
+    input.style.height = "6px";
+    input.style.appearance = "none";
+    input.style.background = "linear-gradient(to right, #4682B4, #FF7F50)";
+    input.style.borderRadius = "3px";
     if (id) input.id = id;
     container.appendChild(input);
+    
+    // Add thumb styling with CSS
+    const style = document.createElement('style');
+    style.textContent = `
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        background: #fff;
+        border: 2px solid #5cffb6;
+        height: 18px;
+        width: 18px;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      }
+      input[type=range]::-moz-range-thumb {
+        background: #fff;
+        border: 2px solid #5cffb6;
+        height: 18px;
+        width: 18px;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      }
+    `;
+    document.head.appendChild(style);
     
     // Create labels container
     const labelsDiv = document.createElement("div");
     labelsDiv.style.display = "flex";
     labelsDiv.style.justifyContent = "space-between";
-    labelsDiv.style.marginTop = "2px";
+    labelsDiv.style.marginTop = "8px";
     
     // Create min label
     const minSpan = document.createElement("span");
     minSpan.style.fontSize = "0.8rem";
+    minSpan.style.color = "rgba(255, 255, 255, 0.8)";
     minSpan.textContent = minLabel ?? formatFunc(min);
     labelsDiv.appendChild(minSpan);
     
     // Create value label
     const valueSpan = document.createElement("span");
-    valueSpan.style.fontSize = "0.8rem";
+    valueSpan.style.fontSize = "0.9rem";
     valueSpan.style.fontWeight = "bold";
+    valueSpan.style.color = "#ffcc5c";
     valueSpan.textContent = formatFunc(value);
     labelsDiv.appendChild(valueSpan);
     
     // Create max label
     const maxSpan = document.createElement("span");
     maxSpan.style.fontSize = "0.8rem";
+    maxSpan.style.color = "rgba(255, 255, 255, 0.8)";
     maxSpan.textContent = maxLabel ?? formatFunc(max);
     labelsDiv.appendChild(maxSpan);
     

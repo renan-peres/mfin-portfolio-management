@@ -1,5 +1,5 @@
 
-# {.sidebar width="270px"}
+# {.sidebar width="280px"}
 
 ##### **<u>Market Info</u>:**
 

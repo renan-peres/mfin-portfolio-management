@@ -138,32 +138,7 @@ capitalAllocationPlot = Plot.plot({
 ### Overview
 
 ```{ojs}
-html`
-<table class="table table-striped">
-  <tbody>
-    <tr>
-      <td>Sharpe Ratio</td>
-      <td>${sharpe_ratio.toFixed(2)}</td>
-    </tr>
-    <tr>
-      <td>Optimal Weight of Risky Portfolio</td>
-      <td>${formatPercent(fixed_optimal_weight)}</td>
-    </tr>
-    <tr>
-      <td>Expected Return at Optimal Weight</td>
-      <td>${formatPercent(er_optimal)}</td>
-    </tr>
-    <tr>
-      <td>Standard Deviation at Optimal Weight</td>
-      <td>${formatPercent(std_dev_optimal)}</td>
-    </tr>
-    <tr>
-      <td>Utility at Optimal Weight</td>
-      <td>${formatPercent(fixed_utility_optimal)}</td>
-    </tr>
-  </tbody>
-</table>
-`
+optimalMetricsTable()
 ```
 
 ## Utility vs. Weight (Risky Assets)
@@ -231,4 +206,3 @@ html`
 </table>
 `
 ```
-

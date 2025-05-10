@@ -5,169 +5,74 @@
 ## Security Distribution
 
 ```{ojs}
-//| echo: false
 viewof equityTickersBarChart = {
-  // Only proceed if we have equity tickers data
-  if (!equity_tickers || equity_tickers.length === 0) 
-    return html`<div>No ticker data available</div>`;
-  
-  // First, calculate total weights by asset type (same as in table)
-  let equityTotal = 0;
-  let bondTotal = 0;
-  
-  equity_tickers.forEach(t => {
-    if (t.Type === "Equity") {
-      equityTotal += t.Risky_Pf_Weight;
-    } else if (t.Type === "Bond") {
-      bondTotal += t.Risky_Pf_Weight;
-    }
+  // Grab the source array and short‑circuit if it’s empty
+  const data = equity_tickers ?? [];
+  if (data.length === 0) return html`<div>No ticker data available</div>`;
+
+  // Totals by asset class
+  let equityTotal = 0, bondTotal = 0;
+  data.forEach(d => {
+    if (d.Type === "Equity")      equityTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Bond")   bondTotal  += d.Risky_Pf_Weight;
   });
-  
-  // Prepare data for the bar chart - top 10 holdings by weight
-  const barData = equity_tickers
+
+  // Top‑10 tickers, converted to complete‑portfolio weights
+  const barData = data
+    .slice()                                       // don’t mutate the source
     .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
     .slice(0, 10)
-    .map(t => {
-      // Calculate normalized weight within asset class
-      const assetClassWeight = 
-        t.Type === "Equity" ? 
-          (equityTotal > 0 ? t.Risky_Pf_Weight / equityTotal : 0) : 
-          (bondTotal > 0 ? t.Risky_Pf_Weight / bondTotal : 0);
-      
-      // Calculate weight in risky portfolio
-      const riskyPfWeight = 
-        t.Type === "Equity" ?
-          assetClassWeight * equity_weight :
-          assetClassWeight * bond_weight;
-          
-      // Calculate weight in complete portfolio (matches table)
-      const completePfWeight = riskyPfWeight * fixed_optimal_weight;
-      
+    .map(d => {
+      const classTotal      = d.Type === "Equity" ? equityTotal : bondTotal;
+      const classWeight     = classTotal > 0 ? d.Risky_Pf_Weight / classTotal : 0;
+      const riskyPfWeight   = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+      const completeWeight  = riskyPfWeight * fixed_optimal_weight;
       return {
-        ticker: t.Ticker,
-        weight: completePfWeight * 100 // Convert to percentage
+        asset:  d.Ticker,          // use the same “asset” key as the other chart
+        weight: completeWeight * 100   // %
       };
     });
 
-  // Create the bar chart
+  // Bar chart
   return Plot.plot({
-    marginLeft: 80,
+    marginLeft: 60,
     x: {
       label: "",
-      domain: barData.map(d => d.ticker),
+      domain: barData.map(d => d.asset),
       padding: 0.3
     },
     y: {
-      label: "Portfolio Weight (%)",
-      domain: [0, Math.max(...barData.map(d => d.weight)) * 1.1], // Add some padding at the top
+      label: "Weight (%)",
+      domain: [0, Math.max(...barData.map(d => d.weight)) * 1.1],
       grid: true,
-      tickFormat: d => d.toFixed(1) + "%"
+      tickFormat: d => d + "%"
     },
     marks: [
       Plot.barY(barData, {
-        x: "ticker", 
+        x: "asset",
         y: "weight",
-        fill: "ticker", 
+        fill: "asset",
         tip: true,
-        title: d => `${d.ticker}: ${d.weight.toFixed(2)}%`
+        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
       }),
       Plot.text(barData, {
-        x: "ticker",
+        x: "asset",
         y: "weight",
         text: d => `${d.weight.toFixed(1)}%`,
         dy: -10,
         fontWeight: "bold",
-        fontSize: 16 
+        fontSize: 16
       })
     ],
-    color: {
-      legend: false
-    }
+    color: { legend: false }
   });
-};
+}
 ```
 
 ### Allocation Table
 
 ```{ojs}
-//| echo: false
-//| output: false
-// Process and display equity ticker weights
-
-equity_ticker_weights = () => {
-  if (!equity_tickers || equity_tickers.length === 0) 
-    return html`<div>No ticker data available</div>`;
-  
-  // First, calculate total weights by asset type
-  let equityTotal = 0;
-  let bondTotal = 0;
-  
-  equity_tickers.forEach(t => {
-    if (t.Type === "Equity") {
-      equityTotal += t.Risky_Pf_Weight;
-    } else if (t.Type === "Bond") {
-      bondTotal += t.Risky_Pf_Weight;
-    }
-  });
-  
-  return html`
-    <div style="margin-top: 5px;">
-      <div style="max-height: 300px; overflow-y: auto;">
-        <table class="table table-sm" style="font-size: 0.85rem;">
-          <thead>
-            <tr>
-              <th>Asset Class</th>
-              <th>Ticker</th>
-              <th>Name</th>
-              <th>Sector</th>
-              <th>Asset Class Weight</th>
-              <th>Risky Pf Weight</th>
-              <th>Complete Pf Weight</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${equity_tickers
-              .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
-              .slice(0, 10)
-              .map(t => {
-                // Calculate normalized weight within asset class
-                const assetClassWeight = 
-                  t.Type === "Equity" ? 
-                    (equityTotal > 0 ? t.Risky_Pf_Weight / equityTotal : 0) : 
-                    (bondTotal > 0 ? t.Risky_Pf_Weight / bondTotal : 0);
-                
-                // Calculate weight in risky portfolio
-                const riskyPfWeight = 
-                  t.Type === "Equity" ?
-                    assetClassWeight * equity_weight :
-                    assetClassWeight * bond_weight;
-                    
-                // Calculate weight in complete portfolio
-                const completePfWeight = riskyPfWeight * fixed_optimal_weight;
-                    
-                return html`
-                  <tr>
-                    <td>${t.Type}</td>
-                    <td>${t.Ticker}</td>
-                    <td>${t.Name}</td>
-                    <td>${t.Sector}</td>
-                    <td>${formatPercent(assetClassWeight)}</td>
-                    <td>${formatPercent(riskyPfWeight)}</td>
-                    <td>${formatPercent(completePfWeight)}</td>
-                  </tr>
-                `
-              })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-```
-
-```{ojs}
-// Display the ticker weights
-equity_ticker_weights();
+securityAllocationTable()
 ```
 
 <!-- 
@@ -183,7 +88,7 @@ html`
     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 96%;">
       <iframe 
         width="100%" 
-        height="100%" 
+        height="90%" 
         src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier_2025-04-26.html"
         frameborder="0"
         allowfullscreen

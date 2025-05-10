@@ -2,26 +2,27 @@
 
 ::: {.panel-tabset}
 
-## Asset Class Distribution
+## Asset Class Distribution 
 
 ```{ojs}
 viewof portfolioBarChart = {
   const data = dynamicAllocations;
-  const complete = data.complete_portfolio;
-  
-  // Create data for bar chart using dynamic calculations
+
+  // Bar‑chart data
   const barData = [
-    {asset: "Risk-Free", weight: (1 - fixed_optimal_weight) * 100},
-    {asset: "Bond", weight: (fixed_optimal_weight * bond_weight)  * 100},
-    {asset: "Equity", weight: (fixed_optimal_weight * equity_weight) * 100},
+    { asset: "Risk‑Free", weight: (1 - fixed_optimal_weight) * 100 },
+    { asset: "Bond",      weight:  fixed_optimal_weight * bond_weight   * 100 },
+    { asset: "Equity",    weight:  fixed_optimal_weight * equity_weight * 100 },
   ];
-  
-  // Use Plot.plot instead of Plot.auto for more control
+
+  /* NEW: sort a fresh copy in descending order of weight */
+  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
+
   return Plot.plot({
     marginLeft: 60,
     x: {
-      label: "", // Explicitly set to empty string to hide the label
-      domain: barData.map(d => d.asset),
+      label: "",
+      domain: barDataSorted.map(d => d.asset),   // use sorted order on the x‑axis
       padding: 0.3
     },
     y: {
@@ -31,34 +32,108 @@ viewof portfolioBarChart = {
       tickFormat: d => d + "%"
     },
     marks: [
-      Plot.barY(barData, {
-        x: "asset", 
+      Plot.barY(barDataSorted, {
+        x: "asset",
         y: "weight",
-        fill: "asset", 
+        fill: "asset",
         tip: true,
         title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
       }),
-      Plot.text(barData, {
+      Plot.text(barDataSorted, {
         x: "asset",
         y: "weight",
         text: d => `${d.weight.toFixed(1)}%`,
         dy: -10,
         fontWeight: "bold",
-        fontSize: 16 
+        fontSize: 16
       })
     ]
   });
 }
 ```
 
-### Asset Class Allocation Table
+:::: {.columns style="height: calc(100vh - 650px); width: 100%;"}
+
+### Allocation Table
 
 ```{ojs}
-
-// Display the table
-createAllocationTable()
+assetClassAllocationTable()
 ```
 
+### Key Portfolios
+
+```{ojs}
+function displayKeyPortfolios() {
+  const { min_variance: minVar, max_sharpe: maxSharpe, complete_portfolio: complete } = dynamicAllocations;
+
+  /* pct helpers */
+  const pct = v => (v * 100).toFixed(1) + "%";
+
+  /* common factor: risky‑portfolio share of the complete portfolio */
+  const riskyShare = fixed_optimal_weight;     // y in earlier code
+  const rfSharePct = pct(1 - riskyShare);
+
+  /* convert risky‑only weights into complete‑portfolio weights */
+  const minVarBondPct     = pct(minVar.Weights[0] * riskyShare);
+  const minVarEquityPct   = pct(minVar.Weights[1] * riskyShare);
+  const maxSharpeBondPct  = pct(maxSharpe.Weights[0] * riskyShare);
+  const maxSharpeEquityPct= pct(maxSharpe.Weights[1] * riskyShare);
+
+  return html`
+    <!-- Portfolio 1: Optimal (max Sharpe) -->
+    <div class="card mb-3">
+      <div class="card-header bg-success text-white">Portfolio&nbsp;1 – Optimal (Maximum Sharpe, Risky Assets with Risk‑Free)</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Risk‑Free Weight:</strong> ${rfSharePct}</p>
+            <p><strong>Risky Portfolio Weight:</strong> ${pct(riskyShare)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Expected Return:</strong> ${formatPercent(complete.er_complete)}</p>
+            <p><strong>Standard Deviation:</strong> ${formatPercent(complete.std_dev_complete)}</p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <p><strong>Bond Weight:</strong> ${pct(complete.bond_weight)}</p>
+            <p><strong>Equity Weight:</strong> ${pct(complete.equity_weight)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Sharpe Ratio:</strong> ${complete.sharpe.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio 2: Minimum Variance -->
+    <div class="card mb-3">
+      <div class="card-header bg-primary text-white">Portfolio&nbsp;2 – Minimum Variance (Risky Assets)</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Expected Return:</strong> ${formatPercent(minVar.Return)}</p>
+            <p><strong>Standard Deviation:</strong> ${formatPercent(minVar.Risk)}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Bond Weight:</strong> ${minVarBondPct}</p>
+            <p><strong>Equity Weight:</strong> ${minVarEquityPct}</p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-12">
+            <p><strong>Sharpe Ratio:</strong> ${minVar.Sharpe.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+displayKeyPortfolios()
+```
+
+:::
 
 ## Efficient Frontier
 
@@ -245,92 +320,3 @@ function createEfficientFrontierTable() {
 // Display the table
 createEfficientFrontierTable()
 ``` 
-
-## Key Portfolios
-
-```{ojs}
-// Display key portfolio data using dynamic allocations
-function displayKeyPortfolios() {
-  const minVar = dynamicAllocations.min_variance;
-  const maxSharpe = dynamicAllocations.max_sharpe;
-  const complete = dynamicAllocations.complete_portfolio;
-  
-  return html`
-    <div class="card mb-3">
-      <div class="card-header bg-primary text-white">
-        A. Minimum Variance Portfolio of Risky Assets
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>Expected Return:</strong> ${formatPercent(minVar.Return)}</p>
-            <p><strong>Standard Deviation:</strong> ${formatPercent(minVar.Risk)}</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>Bond Weight:</strong> ${(minVar.Weights[0]*100).toFixed(1)}%</p>
-            <p><strong>Equity Weight:</strong> ${(minVar.Weights[1]*100).toFixed(1)}%</p>
-          </div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-12">
-            <p><strong>Sharpe Ratio:</strong> ${minVar.Sharpe.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header bg-success text-white">
-        B. Maximum Sharpe Ratio Portfolio of Risky Assets
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>Expected Return:</strong> ${formatPercent(maxSharpe.Return)}</p>
-            <p><strong>Standard Deviation:</strong> ${formatPercent(maxSharpe.Risk)}</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>Bond Weight:</strong> ${(maxSharpe.Weights[0]*100).toFixed(1)}%</p>
-            <p><strong>Equity Weight:</strong> ${(maxSharpe.Weights[1]*100).toFixed(1)}%</p>
-          </div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-12">
-            <p><strong>Sharpe Ratio:</strong> ${maxSharpe.Sharpe.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header bg-info text-white">
-        C. Optimal Complete Portfolio with Risk-Free Asset
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <p><strong>Risk-Free Weight:</strong> ${(complete.rf_weight*100).toFixed(1)}%</p>
-            <p><strong>Risky Portfolio Weight:</strong> ${(complete.y*100).toFixed(1)}%</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>Expected Return:</strong> ${formatPercent(complete.er_complete)}</p>
-            <p><strong>Standard Deviation:</strong> ${formatPercent(complete.std_dev_complete)}</p>
-          </div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-md-6">
-            <p><strong>Bond Weight:</strong> ${(complete.bond_weight*100).toFixed(1)}%</p>
-            <p><strong>Equity Weight:</strong> ${(complete.equity_weight*100).toFixed(1)}%</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>Sharpe Ratio:</strong> ${complete.sharpe.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// Display the portfolios
-displayKeyPortfolios()
-```
