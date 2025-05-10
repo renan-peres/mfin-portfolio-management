@@ -1,7 +1,0 @@
-[build]
-publish = "/dist"
-command = """
-  rustup toolchain install 1.83.0 && \
-  cargo install rust-script && \
-  npm run build
-"""
