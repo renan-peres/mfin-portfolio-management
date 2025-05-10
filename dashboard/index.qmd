@@ -1,5 +1,5 @@
 ---
-title: "Investment Portfolio Models"
+title: "Investment Portfolio Construction"
 logo: img/hult_logo.png
 format:
   dashboard:
@@ -443,7 +443,7 @@ portfolioData = {
 
 {{< include 00_sidebar.qmd >}}
 
-# Complete Portfolio
+# Portfolio
 
 ```{ojs}
 //| echo: false
@@ -562,7 +562,7 @@ function securityPerformanceTable() {
 
   return html`
     <div class="table-responsive">
-      <h5 class="table-title">Security Performance</h5>
+      <h5 class="table-title">Individuals Security Performance</h5>
       <table class="table table-sm table-hover">
         <thead>
           <tr>
