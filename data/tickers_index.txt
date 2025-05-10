@@ -44,6 +44,7 @@
 ^MID
 ^MOVE
 ^MXX
+^N10EURGI
 ^N225
 ^NBI
 ^NDX
@@ -62,7 +63,6 @@
 ^REI
 ^REIT
 ^RLG
-^RLV
 ^RUA
 ^RUI
 ^RUITR
