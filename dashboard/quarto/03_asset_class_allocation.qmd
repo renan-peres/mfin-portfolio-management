@@ -228,8 +228,8 @@ function createEfficientFrontierTable() {
             return html`
               <tr ${i === maxSharpeIdx ? 'style="background-color: #ffff9980;"' : ''}>
                 <td>${completeRfWeight.toFixed(1)}%</td>
-                <td>${completeBondWeight.toFixed(1)}% (${d.bond_weight}%)</td>
-                <td>${completeEquityWeight.toFixed(1)}% (${d.equity_weight}%)</td>
+                <td>${completeBondWeight.toFixed(1)}% (${d.bond_weight}% of Risky Pf)</td>
+                <td>${completeEquityWeight.toFixed(1)}% (${d.equity_weight}% of Risky Pf)</td>
                 <td>${formatPercent(d.expected_return)}</td>
                 <td>${formatPercent(d.std_dev)}</td>
                 <td>${d.sharpe.toFixed(2)}${i === maxSharpeIdx ? ' ★' : ''}</td>

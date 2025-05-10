@@ -490,7 +490,24 @@ portfolioValueChart = {
 
 :::
 
-### Forecasts
+### Portfolio vs Benchmark
+
+```{ojs}
+benchmarkModel = html`
+  <div>
+    <div style="width: 100%; height: "100%"; position: absolute;">
+    <iframe height="100%" width="100%" 
+        id="benchmarkModel-embed" 
+        title="benchmarkModel Embed"
+        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio_vs_benchmark_2025-04-26.html"
+        frameborder="0" allow="clipboard-write" allowfullscreen 
+        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"></iframe>
+    </div>
+  </div>
+`;
+```
+
+### Projections
 
 ```{ojs}
 capitalAlocation = html`
@@ -511,7 +528,9 @@ capitalAlocation = html`
 createAllocationTable()
 ```
 
-### Quotes
+### Fund Fee Structure
+
+### Stock Quotes
 
 ```{python}
 #| echo: False
@@ -552,7 +571,7 @@ show(monthly_px.round(2).sort_values(by='Date', ascending=False).reset_index(), 
 
 :::
 
-### Fundamentals
+### Stock Fundamentals
 
 ```{python}
 # Order Columns
@@ -570,7 +589,5 @@ transposed_df = optimal_portfolio_fundamentals.sort_values(by="Weight", ascendin
 # Display the result
 display(transposed_df)
 ```
-
-### Fund Fee Structure
 
 :::

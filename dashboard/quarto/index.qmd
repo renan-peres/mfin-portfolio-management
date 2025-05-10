@@ -554,6 +554,3 @@ function createAllocationTable() {
 
 :::
 
-# Portfolio vs Benchmark
-
-{{< include 05_index_benchmark_model.qmd >}}

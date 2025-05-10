@@ -175,7 +175,7 @@ equity_ticker_weights();
 
 ::: {.panel-tabset style="height: calc(100vh - 450px); overflow-y: auto;"} -->
 
-## Efficient Frontier
+## Equity Efficient Frontier
 
 ```{ojs}
 equityEfficientFrontier = html`
@@ -206,4 +206,6 @@ optimal_portfolio_ef = optimal_portfolio_ef[first_columns].sort_values(by="Weigh
 display(optimal_portfolio_ef)
 ```
 
-<!-- ## Bond Securities -->
+## Bond Securities
+
+## Covariances
