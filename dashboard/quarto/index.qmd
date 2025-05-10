@@ -554,3 +554,6 @@ function createAllocationTable() {
 
 :::
 
+# Excel Models
+
+{{< include 05_excel_models.qmd >}} 
