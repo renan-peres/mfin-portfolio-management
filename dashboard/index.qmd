@@ -449,128 +449,146 @@ portfolioData = {
 //| echo: false
 //| output: false
 
-function createPortfolioMetricsDisplay() {
-  /* ─── Guard clauses ─────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────────
+   1.  Core metrics builder (called by both renderers)
+-----------------------------------------------------------------*/
+function buildPortfolioMetrics() {
   if (!portfolioData || portfolioData.length === 0)
-    return html`<div class="alert alert-warning">No portfolio data available</div>`;
+    return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
 
   const tickerPrices = processedQuotesData ?? portfolioData.tickerFirstLastPrices;
   if (!tickerPrices || Object.keys(tickerPrices).length === 0)
-    return html`<div class="alert alert-warning">Incomplete portfolio data – missing price information</div>`;
+    return { error: html`<div class="alert alert-warning">Incomplete portfolio data – missing price information</div>` };
 
-  /* ─── Date range & elapsed time ─────────────────────── */
   const { startDate = new Date(), endDate = new Date() } = portfolioData.datasetDateRange ?? {};
   const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
 
-  /* ─── Asset‑class weights & per‑ticker metrics ──────── */
-  const assetClassTotals = calculateAssetClassWeights(tickerPrices);
-  const tickerData = {};
-  let validTickerCount = 0;
+  /* asset‑class totals & per‑ticker weights */
+  const classTotals = calculateAssetClassWeights(tickerPrices);
+  const tickerData  = {};
+  let validCount = 0;
 
   for (const [ticker, price] of Object.entries(tickerPrices)) {
-    // Skip bad price data
     if (!price.firstPrice || !price.lastPrice || price.firstPrice <= 0 || price.lastPrice <= 0) continue;
 
     const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
     const type = info?.Type ?? price.type ?? "Equity";
-    validTickerCount++;
+    validCount++;
 
-    /* Weights */
     const w = calculateTickerWeights(ticker, type, price,
-                                     assetClassTotals, equity_weight, bond_weight,
+                                     classTotals, equity_weight, bond_weight,
                                      fixed_optimal_weight);
 
-    /* Dollar values */
-    const initialValue  = investment_amount * w.completeWeight;
-    const shares        = initialValue / price.firstPrice;
-    const currentValue  = shares * price.lastPrice;
-    const dollarReturn  = currentValue - initialValue;
-    const totalReturn   = initialValue > 0 ? currentValue / initialValue - 1 : 0;
+    const initial = investment_amount * w.completeWeight;
+    const shares  = initial / price.firstPrice;
+    const current = shares * price.lastPrice;
+    const totRet  = initial ? current / initial - 1 : 0;
 
-    let annualizedReturn = 0;
-    if (yearsDiff > 0 && totalReturn >= -1 && isFinite(totalReturn)) {
-      annualizedReturn = Math.pow(1 + totalReturn, 1 / yearsDiff) - 1;
-      if (!isFinite(annualizedReturn)) annualizedReturn = 0;
+    let annRet = 0;
+    if (yearsDiff > 0 && totRet >= -1 && isFinite(totRet)) {
+      annRet = Math.pow(1 + totRet, 1 / yearsDiff) - 1;
+      if (!isFinite(annRet)) annRet = 0;
     }
 
     tickerData[ticker] = {
       type,
-      name:   info?.Name   ?? ticker,
+      name:   info?.Name ?? ticker,
       sector: info?.Sector ?? "N/A",
       assetClassWeight: w.assetClassWeight,
       riskyPfWeight:    w.riskyPfWeight,
       completeWeight:   w.completeWeight,
-      initialValue,
-      currentValue,
-      dollarReturn,
-      totalReturn,
-      annualizedReturn
+      initialValue:     initial,
+      currentValue:     current,
+      totalReturn:      totRet,
+      annualizedReturn: annRet
     };
   }
 
-  if (validTickerCount === 0)
-    return html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>`;
+  if (validCount === 0)
+    return { error: html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>` };
 
-  /* ─── Portfolio totals ──────────────────────────────── */
-  const totals = Object.values(tickerData).reduce((acc, d) => ({
-    initial: acc.initial + d.initialValue,
-    current: acc.current + d.currentValue
+  /* portfolio totals */
+  const totals = Object.values(tickerData).reduce((a, d) => ({
+    initial: a.initial + d.initialValue,
+    current: a.current + d.currentValue
   }), { initial: 0, current: 0 });
 
-  const totalReturnPct     = totals.initial ? totals.current / totals.initial - 1 : 0;
-  let   annualizedReturnPct = 0;
-  if (yearsDiff > 0 && totalReturnPct >= -1 && isFinite(totalReturnPct)) {
-    annualizedReturnPct = Math.pow(1 + totalReturnPct, 1 / yearsDiff) - 1;
-    if (!isFinite(annualizedReturnPct)) annualizedReturnPct = 0;
+  const totalRet = totals.initial ? totals.current / totals.initial - 1 : 0;
+  let   irr      = 0;
+  if (yearsDiff > 0 && totalRet >= -1 && isFinite(totalRet)) {
+    irr = Math.pow(1 + totalRet, 1 / yearsDiff) - 1;
+    if (!isFinite(irr)) irr = 0;
   }
 
-  /* ─── Render ────────────────────────────────────────── */
+  return {
+    startDate, endDate, yearsDiff,
+    totals, totalRet, irr,
+    tickerData
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────
+   2.  Summary card only
+-----------------------------------------------------------------*/
+function portfolioPerformanceCard() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
   return html`
     <div class="card">
       <div class="card-body">
         <h5 class="card-title">Portfolio Performance</h5>
-
-        <table class="table table-sm mb-4">
+        <table class="table table-sm mb-0">
           <tbody>
-            <tr><th>Initial Investment:</th>      <td>${formatCurrency(totals.initial)}</td></tr>
-            <tr><th>Current Value:</th>           <td>${formatCurrency(totals.current)}</td></tr>
-            <tr><th>Holding Period Return:</th>   <td>${formatPercent(totalReturnPct)}</td></tr>
-            <tr><th>IRR (Annualized):</th>        <td>${formatPercent(annualizedReturnPct)}</td></tr>
-            <tr><th>Time Period:</th>             <td>${d3.timeFormat("%b %d, %Y")(startDate)} – ${d3.timeFormat("%b %d, %Y")(endDate)} (${yearsDiff.toFixed(1)} yrs)</td></tr>
+            <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
+            <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
+            <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
+            <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
+            <tr><th>Time Period:</th>
+                <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}
+                    (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
           </tbody>
         </table>
-
-        <h5 class="mt-3">Security Performance</h5>
-        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
-          <table class="table table-sm table-hover">
-            <thead>
-              <tr>
-                <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
-                <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
-                <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
-                <th>HPR</th><th>IRR</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${Object.entries(tickerData).map(([ticker, d]) => html`
-                <tr>
-                  <td>${d.type}</td>
-                  <td><strong>${ticker}</strong></td>
-                  <td>${d.name}</td>
-                  <td>${d.sector}</td>
-                  <td>${formatPercent(d.assetClassWeight)}</td>
-                  <td>${formatPercent(d.riskyPfWeight)}</td>
-                  <td>${formatPercent(d.completeWeight)}</td>
-                  <td>${formatCurrency(d.initialValue)}</td>
-                  <td>${formatCurrency(d.currentValue)}</td>
-                  <td>${formatPercent(d.totalReturn)}</td>
-                  <td>${formatPercent(d.annualizedReturn)}</td>
-                </tr>
-              `)}
-            </tbody>
-          </table>
-        </div>
       </div>
+    </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   3.  Security‑level table only
+-----------------------------------------------------------------*/
+function securityPerformanceTable() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
+  return html`
+    <div class="table-responsive">
+      <h5 class="table-title">Security Performance</h5>
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
+            <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
+            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
+            <th>HPR</th><th>IRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(m.tickerData).map(([t, d]) => html`
+            <tr>
+              <td>${d.type}</td>
+              <td><strong>${t}</strong></td>
+              <td>${d.name}</td>
+              <td>${d.sector}</td>
+              <td>${formatPercent(d.assetClassWeight)}</td>
+              <td>${formatPercent(d.riskyPfWeight)}</td>
+              <td>${formatPercent(d.completeWeight)}</td>
+              <td>${formatCurrency(d.initialValue)}</td>
+              <td>${formatCurrency(d.currentValue)}</td>
+              <td>${formatPercent(d.totalReturn)}</td>
+              <td>${formatPercent(d.annualizedReturn)}</td>
+            </tr>`)}
+        </tbody>
+      </table>
     </div>`;
 }
 ```

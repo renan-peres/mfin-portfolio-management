@@ -37,10 +37,6 @@ viewof time_horizon = createNumericInput({
 
 ### Performance 
 
-:::: {.columns}
-
-#### Performance Summary Table
-
 ```{ojs}
 //| echo: false
 //| output: false
@@ -49,12 +45,15 @@ viewof time_horizon = createNumericInput({
 processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
 ```
 
+:::: {.columns style="height: calc(100vh - 650px); width: 100%;"}
+
+#### Performance Summary Card {width=35%}
 
 ```{ojs}
-createPortfolioMetricsDisplay()
+portfolioPerformanceCard()
 ```
 
-#### Performance Over Time Chart
+#### Performance Over Time Chart {width=65%}
 
 ```{ojs}
 //| echo: false
@@ -191,6 +190,12 @@ viewof portfolioValueChart = {
 
 :::
 
+#### Performance Summary Table
+
+```{ojs}
+securityPerformanceTable()
+```
+
 ### Projections
 
 ```{ojs}
@@ -215,6 +220,8 @@ assetClassAllocationTable(3)
 securityAllocationTable()
 ```
 
+### Fee Structure
+
 ### Benchmark Comparison
 
 ```{ojs}
@@ -232,7 +239,5 @@ html`
   </div>
 `;
 ```
-
-### Fee Structure
 
 :::
