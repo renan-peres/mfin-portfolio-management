@@ -1,7 +1,7 @@
 # Investment Portfolio Construction
 
 ## Overview
-This repository contains portfolio models designed for optimal asset allocation based on a client's risk tolerance and the overall market conditions. It provides tools to optimize investment strategies, analyze risk, and visualize performance.
+This repository contains portfolio construction models designed for optimal asset allocation based on a client's risk tolerance, assets' fundamental screening and risk-adjusted returns, maximum Sharpe ratio for the portfolio, and the overall market conditions.
 
 ## Features
 - Equity Portfolio Construction using fundamental screening + modern portfolio theory  
