@@ -105,6 +105,7 @@ This section provides access to the underlying quantitative models driving the p
 
 Portfolio optimization calculations based on historical return data Risk metrics including standard deviation, Value at Risk (VaR), and drawdown analysis Asset correlation matrices demonstrating diversification benefits Scenario analysis and stress testing for various market conditions. These models implement the mathematical framework described in academic literature while maintaining practical applicability for real-world investment decisions.
 
+<!-- 
 ```js
 // Spreadsheet embedding
 const spreadsheetUrl = "https://1drv.ms/x/c/bde1a904e346bc6a/IQRTEwB280IjSazAjML3PbuuAd4_2bk5zHNh5guP6706TTo?em=2&AllowTyping=True&AllowFormulaEntry=True&ActiveCell='Cover'!A1&wdHideGridlines=True&wdInConfigurator=True&wdShowFormulaBar=True&wdInConfigurator=True";
@@ -140,7 +141,6 @@ function embedSpreadsheet(url) {
             scrolling="no"
             allowfullscreen
           ></iframe>
-          <!-- Cover element to hide footer -->
           <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: white; z-index: 1000;"></div>
         </div>
       </div>`;
@@ -153,7 +153,8 @@ function embedSpreadsheet(url) {
 }
 // Display the embedded spreadsheet
 display(embedSpreadsheet(spreadsheetUrl));
-```
+``` 
+-->
 
 ---
 ## Investment Policy Statement
@@ -165,7 +166,7 @@ The Investment Policy Statement (IPS) establishes the strategic framework for po
 
 This document serves as the foundational governance framework for all investment activities and ensures alignment between strategies employed and investor objectives.
 
-```js
+<!-- ```js
 const oneDrivePath = "https://1drv.ms/b/c/bde1a904e346bc6a/EY-k0gdHz5BJms-NY7B5AK8B62B7MKz13IHndFdhL_SZEg";
 const embedUrl = `${oneDrivePath}?embed=true`;
 
@@ -196,4 +197,4 @@ display(html`
     </div>
   </div>
 `);
-```
+``` -->

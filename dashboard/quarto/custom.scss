@@ -1,8 +1,4 @@
 /*-- scss:defaults --*/
-
-// THEME VARIABLES
-// ------------------------------------------------------
-// Navbar
 $navbar-bg: #01090c !default;
 $navbar-fg: #ffffff !default;
 
@@ -24,19 +20,33 @@ $table-header-background-color: #0b3040 !default;
 $table-header-text-color: #FFF !default;
 $table-header-border: 1px solid #FFF !default;
 
-// Tabset colour palette
-$tab-bg: #fafbfc;             // background of the whole tab bar
-$tab-link-bg: #eef2f7;        // normal (inactive) tab
-$tab-link-text: #334155;      // normal (inactive) text
-$tab-hover-accent: #5c7cfa;   // hover & focus accent
-$tab-active-accent: #2954ff;  // active tab text/underline/shadow
+/* =========================================================================
+   Tabset colour palette  ▸ change these five colours to suit your design
+   ========================================================================*/
+$tab-bg            : #fafbfc;   // background of the whole tab bar
+$tab-link-bg       : #eef2f7;   // normal (inactive) tab
+$tab-link-text     : #334155;   // normal (inactive) text
+$tab-hover-accent  : #5c7cfa;   // hover & focus accent (uses lighten() below)
+$tab-active-accent : #2954ff;   // active tab text / underline / shadow
+/* ----------------------------------------------------------------------- */
 
-/*-- scss:rules --*/
+/*-- scss:defaults --*/
 
-/* BASE TYPOGRAPHY & ELEMENTS
----------------------------------------------- */
-// Headings and text
-h4, h5 {
+/* Remove padding from bslib grid items */
+.cell.bslib-grid-item.html-fill-item {
+  padding: 0 !important;
+}
+
+// Base Extensions
+.value-box-value {
+  font-size: 3rem !important;
+}
+
+h4 {
+  font-weight: 700 !important;
+}
+
+h5 {
   font-weight: 700 !important;
 }
 
@@ -44,50 +54,19 @@ p {
   margin-bottom: 0.2rem !important; 
 }
 
-// Lists
+/* Reduce left margin of bullet points */
 ul, ol {
   padding-left: 1.5rem !important; 
   margin-left: 0 !important; 
 }
 
-// Value boxes
-.value-box-value {
-  font-size: 3rem !important;
+/* Target specifically the Observable output areas in the sidebar */
+.ojs-in-a-box-waiting-for-module-import ul,
+.ojs-in-a-box-waiting-for-module-import ol {
+  padding-left: 1rem !important; /* Make even tighter in Observable outputs */
 }
 
-/* LAYOUT COMPONENTS
----------------------------------------------- */
-// Grid items
-.cell.bslib-grid-item.html-fill-item {
-  padding: 0 !important;
-}
-
-// Chart Container
-.chart-container {
-  width: 100%;
-  height: 100%;
-  min-height: calc(100vh - 100px);
-  overflow: hidden;
-}
-
-// SVG Fallback
-svg[width][height][viewBox] {
-  width: 100% !important;
-  height: auto !important;
-  max-width: 100%;
-  max-height: 100%;
-  display: block;
-  overflow: hidden;
-}
-
-// Transitions for animations
-path {
-  transition: opacity 0.2s, d 0.2s;
-}
-
-/* TABLES
----------------------------------------------- */
-// Basic table styling
+/* Custom Table Styles targeting .panel-tabset .card-body.html-fill-container tables */
 .panel-tabset .card-body.html-fill-container table {
   margin: 1em 0;
   width: 100%;
@@ -110,7 +89,7 @@ path {
     color: $table-header-text-color;
     padding: 0.8em;
     text-align: left;
-    vertical-align: top !important;
+    vertical-align: top !important; /* Align header text to the top */
   }
   
   td {
@@ -121,91 +100,136 @@ path {
   }
 }
 
-// Sticky headers
+/* Sticky table headers with top-aligned text */
 .panel-tabset .card-body.html-fill-container table thead th,
-table thead th,
-div[style*="overflow-y: auto"] table thead th,
-div[style*="overflow: auto"] table thead th,
-.table-responsive table thead th,
-.dt-container table thead th,
-.ojs-in-a-box-waiting-for-module-import table thead th {
+table thead th {
   position: sticky;
   top: 0;
   z-index: 10;
   background-color: $table-header-background-color;
   box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  vertical-align: top !important; /* Align header text to the top */
+}
+
+/* Ensure proper positioning for nested tables inside scrollable containers */
+div[style*="overflow-y: auto"] table thead th,
+div[style*="overflow: auto"] table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   vertical-align: top !important;
 }
 
+/* Support for horizontally scrollable tables */
+.table-responsive table thead th,
+.dt-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  vertical-align: top !important;
+}
 
-/* TABSET AND PANELS
----------------------------------------------- */
+/* Specifically target OJS tables */
+.ojs-in-a-box-waiting-for-module-import table thead th {
+  vertical-align: top !important;
+}
+
+/* Responsive behavior for tables */
+@media (max-width: 767px) {
+  .panel-tabset .card-body.html-fill-container table {
+    border: 0;
+    
+    thead {
+      display: none; /* Hide table headers on mobile */
+    }
+    
+    tr {
+      margin-bottom: 1em;
+      display: block;
+      border-bottom: 2px solid $table-header-background-color;
+    }
+    
+    td {
+      display: block;
+      text-align: right;
+      font-size: 0.9em;
+      border-bottom: 1px dotted #ccc;
+      
+      /* Add attribute labels before each cell */
+      &:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+
 .panel-tabset {
-  display: flex;
-  flex-direction: column;
-  
   .nav-tabs {
     background-color: $tab-bg;
     border-bottom: 1px solid lighten($tab-link-bg, 6%);
 
-    .nav-item .nav-link {
-      background-color: $tab-link-bg;
-      color: $tab-link-text;
-      margin-right: .25rem;
-      border: 1px solid lighten($tab-link-bg, 10%);
-      border-bottom: none;
-      transition: background-color .15s ease, color .15s ease;
+    .nav-item {
+      .nav-link {
+        background-color: $tab-link-bg;
+        color: $tab-link-text;
+        margin-right: .25rem;
+        border: 1px solid lighten($tab-link-bg, 10%);
+        border-bottom: none;
+        transition: background-color .15s ease, color .15s ease;
 
-      // Hover and focus states
-      &:hover:not(.active),
-      &:focus-visible:not(.active) {
-        background-color: lighten($tab-hover-accent, 38%);
-        border-color: lighten($tab-hover-accent, 32%);
-        color: darken($tab-hover-accent, 20%);
-      }
+        /* ─────────────  hover / focus  ───────────── */
+        &:hover:not(.active),
+        &:focus-visible:not(.active) {
+          background-color: lighten($tab-hover-accent, 38%);  // pale tint
+          border-color: lighten($tab-hover-accent, 32%);
+          color: darken($tab-hover-accent, 20%);
+        }
 
-      // Active state
-      &.active {
-        background-color: #fff;
-        color: $tab-active-accent;
-        font-weight: 600;
-        border-bottom: 1px solid #fff;
-        box-shadow: 0 -2px 0 0 $tab-active-accent inset;
+        /* ─────────────  active tab  ───────────── */
+        &.active {
+          background-color: #fff;
+          color: $tab-active-accent;
+          font-weight: 600;
+          border-bottom: 1px solid #fff;        // visually merges with pane
+          box-shadow: 0 -2px 0 0 $tab-active-accent inset;  // subtle underline
+        }
       }
     }
-  }
-  
-  // Nested tabsets
-  .panel-tabset .nav-tabs {
-    background-color: lighten($tab-bg, 2%);
-    
-    .nav-link {
-      background-color: lighten($tab-link-bg, 2%);
-      font-size: 0.9rem;
-      
-      &.active {
-        background-color: #fff;
-        color: $tab-active-accent;
-        box-shadow: 0 -2px 0 0 $tab-active-accent inset;
+
+    /* ================================================================
+       Optional nested “sub‑tabs” (inherits the same palette)
+       ================================================================*/
+    .panel-tabset {
+      .nav-tabs {
+        background-color: lighten($tab-bg, 2%);
+
+        .nav-link {
+          background-color: lighten($tab-link-bg, 2%);
+          font-size: 0.9rem;
+
+          &.active {
+            background-color: #fff;
+            color: $tab-active-accent;
+            box-shadow: 0 -2px 0 0 $tab-active-accent inset;
+          }
+        }
       }
-    }
-  }
-  
-  // Card body within tabsets
-  .card-body.html-fill-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    
-    div:has(iframe), iframe {
-      flex: 1;
-      min-height: 800px;
     }
   }
 }
 
-/* TOOLTIPS
----------------------------------------------- */
+// Chart Container
+.chart-container {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+// Tooltips
 .tooltip,
 .plot-tooltip {
   position: absolute;
@@ -220,8 +244,23 @@ div[style*="overflow: auto"] table thead th,
   pointer-events: none;
 }
 
-/* PLOT.JS VISUALIZATIONS
----------------------------------------------- */
+// Transitions
+path {
+  transition: opacity 0.2s, d 0.2s;
+}
+
+// Responsive Adjustments
+@media (max-width: 768px) {
+  text.title {
+    font-size: 18px;
+  }
+
+  .legend text {
+    font-size: 12px;
+  }
+}
+
+// Plot.js Visualizations
 [class^="plot-"] {
   font-size: 12px !important;
   width: 100% !important;
@@ -246,152 +285,61 @@ div[style*="overflow: auto"] table thead th,
   }
 }
 
-/* OBSERVABLE/OJS SPECIFIC STYLES
----------------------------------------------- */
-// Observable lists
-.ojs-in-a-box-waiting-for-module-import ul,
-.ojs-in-a-box-waiting-for-module-import ol {
-  padding-left: 1rem !important;
+// SVG Fallback
+svg[width][height][viewBox] {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  overflow: hidden;
 }
 
-// Toolbar styling
-.toolbar {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
-  
-  .ojs-in-a-box-waiting-for-module-import.observablehq,
-  .ojs-inputs-container {
-    width: 250px;
-    min-width: 200px;
-  }
-  
-  > * {
-    margin-bottom: 10px;
-  }
-}
-
-
-/* FULL-SCREEN / SIDEBAR COLLAPSED STYLES
----------------------------------------------- */
-// When sidebar is collapsed, make cards fullscreen
-.bslib-sidebar-layout.sidebar-collapsed .card.cell.html-fill-item.html-fill-container.bslib-card[data-full-screen="false"],
-[data-bslib-sidebar-state="collapsed"] .card.cell.html-fill-item.html-fill-container.bslib-card[data-full-screen="false"],
-body.sidebar-collapsed .card.cell.html-fill-item.html-fill-container.bslib-card[data-full-screen="false"] {
+// Using flexbox for dynamic iframe sizing
+.panel-tabset {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
   
-  .card-body.html-fill-item.html-fill-container {
+  .card-body.html-fill-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0 !important;
     
-    .ojs-in-a-box-waiting-for-module-import.observablehq {
+    div:has(iframe) {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      
-      > div {
-        flex: 1;
-        position: relative;
-        height: 100%;
-        
-        > div {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          
-          iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-          }
-        }
-      }
+      min-height: 800px;
     }
     
-    // Table containers in collapsed sidebar state
-    div:has(table), .dt-container, .table-responsive {
+    iframe {
       flex: 1;
-      height: calc(100vh - 180px) !important; // Adjust based on header/margin height
-      max-height: 100%;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    // Tables themselves in collapsed sidebar state
-    table {
-      margin: 0 !important;
-      height: auto !important;
-      width: 100% !important;
-      
-      // Make sure tbody can grow/scroll
-      tbody {
-        flex: 1;
-        overflow: auto;
-      }
+      min-height: 800px;
     }
   }
 }
 
-// Regular styling when sidebar is expanded
-.bslib-sidebar-layout:not(.sidebar-collapsed) .card.cell.html-fill-item.html-fill-container.bslib-card[data-full-screen="false"] {
-  height: auto;
+.toolbar {
+  display: flex;
+  justify-content: flex-start; /* Changed from space-between to flex-start */
+  gap: 10px; /* Keep a small gap between items */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
-/* RESPONSIVE STYLES
----------------------------------------------- */
-// Table responsive behavior
-@media (max-width: 767px) {
-  .panel-tabset .card-body.html-fill-container table {
-    border: 0;
-    
-    thead {
-      display: none;
-    }
-    
-    tr {
-      margin-bottom: 1em;
-      display: block;
-      border-bottom: 2px solid $table-header-background-color;
-    }
-    
-    td {
-      display: block;
-      text-align: right;
-      font-size: 0.9em;
-      border-bottom: 1px dotted #ccc;
-      
-      &:before {
-        content: attr(data-label);
-        float: left;
-        font-weight: bold;
-      }
-    }
-  }
+.toolbar .ojs-in-a-box-waiting-for-module-import.observablehq {
+  width: 250px;
+  min-width: 200px; /* Slightly reduced min-width for better responsiveness */
 }
 
-// Plot responsive adjustments
-@media (max-width: 768px) {
-  text.title {
-    font-size: 18px;
-  }
-
-  .legend text {
-    font-size: 12px;
-  }
+/* Keep this rule as fallback */
+.toolbar .ojs-inputs-container {
+  width: 250px;
+  min-width: 200px;
 }
 
-// Data tables container
+/* Additional style to ensure consistent alignment */
+.toolbar > * {
+  margin-bottom: 10px; /* Add vertical spacing when wrapped */
+}
+
 .dt-container {
   max-width: 100%;
 }
@@ -399,14 +347,4 @@ body.sidebar-collapsed .card.cell.html-fill-item.html-fill-container.bslib-card[
 .dt-layout-table {
   overflow: auto;
   max-width: 100%;
-}
-
-// Additional DataTables fixes for collapsed sidebar
-.bslib-sidebar-layout.sidebar-collapsed .dt-container,
-[data-bslib-sidebar-state="collapsed"] .dt-container,
-body.sidebar-collapsed .dt-container {
-  .dataTables_scrollBody {
-    max-height: calc(100vh - 250px) !important;
-    height: auto !important;
-  }
 }
