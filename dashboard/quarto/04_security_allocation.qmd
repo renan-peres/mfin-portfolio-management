@@ -178,15 +178,16 @@ equity_ticker_weights();
 ## Equity Efficient Frontier
 
 ```{ojs}
-equityEfficientFrontier = html`
-  <div>
-    <div style="width: 100%; height: 100%; position: absolute;">
-    <iframe height="100%" width="100%" 
-        id="equityEfficientFrontier-embed" 
-        title="equityEfficientFrontier Embed"
+html`
+  <div style="display: flex; flex-direction: column; height: 100%;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 96%;">
+      <iframe 
+        width="100%" 
+        height="100%" 
         src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier_2025-04-26.html"
-        frameborder="0" allow="clipboard-write" allowfullscreen 
-        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"></iframe>
+        frameborder="0"
+        allowfullscreen
+      ></iframe>
     </div>
   </div>
 `;

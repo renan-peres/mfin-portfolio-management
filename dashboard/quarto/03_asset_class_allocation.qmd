@@ -246,7 +246,6 @@ function createEfficientFrontierTable() {
 createEfficientFrontierTable()
 ``` 
 
-
 ## Key Portfolios
 
 ```{ojs}
