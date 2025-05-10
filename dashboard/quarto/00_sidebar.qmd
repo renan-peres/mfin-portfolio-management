@@ -1,5 +1,5 @@
 
-<!-- # {.sidebar width="280px"} -->
+# {.sidebar width="270px"}
 
 ##### **<u>Market Info</u>:**
 
@@ -93,14 +93,12 @@ md`
 md`**Risk Aversion Index: ${risk_aversion}**`
 ```
 
-<!-- 
-
 ```{ojs}
 // Create Investment Amount with currency formatting
 viewof investment_amount = createCurrencyInput({
   min: 10000,
   max: 1000000,
-  value: 50000,
+  value: 100000,
   step: 5000,
   label: "Investment Amount:",
   decimals: 0
@@ -114,12 +112,11 @@ viewof time_horizon = createNumericInput({
   max: 50,
   value: 5,
   step: 1,
-  label: "Time Horizon (Years):",
+  label: "Projected Time Horizon (Years):",
   format: "integer",
   decimals: 0
 })
 ```
- -->
 
 ##### **<u>Risky Portfolio</u>:**
 

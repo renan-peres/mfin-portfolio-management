@@ -526,7 +526,7 @@ function createAllocationTable() {
 }
 ```
 
-# {.sidebar width="250px"}
+<!-- # Sidebar -->
 
 {{< include 00_sidebar.qmd >}}
 
@@ -536,7 +536,7 @@ function createAllocationTable() {
 
 :::
 
-# Capital Allocation 
+# Capital Allocation
 
 {{< include 02_capital_allocation.qmd >}}
 
