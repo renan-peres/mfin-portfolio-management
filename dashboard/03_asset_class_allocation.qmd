@@ -25,7 +25,7 @@ function assetClassAllocationTable(howMany = Infinity) {
   return html`
     <div style="overflow-y: auto;">
       <table class="table table-striped table-sm">
-     <h5 class="table-title">Asset Class Allocation</h5>
+     <h5 class="table-title">Key Portfolios</h5>
       <p>
         <thead>
           <tr>
@@ -144,7 +144,7 @@ viewof portfolioBarChart = {
 assetClassAllocationTable()
 ```
 
-### Key Portfolios {width=40%}
+### Best Portfolios {width=40%}
 
 ```{ojs}
 function displayKeyPortfolios() {

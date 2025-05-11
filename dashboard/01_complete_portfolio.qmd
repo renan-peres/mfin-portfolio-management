@@ -93,8 +93,7 @@ function portfolioPerformanceCard() {
 
   return html`
     <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Portfolio Performance</h5>
+        <h5 class="card-title">Portfolio Historical Performance (5Y)</h5>
         <table class="table table-sm mb-0">
           <tbody>
             <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
@@ -106,7 +105,6 @@ function portfolioPerformanceCard() {
                     (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
           </tbody>
         </table>
-      </div>
     </div>`;
 }
 
@@ -119,7 +117,7 @@ function securityPerformanceTable() {
 
   return html`
     <div class="table-responsive">
-      <h5 class="table-title">Assets Performance</h5>
+      <h5 class="table-title">Individual Assets Performance</h5>
       <table class="table table-sm table-hover">
         <thead>
           <tr>
