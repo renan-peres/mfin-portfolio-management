@@ -26,7 +26,7 @@ options.style = "width:100%;margin:auto"
 options.columnDefs = [{"className": "dt-center", "targets": "_all"}]
 ```
 
-::: {.panel-tabset style="height: calc(100vh - 450px); min-height: 400px; overflow-y: auto;"}
+::: {.panel-tabset}
 
 ### Daily
 

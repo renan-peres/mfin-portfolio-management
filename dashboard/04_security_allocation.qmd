@@ -1,5 +1,74 @@
 <!-- # Security Allocation -->
 
+```{ojs}
+//| echo: false
+//| output: false
+
+function securityAllocationTable() {
+  const data = equity_tickers ?? [];
+  if (data.length === 0)
+    return html`<div>No ticker data available</div>`;
+
+  /* ─── Totals by asset class ───────────────────────────── */
+  let equityTotal = 0, bondTotal = 0;
+  data.forEach(d => {
+    if (d.Type === "Equity")  equityTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Bond") bondTotal += d.Risky_Pf_Weight;
+  });
+
+  /* ─── Largest holding (optional row highlight) ────────── */
+  const maxRisky = Math.max(...data.map(d => d.Risky_Pf_Weight));
+
+  /* ─── HTML table ──────────────────────────────────────── */
+  return html`
+    <div style="overflow-y: auto;">
+      <h5 class="table-title">Security Allocation</h5>
+      <p>
+      <table class="table table-striped table-sm">
+        <thead>
+          <tr>
+            <th>Asset Class</th>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Sector</th>
+            <th>Asset Class&nbsp;Weight</th>
+            <th>Risky Pf&nbsp;Weight</th>
+            <th>Complete Pf&nbsp;Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data
+            .slice()                                            // keep source intact
+            .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+            .slice(0, 10)
+            .map(d => {
+              const classTotal     = d.Type === "Equity" ? equityTotal : bondTotal;
+              const classWeight    = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
+              const riskyPfWeight  = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+              const completeWeight = riskyPfWeight * fixed_optimal_weight;
+
+              /* optional highlight for single largest holding */
+              // const bgColor = d.Risky_Pf_Weight === maxRisky ? "#ffff9980" : "";
+
+              return html`
+                <tr>
+                  <td>${d.Type}</td>
+                  <td>${d.Ticker}</td>
+                  <td>${d.Name}</td>
+                  <td>${d.Sector}</td>
+                  <td>${formatPercent(classWeight)}</td>
+                  <td>${formatPercent(riskyPfWeight)}</td>
+                  <td>${formatPercent(completeWeight)}</td>
+                </tr>
+              `;
+            })}
+        </tbody>
+      </table>
+    </p>
+    </div>`;
+}
+```
+
 ::: {.panel-tabset}
 
 ## Security Distribution

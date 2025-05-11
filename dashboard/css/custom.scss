@@ -1,8 +1,20 @@
 /*-- scss:defaults --*/
 
-// Theme colors
+// Theme colors and base variables
 $navbar-bg: #01090c !default;
 $navbar-fg: #ffffff !default;
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
 
 // Plot visualization settings
 $plot-margin-left: 60px !default;
@@ -23,19 +35,25 @@ $table-header-text-color: #FFF !default;
 $table-header-border: 1px solid #FFF !default;
 
 // Tabset color palette
-$tab-bg: #fafbfc !default; // Background of the whole tab bar
-$tab-link-bg: #eef2f7 !default; // Normal (inactive) tab
-$tab-link-text: #334155 !default; // Normal (inactive) text
-$tab-hover-accent: #5c7cfa !default; // Hover & focus accent
-$tab-active-accent: #2954ff !default; // Active tab text/underline/shadow
+$tab-bg: #fafbfc !default;
+$tab-link-bg: #dfe5ec !default;
+$tab-link-text: #334155 !default;
+$tab-hover-accent: #5c7cfa !default;
+$tab-active-accent: #2954ff !default;
+
+// Common values
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
 
 /*-----------------------------------------
   BASE ELEMENT STYLES
 -----------------------------------------*/
 
-// Typography adjustments
+// Typography
 h4, h5 {
   font-weight: 700 !important;
+  color: $text-dark !important;
 }
 
 p {
@@ -44,31 +62,25 @@ p {
 
 // List styles
 ul, ol {
-  padding-left: 1.5rem !important; 
+  padding-left: 1.2rem !important; 
   margin-left: 0 !important; 
 }
 
-// Observable list output adjustments
-.ojs-in-a-box-waiting-for-module-import ul,
-.ojs-in-a-box-waiting-for-module-import ol {
-  padding-left: 1rem !important;
-}
-
-// Path transitions
+// Animation effects
 path {
   transition: opacity 0.2s, d 0.2s;
 }
 
 /*-----------------------------------------
-  LAYOUT AND COMPONENTS
+  LAYOUT COMPONENTS
 -----------------------------------------*/
 
-// Remove padding from bslib grid items
+// Grid items
 .cell.bslib-grid-item.html-fill-item {
   padding: 0 !important;
 }
 
-// Value box adjustments
+// Value boxes
 .value-box-value {
   font-size: 3rem !important;
 }
@@ -90,8 +102,8 @@ path {
   background: rgba(255, 255, 255, 0.95);
   padding: 6px 8px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-radius: $standard-border-radius;
+  box-shadow: $medium-shadow;
   font-size: 14px !important;
   pointer-events: none;
 }
@@ -106,7 +118,7 @@ svg[width][height][viewBox] {
   overflow: hidden;
 }
 
-// Toolbar styles
+// Toolbar 
 .toolbar {
   display: flex;
   justify-content: flex-start;
@@ -124,7 +136,7 @@ svg[width][height][viewBox] {
   }
 }
 
-// DataTables containers
+// DataTables
 .dt-container {
   max-width: 100%;
 }
@@ -138,6 +150,7 @@ svg[width][height][viewBox] {
   TABLE STYLES
 -----------------------------------------*/
 
+// Base table styles
 .panel-tabset .card-body.html-fill-container table {
   margin: 1em 0;
   width: 100%;
@@ -145,10 +158,10 @@ svg[width][height][viewBox] {
   background: $table-background-color;
   color: $table-text-color;
   border-radius: $table-border-radius;
-  border: $table-outer-border;
   
   tr {
     border: $table-cell-border;
+    
     &:nth-child(odd) {
       background-color: $table-highlight-color;
     }
@@ -171,7 +184,7 @@ svg[width][height][viewBox] {
   }
 }
 
-// Sticky table headers
+// Sticky headers
 .panel-tabset .card-body.html-fill-container table thead th,
 table thead th,
 div[style*="overflow-y: auto"] table thead th,
@@ -213,6 +226,7 @@ div[style*="overflow: auto"] table thead th,
       &:focus-visible:not(.active) {
         background-color: lighten($tab-hover-accent, 38%);
         border-color: lighten($tab-hover-accent, 32%);
+        transform: translateY(-2px);
         color: darken($tab-hover-accent, 20%);
       }
 
@@ -220,6 +234,7 @@ div[style*="overflow: auto"] table thead th,
       &.active {
         background-color: #fff;
         color: $tab-active-accent;
+        transform: translateY(1px);
         font-weight: 600;
         border-bottom: 1px solid #fff;
         box-shadow: 0 -2px 0 0 $tab-active-accent inset;
@@ -324,15 +339,237 @@ div[style*="overflow: auto"] table thead th,
   }
 
   // Full height for cards with a single iframe
-  &:has(
-    .card-body.html-fill-item.html-fill-container iframe
-  ):not(
-    :has( .card-body.html-fill-item.html-fill-container iframe ~ iframe )
-  ) {
+  &:has(.card-body.html-fill-item.html-fill-container iframe):not(:has(.card-body.html-fill-item.html-fill-container iframe ~ iframe)) {
     height: calc(100vh - 120px) !important;
     
     .card-body.html-fill-item.html-fill-container {
       padding: 0 !important;
+    }
+  }
+}
+
+/*-----------------------------------------
+  CUSTOM INPUT COMPONENTS
+-----------------------------------------*/
+
+// Range slider container
+.input-slider-container {
+  margin-top: 4px;
+  margin-bottom: 0px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: $standard-border-radius;
+  padding: 6px;
+  border: 2px solid $border-light;
+}
+
+// Slider label
+.input-slider-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: $text-dark;
+  font-size: 0.9rem;
+}
+
+// Range slider input
+.range-slider {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  // background: linear-gradient(to right, $accent-blue, $accent-orange);
+  background: linear-gradient(to right, $primary-light, $primary-blue);
+  border-radius: 3px;
+  border: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: #fff;
+    border: 2px solid $primary-blue;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  }
+  
+  &::-moz-range-thumb {
+    background: #fff;
+    border: 2px solid $primary-blue;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Slider labels container
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  
+  .min-label, .max-label {
+    font-size: 0.8rem;
+    color: $text-primary;
+  }
+  
+  .value-label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: $primary-blue;
+  }
+}
+
+// Asset allocation slider
+.allocation-slider-container {
+  padding-bottom: 10px;
+}
+
+.optimize-btn-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.optimize-btn {
+  margin-bottom: 12px;
+  background-color: $table-header-background-color !important;
+  color: white;
+  border-color: $table-header-background-color;
+}
+
+.allocation-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  
+  .asset1-label, .asset2-label {
+    font-weight: bold;
+  }
+}
+
+/*-----------------------------------------
+  SIDEBAR ENHANCEMENTS
+-----------------------------------------*/
+
+.sidebar {
+  background: linear-gradient(to bottom, $background-light, $background-light);
+  border-right: 1px solid $border-light;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  color: $text-primary;
+  
+  // Section headers
+  .quarto-dashboard & h5 {
+    color: $text-dark !important; 
+    font-weight: 600 !important;
+    border-bottom: 2px solid darken($text-dark, 10%);
+    padding-bottom: 6px;
+    margin-top: 14px !important; 
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 1.1rem;
+    text-shadow: none;
+  }
+
+  // First h5 element - no top margin
+  .quarto-dashboard & section:first-of-type h5:first-of-type {
+    margin-top: 0 !important;
+  }
+
+  // Observable list output adjustments
+  .ojs-in-a-box-waiting-for-module-import ul, .ojs-in-a-box-waiting-for-module-import ol {
+      padding-left: 1rem !important;
+      margin-bottom: 5px;
+  }
+
+  // Input containers
+  .form-group {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: $standard-border-radius;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid $border-light;
+    
+    label {
+      color: $text-dark;
+      font-weight: 500;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    
+    // Inputs
+    input, select {
+      background-color: #ffffff;
+      border: 1px solid #d9e3ff;
+      border-left: 2px solid $primary-blue;
+      box-shadow: $small-shadow;
+      
+      &:focus {
+        border-left-color: darken($primary-blue, 5%);
+        box-shadow: 0 0 0 0.2rem rgba($primary-blue, 0.2);
+      }
+    }
+  }
+  
+  // Text styling
+  p {
+    color: $text-primary;
+    font-size: 0.9rem;
+    margin-bottom: .2rem !important;
+    margin-top: .2rem !important;
+  }
+
+  li {
+    color: $text-primary;
+    font-size: 0.9rem;
+    margin-bottom: 0rem !important;
+    margin-top: 0rem !important;
+  }
+
+  strong, b {
+    color: $dark-black;
+    font-weight: 600;
+  }
+  
+  // Asset allocation display
+  .allocation-display {
+    background: rgba(225, 235, 255, 0.5);
+    border-radius: $standard-border-radius;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid $border-light;
+  }
+  
+  .allocation-slider-container {
+      padding-bottom: 4px;
+      padding-top: .3em;
+  }
+
+  // Buttons
+  button {
+    background: linear-gradient(to right, $primary-blue, $primary-blue);
+    margin-bottom: 0em;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: linear-gradient(to right, darken($primary-blue, 5%), darken($primary-light, 10%));
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
   }
 }
@@ -383,143 +620,99 @@ div[style*="overflow: auto"] table thead th,
 }
 
 /*-----------------------------------------
-  SIDEBAR ENHANCEMENTS
+  COLLAPSIBLE TOOLBAR
 -----------------------------------------*/
 
-// Enhanced sidebar styling
-.sidebar {
-  background: linear-gradient(to bottom, #01090c, #01090c);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  color: #fff;
+// Base toolbar styling
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: linear-gradient(to bottom, $background-light, $background-light);
+  border-right: 1px solid $border-light;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  color: $text-primary;
+  
+  // Nested elements spacing
+  .ojs-in-a-box-waiting-for-module-import.observablehq,
+  .ojs-inputs-container {
+    width: 250px;
+    min-width: 200px;
+    margin-top: 10px; // Add space after toggle button
+  }
+  
+  > * {
+    margin-bottom: 10px;
+  }
   
   // Section headers
-  h5 {
-    color: #5cffb6;
-    font-weight: 700 !important;
-    border-bottom: 2px solid #5cffb6;
-    padding-bottom: 8px;
-    margin-top: 20px;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 1rem;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  .quarto-dashboard & h5 {
+    color: $text-dark !important; 
+    font-weight: 600 !important;
+    border-top: solid 1px #e3e3e3;
+    flex-wrap: wrap;
   }
+}
+
+// Collapsible functionality
+.collapsible-toolbar {
+  position: relative;
+  padding-top: 40px; // Increased to create more space below toggle
+  transition: max-height 0.2s ease, opacity 0.25s ease;
+  overflow: hidden;
+  max-height: 800px; // Generous height for all content
   
-  // Input containers
-  .form-group {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+  // Collapsed state
+  &.collapsed {
+    max-height: 40px; // Just enough for the toggle button
+    opacity: 0.9;
     
-    label {
-      color: #cce6ff;
-      font-weight: 500;
-      margin-bottom: 5px;
-      font-size: 0.9rem;
+    .toolbar-toggle::after {
+      transform: rotate(180deg);
     }
     
-    // Inputs
-    input, select {
-      background-color: rgba(255, 255, 255, 0.9);
-      border: none;
-      border-left: 3px solid #5cffb6;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-      
-      &:focus {
-        border-left-color: #ff9f5c;
-        box-shadow: 0 0 0 0.2rem rgba(92, 255, 182, 0.25);
-      }
+    > *:not(.toolbar-toggle) {
+      visibility: hidden;
     }
   }
   
-  // Sliders
-  input[type="range"] {
-    height: 6px;
-    background: linear-gradient(to right, #4682B4, #FF7F50);
-    border: none;
-    
-    &::-webkit-slider-thumb {
-      background: #fff;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-      border: 2px solid #5cffb6;
-      height: 18px;
-      width: 18px;
-    }
-  }
-  
-  // Text and markdown
-  p, li {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.9rem;
-  }
-  
-  // Style strong text and values
-  strong, b {
-    color: #ffcc5c;
-    font-weight: 600;
-  }
-  
-  // Asset allocation display
-  .allocation-display {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-    padding: 10px;
-    margin-top: 10px;
-  }
-  
-  // Buttons
-  button {
-    background: linear-gradient(to right, #3a7bd5, #00d2ff);
-    border: none;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  // Toggle button
+  .toolbar-toggle {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    background: $table-header-background-color;
     color: white;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
+    width: 30px;
+    height: 20px;
+    border-radius: 0 0 4px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.1s ease;
     
     &:hover {
-      background: linear-gradient(to right, #3a7bd5, #5cffb6);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+      background: darken($table-header-background-color, 10%);
     }
     
-    &:active {
-      transform: translateY(1px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    // Arrow indicator
+    &::after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid white;
+      transition: transform 0.3s ease;
     }
   }
   
-  // Market condition indicators
-  .market-indicator {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin-right: 5px;
-    
-    &.bear { background-color: #ff5c5c; color: white; }
-    &.normal { background-color: #5c96ff; color: white; }
-    &.bull { background-color: #5cff8f; color: white; }
-    &.bubble { background-color: #ff8f5c; color: white; }
-  }
-  
-  // Risk tolerance indicators
-  .risk-indicator {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin-right: 5px;
-    
-    &.conservative { background-color: #5c96ff; color: white; }
-    &.moderate { background-color: #ffcc5c; color: white; }
-    &.aggressive { background-color: #ff5c5c; color: white; }
+  // First element after toggle needs space
+  > div:nth-child(2) {
+    margin-top: 10px;
   }
 }

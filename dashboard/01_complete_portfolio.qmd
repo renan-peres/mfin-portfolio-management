@@ -2,16 +2,211 @@
 
 ::: {.column-screen}
 
-<!-- ## Inputs
+```{ojs}
+//| echo: false
+//| output: false
 
-::: {.toolbar style="width: 100%;"}
+/* ────────────────────────────────────────────────────────────────
+   1.  Core metrics builder (called by both renderers)
+-----------------------------------------------------------------*/
+function buildPortfolioMetrics() {
+  if (!portfolioData || portfolioData.length === 0)
+    return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
+
+  const tickerPrices = processedQuotesData ?? portfolioData.tickerFirstLastPrices;
+  if (!tickerPrices || Object.keys(tickerPrices).length === 0)
+    return { error: html`<div class="alert alert-warning">Incomplete portfolio data – missing price information</div>` };
+
+  const { startDate = new Date(), endDate = new Date() } = portfolioData.datasetDateRange ?? {};
+  const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
+
+  /* asset‑class totals & per‑ticker weights */
+  const classTotals = calculateAssetClassWeights(tickerPrices);
+  const tickerData  = {};
+  let validCount = 0;
+
+  for (const [ticker, price] of Object.entries(tickerPrices)) {
+    if (!price.firstPrice || !price.lastPrice || price.firstPrice <= 0 || price.lastPrice <= 0) continue;
+
+    const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
+    const type = info?.Type ?? price.type ?? "Equity";
+    validCount++;
+
+    const w = calculateTickerWeights(ticker, type, price,
+                                     classTotals, equity_weight, bond_weight,
+                                     fixed_optimal_weight);
+
+    const initial = investment_amount * w.completeWeight;
+    const shares  = initial / price.firstPrice;
+    const current = shares * price.lastPrice;
+    const totRet  = initial ? current / initial - 1 : 0;
+
+    let annRet = 0;
+    if (yearsDiff > 0 && totRet >= -1 && isFinite(totRet)) {
+      annRet = Math.pow(1 + totRet, 1 / yearsDiff) - 1;
+      if (!isFinite(annRet)) annRet = 0;
+    }
+
+    tickerData[ticker] = {
+      type,
+      name:   info?.Name ?? ticker,
+      sector: info?.Sector ?? "N/A",
+      assetClassWeight: w.assetClassWeight,
+      riskyPfWeight:    w.riskyPfWeight,
+      completeWeight:   w.completeWeight,
+      initialValue:     initial,
+      currentValue:     current,
+      totalReturn:      totRet,
+      annualizedReturn: annRet
+    };
+  }
+
+  if (validCount === 0)
+    return { error: html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>` };
+
+  /* portfolio totals */
+  const totals = Object.values(tickerData).reduce((a, d) => ({
+    initial: a.initial + d.initialValue,
+    current: a.current + d.currentValue
+  }), { initial: 0, current: 0 });
+
+  const totalRet = totals.initial ? totals.current / totals.initial - 1 : 0;
+  let   irr      = 0;
+  if (yearsDiff > 0 && totalRet >= -1 && isFinite(totalRet)) {
+    irr = Math.pow(1 + totalRet, 1 / yearsDiff) - 1;
+    if (!isFinite(irr)) irr = 0;
+  }
+
+  return {
+    startDate, endDate, yearsDiff,
+    totals, totalRet, irr,
+    tickerData
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────
+   2.  Summary card only
+-----------------------------------------------------------------*/
+function portfolioPerformanceCard() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
+  return html`
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Portfolio Performance</h5>
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
+            <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
+            <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
+            <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
+            <tr><th>Time Period:</th>
+                <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}
+                    (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   3.  Security‑level table only
+-----------------------------------------------------------------*/
+function securityPerformanceTable() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
+  return html`
+    <div class="table-responsive">
+      <h5 class="table-title">Assets Performance</h5>
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
+            <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
+            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
+            <th>HPR</th><th>IRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(m.tickerData).map(([t, d]) => html`
+            <tr>
+              <td>${d.type}</td>
+              <td><strong>${t}</strong></td>
+              <td>${d.name}</td>
+              <td>${d.sector}</td>
+              <td>${formatPercent(d.assetClassWeight)}</td>
+              <td>${formatPercent(d.riskyPfWeight)}</td>
+              <td>${formatPercent(d.completeWeight)}</td>
+              <td>${formatCurrency(d.initialValue)}</td>
+              <td>${formatCurrency(d.currentValue)}</td>
+              <td>${formatPercent(d.totalReturn)}</td>
+              <td>${formatPercent(d.annualizedReturn)}</td>
+            </tr>`)}
+        </tbody>
+      </table>
+    </div>`;
+}
+```
+
+## Inputs
+
+::: {.toolbar .collapsible-toolbar style="width: 100%;"}
 
 ```{ojs}
+//| echo: false
+//| output: false
+
+toolbarToggle = {
+  // Wait for the document to fully load
+  const toolbar = document.querySelector(".toolbar");
+  if (!toolbar) return null;
+  
+  // Add the necessary class that Quarto strips away
+  toolbar.classList.add("collapsible-toolbar");
+  
+  // Create and add the toggle button
+  const toggleBtn = document.createElement("div");
+  toggleBtn.className = "toolbar-toggle";
+  toggleBtn.title = "Toggle toolbar";
+  toolbar.prepend(toggleBtn);
+  
+  // Toggle function
+  function toggleToolbar() {
+    toolbar.classList.toggle("collapsed");
+    try {
+      localStorage.setItem("portfolio-toolbar-collapsed", 
+                           toolbar.classList.contains("collapsed"));
+    } catch (e) {
+      console.warn("Could not save toolbar state");
+    }
+  }
+  
+  // Add click event
+  toggleBtn.addEventListener("click", toggleToolbar);
+  
+  // Apply saved state
+  try {
+    const savedState = localStorage.getItem("portfolio-toolbar-collapsed");
+    if (savedState === "true") {
+      toolbar.classList.add("collapsed");
+    }
+  } catch (e) {
+    console.warn("Could not load saved toolbar state");
+  }
+  
+  return { toggle: toggleToolbar };
+}
+```
+
+```{ojs}
+
 // Create Investment Amount with currency formatting
 viewof investment_amount = createCurrencyInput({
   min: 10000,
   max: 1000000,
-  value: 50000,
+  value: 100000,
   step: 5000,
   label: "Investment Amount:",
   decimals: 0
@@ -25,13 +220,13 @@ viewof time_horizon = createNumericInput({
   max: 50,
   value: 5,
   step: 1,
-  label: "Projected Time Horizon (Years):",
+  label: "Time Horizon (Years):",
   format: "integer",
   decimals: 0
 })
 ```
 
-::: -->
+:::
 
 ::: {.panel-tabset style="height: calc(100vh - 80px); min-height: 600px; width: 100%;"}
 
@@ -196,25 +391,40 @@ viewof portfolioValueChart = {
 securityPerformanceTable()
 ```
 
-### Projections
+### Projections 
+
+:::: {.columns style="height: 700px; width: 100%;"}
+
+#### Asset Class Allocation 
 
 ```{ojs}
-capitalAlocation = html`
-  <div>
-    <div style="width: 100%; height: 800px; position: relative;">
-    <iframe height=800px width="100%" 
-        id="capitalAlocation-embed" 
-        title="capitalAlocation Embed"
-        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/anychart_js.html"
-        frameborder="0" allow="clipboard-write" allowfullscreen></iframe>
+assetClassAllocationTable(3)
+```
+
+#### Forecast
+
+```{ojs}
+html`
+  <div class="card" style="height: 700px;">
+    <div class="card-body d-flex flex-column" style="padding: 0.75rem; height: 100%;">
+      <h5 class="card-title" style="margin-bottom: 0.5rem;">Portfolio Performance</h5>
+      <div style="flex: 1; position: relative; min-height: 0;">
+        <iframe 
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 700px;"
+          id="capitalAlocation-embed" 
+          title="capitalAlocation Embed"
+          src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/anychart_js.html"
+          frameborder="0" allow="clipboard-write" allowfullscreen>
+        </iframe>
+      </div>
     </div>
   </div>
 `;
 ```
 
-```{ojs}
-assetClassAllocationTable(3)
-```
+::::
+
+#### Security Allocation
 
 ```{ojs}
 securityAllocationTable()

@@ -16,9 +16,8 @@ This repository contains portfolio construction models designed for optimal asse
   - [01_equity_portfolio_construction.ipynb](01_equity_portfolio_construction.ipynb)  
   - [02_bond_portfolio_contruction.ipynb](02_bond_portfolio_contruction.ipynb)  
   - [03_benchmark_selection.ipynb](03_benchmark_selection.ipynb)  
-  - [04_index_capm_model.ipynb](04_index_capm_model.ipynb)  
+  - [04_capm_index_model.ipynb](04_capm_index_model.ipynb)  
   - [05_capital_allocation_utility.ipynb](05_capital_allocation_utility.ipynb)  
-  - [06_arbitrage_pricing_theory.ipynb](06_arbitrage_pricing_theory.ipynb)  
 
 - **Python Utilities** (in `py/`):  
   - [quantstats_fix.py](py/quantstats_fix.py): Patches for QuantStats library (resampling fixes, HTML-report enhancements)
@@ -42,7 +41,7 @@ This repository contains portfolio construction models designed for optimal asse
     - Fixes resampling bugs  
     - Adds download button & removes attribution in generated HTML  
 
-## 5. Interactive Dashboards
+## 5. Interactive Dashboards (Quarto)
 - **Dashboard Files** (in `dashboard/`):  
   - [`index.qmd`](dashboard/index.qmd): Main dashboard layout & OJS glue  
   - [`00_sidebar.qmd`](dashboard/00_sidebar.qmd): Input controls & summary cards  
@@ -73,7 +72,9 @@ uv pip install -r requirements.txt
 ```
 
 ## References
-- [The Efficient Frontier – Tidy Finance](https://www.tidy-finance.org/python/modern-portfolio-theory.html#the-efficient-frontier)  
+- [Tidy Finance: Modern Portfolio Theory](https://www.tidy-finance.org/python/modern-portfolio-theory.html)
+- [Tidy Finance: The Capital Asset Pricing Model](https://www.tidy-finance.org/python/capital-asset-pricing-model.html)
+- [Tidy Finance: Parametric Portfolio Policies](https://www.tidy-finance.org/python/parametric-portfolio-policies.html)
 - [Portfolio Optimization with Python and R](https://kenwuyang.com/posts/2021_09_15_portfolio_optimization_with_python_and_r_modern_portfolio_theory/#efficient-frontier)  
 - [Portfolio Strategies by Shashank Vemuri](https://github.com/shashankvemuri/Finance/tree/master/portfolio_strategies)  
 - [Algorithmic Portfolio Optimization by Kevin Vecmanis](https://kevinvecmanis.io/finance/optimization/2019/04/02/Algorithmic-Portfolio-Optimization.html)  

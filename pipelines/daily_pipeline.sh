@@ -289,7 +289,7 @@ main() {
     run_notebook "03_benchmark_selection.ipynb" || exit 1
     
     log "Step 6/10: Run CAPM Model..."
-    run_notebook "04_index_capm_model.ipynb" || exit 1
+    run_notebook "04_capm_index_model.ipynb" || exit 1
     
     log "Step 7/10: Comparing Portfolio with benchmark using QuantStats..."
     run_notebook "reports/01_benchmark_comparison_quantstats.ipynb" || exit 1

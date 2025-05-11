@@ -1,5 +1,35 @@
 <!-- # Capital Allocation  -->
 
+```{ojs}
+//| echo: false
+//| output: false
+
+function optimalMetricsTable() {
+  /* Guard against missing inputs */
+  if (
+    sharpe_ratio == null ||
+    fixed_optimal_weight == null ||
+    er_optimal == null ||
+    std_dev_optimal == null ||
+    fixed_utility_optimal == null
+  ) {
+    return html`<div class="alert alert-warning">Summary metrics unavailable</div>`;
+  }
+
+  /* Render */
+  return html`
+    <table class="table table-striped table-sm">
+      <tbody>
+        <tr><td>Sharpe Ratio</td>                 <td>${sharpe_ratio.toFixed(2)}</td></tr>
+        <tr><td>Optimal Weight (Risky Pf.)</td>   <td>${formatPercent(fixed_optimal_weight)}</td></tr>
+        <tr><td>Expected Return @ Optimal</td>    <td>${formatPercent(er_optimal)}</td></tr>
+        <tr><td>Std. Deviation @ Optimal</td>     <td>${formatPercent(std_dev_optimal)}</td></tr>
+        <tr><td>Utility @ Optimal</td>            <td>${formatPercent(fixed_utility_optimal)}</td></tr>
+      </tbody>
+    </table>`;
+}
+```
+
 ::: {.panel-tabset}
 
 ## Capital Allocation Line 

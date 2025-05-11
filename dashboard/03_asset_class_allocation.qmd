@@ -1,5 +1,89 @@
 <!-- # Asset Class Allocation -->
 
+```{ojs}
+//| echo: false
+//| output: false
+
+/* pass howMany = 3 to show only the first three rows */
+function assetClassAllocationTable(howMany = Infinity) {
+  const { allocations } = dynamicAllocations;
+  const rfWeight = 1 - fixed_optimal_weight;
+
+  /* key‑portfolio indices */
+  const maxSharpeIdx = allocations.reduce((m, d, i, a) => d.sharpe          > a[m].sharpe          ? i : m, 0);
+  const minVarIdx    = allocations.reduce((m, d, i, a) => d.std_dev         < a[m].std_dev         ? i : m, 0);
+  const maxReturnIdx = allocations.reduce((m, d, i, a) => d.expected_return > a[m].expected_return ? i : m, 0);
+
+  /* display order */
+  const orderedIdx = [
+    maxSharpeIdx, minVarIdx, maxReturnIdx,
+    ...allocations.map((_, i) => i)
+  ].filter((v, i, a) => a.indexOf(v) === i)            // dedupe
+   .slice(0, howMany);                                 // ← limit rows here
+
+  /* ── render table ───────────────────────────────────── */
+  return html`
+    <div style="overflow-y: auto;">
+      <table class="table table-striped table-sm">
+     <h5 class="table-title">Asset Class Allocation</h5>
+      <p>
+        <thead>
+          <tr>
+            <th>Portfolio</th>
+            <th>Weights</th>
+            <th>Expected Return</th>
+            <th>Standard Deviation</th>
+            <th>Sharpe Ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orderedIdx.map((idx, rowPos) => {
+            const d = allocations[idx];
+
+            /* complete‑portfolio weights */
+            const rf    = rfWeight * 100;
+            const bond  = (1 - rfWeight) * d.bond_weight;
+            const equity= (1 - rfWeight) * d.equity_weight;
+
+            /* expected return */
+            const expRet = (rf/100)*rf_rate + (bond/100)*bond_ret + (equity/100)*calc_equity_return;
+
+            /* std dev */
+            const stdDev = Math.sqrt(
+              Math.pow(bond/100 * bond_vol, 2) +
+              Math.pow(equity/100 * calc_equity_std, 2) +
+              2*(bond/100)*(equity/100)*bond_vol*calc_equity_std*corr_eq_bd
+            );
+
+            /* portfolio name + highlight */
+            const prefix = `Portfolio ${rowPos + 1}`;
+            let name = prefix;
+            let bg   = "";
+
+            if (idx === maxSharpeIdx) { name = `${prefix}: Optimal`;           bg = "#ffff9980"; }
+            else if (idx === minVarIdx) { name = `${prefix}: Minimum Variance`;  }
+            else if (idx === maxReturnIdx) { name = `${prefix}: Maximum Return`; }
+
+            return html`
+              <tr style="background-color:${bg}">
+                <td>${name}</td>
+                <td>
+                  RF: ${rf.toFixed(1)}%, 
+                  Bond: ${bond.toFixed(1)}%, 
+                  Equity: ${equity.toFixed(1)}%
+                </td>
+                <td>${formatPercent(expRet)}</td>
+                <td>${formatPercent(stdDev)}</td>
+                <td>${d.sharpe.toFixed(2)}${idx === maxSharpeIdx ? " ★" : ""}</td>
+              </tr>`;
+          })}
+        </tbody>
+      </table>
+    </p>
+    </div>`;
+}
+```
+
 ::: {.panel-tabset}
 
 ## Asset Class Distribution 
@@ -54,13 +138,13 @@ viewof portfolioBarChart = {
 
 :::: {.columns style="height: calc(100vh - 650px); width: 100%;"}
 
-### Allocation Table
+### Allocation Table {width=60%}
 
 ```{ojs}
 assetClassAllocationTable()
 ```
 
-### Key Portfolios
+### Key Portfolios {width=40%}
 
 ```{ojs}
 function displayKeyPortfolios() {

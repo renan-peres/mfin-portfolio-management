@@ -1,7 +1,7 @@
 
-# {.sidebar width="280px"}
+# {.sidebar width="290px"}
 
-##### **<u>Market Info</u>:**
+##### **Market Info:**
 
 ```{ojs}
 // Use imported function to create risk-free rate input
@@ -12,11 +12,13 @@ viewof rf_rate = createPercentInput({
   step: 0.001, 
   label: "Risk-Free Rate (T-Bill):"
 })
+
+md`**Risk-Free Rate: ${formatPercent(rf_rate)}**`
 ```
 
 ```{ojs}
 // Use imported function to create market condition input
-viewof market_view = createNumericInput({
+viewof raw_market_view = createNumericInput({
   min: 0,
   max: 100,
   value: default_market_view,
@@ -29,6 +31,10 @@ viewof market_view = createNumericInput({
 ```{ojs}
 //| echo: false
 //| output: false
+
+// Adjust market view score - use 1 when 0 is selected
+market_view = raw_market_view === 0 ? 1 : raw_market_view
+
 // Use categorizeValue function to format market condition
 market_condition = categorizeValue(
   market_view, 
@@ -49,12 +55,11 @@ md`
 `
 ```
 
-##### **<u>Client Info</u>:**
-
+##### **Client Info:**
 
 ```{ojs}
 // Create risk tolerance input using our component
-viewof risk_score = createNumericInput({
+viewof raw_risk_score = createNumericInput({
   min: 0,
   max: 100,
   value: default_risk_score,
@@ -67,6 +72,10 @@ viewof risk_score = createNumericInput({
 ```{ojs}
 //| echo: false
 //| output: false
+
+// Adjust risk score - use 99 when 100 is selected
+risk_score = raw_risk_score === 100 ? 99 : raw_risk_score
+
 // Use categorizeValue function for risk tolerance display
 risk_tolerance_score = categorizeValue(
   risk_score,
@@ -90,9 +99,11 @@ md`
 
 ```{ojs}
 // Display risk aversion index
-md`**Risk Aversion Index: ${risk_aversion}**`
+md`**Risk Aversion Index: ${risk_aversion}**
+`
 ```
 
+<!-- 
 ```{ojs}
 // Create Investment Amount with currency formatting
 viewof investment_amount = createCurrencyInput({
@@ -112,13 +123,14 @@ viewof time_horizon = createNumericInput({
   max: 50,
   value: 5,
   step: 1,
-  label: "Projected Time Horizon (Years):",
+  label: "Time Horizon (Years):",
   format: "integer",
   decimals: 0
 })
-```
+``` 
+-->
 
-##### **<u>Risky Portfolio</u>:**
+##### **Risky Portfolio:**
 
 ```{ojs}
 //| echo: false
@@ -141,7 +153,7 @@ viewof equity_weight = createAssetAllocationSlider({
   value: optimal_equity_weight,
   asset1Name: "Bonds",
   asset2Name: "Equity",
-  asset1Color: "#4682B4",
+  asset1Color: "#1c7ed6",
   asset2Color: "#FF7F50",
   onOptimize: () => findOptimalEquityWeight({
     equity_return: calc_equity_return || 0.237,
@@ -217,149 +229,25 @@ initialData = initial_data;
 ```{ojs}
 // Display risky portfolio stats using formatting functions
 md`
+**Sharpe Ratio: ${formatNumber((er_risky - rf_rate) / std_dev_risky, 2)}**
 - Expected Return: ${formatPercent(er_risky)}
 - Standard Deviation: ${formatPercent(std_dev_risky)}
-- Sharpe Ratio: ${formatNumber((er_risky - rf_rate) / std_dev_risky, 2)}
 `
 ```
 
-##### **<u>Complete Portfolio</u>:**
-<!-- 
-```{ojs}
-//| echo: false
-// Use the imported asset allocation slider for the complete portfolio
-viewof complete_portfolio_weight = createAssetAllocationSlider({
-  value: fixed_optimal_weight,
-  asset1Name: "Risk-Free Asset",
-  asset2Name: "Risky Pf",
-  asset1Color: "#4682B4",
-  asset2Color: "#FF7F50",
-  onOptimize: () => {
-    // Calculate optimal weight based on risk aversion
-    return calculateRiskBasedAllocation(
-      rf_rate, 
-      er_risky, 
-      std_dev_risky, 
-      market_view, 
-      risk_score
-    ).risk_aversion_weight;
-  }
-})
-```
- -->
+##### **Complete Portfolio:**
 
 ```{ojs}
 // Show calculated portfolio statistics with consistent formatting
 md`
+**Sharpe Ratio: ${formatNumber(sharpe_ratio, 2)}**
+- Expected Return: ${formatPercent(er_optimal)}
+- Standard Deviation: ${formatPercent(std_dev_optimal)}
+
 **Weights:**
 - Risk-Free Asset: ${formatPercent(1 - fixed_optimal_weight)}
 - Risky Portfolio: ${formatPercent(fixed_optimal_weight)}
-  - Equity: ${formatPercent(fixed_optimal_weight * equity_weight)} (${formatPercent(equity_weight)} of risky pf)
-  - Bonds: ${formatPercent(fixed_optimal_weight * bond_weight)} (${formatPercent(bond_weight)} of risky pf)
-
-**Risk/Return:**
-- Expected Return: ${formatPercent(er_optimal)}
-- Standard Deviation: ${formatPercent(std_dev_optimal)}
-- Sharpe Ratio: ${formatNumber(sharpe_ratio, 2)}
+  - Equity: ${formatPercent(fixed_optimal_weight * equity_weight)} (${formatPercent(equity_weight, 0)} of Risky)
+  - Bonds: ${formatPercent(fixed_optimal_weight * bond_weight)} (${formatPercent(bond_weight, 0)} of Risky)
 `
-```
-
-```{ojs}
-//| echo: false
-//| output: false
-// Calculate dynamic asset allocations based on current inputs
-dynamicAllocations = (() => {
-  // We'll apply a simplified version of calculate_allocations here
-  // that responds to the changing inputs
-  
-  // Use current parameter values
-  const bondReturn = bond_ret; // Fixed value from default_assets
-  const equityReturn = calc_equity_return || 0.237;
-  const bondStd = bond_vol; // Fixed value from default_assets
-  const equityStd = calc_equity_std || 0.161;
-  const correlation = corr_eq_bd; // Fixed value from default_assets
-  
-  // Get current risk free rate from user input
-  const riskFreeRate = rf_rate;
-  
-  // Clone the initial allocations structure but update with current values
-  const allocations = JSON.parse(JSON.stringify(initial_allocations));
-  
-  // Recalculate allocations using current values
-  allocations.allocations = [];
-  for (let bondWeight = 0; bondWeight <= 100; bondWeight += 10) {
-    const equityWeight = 100 - bondWeight;
-    const w = [bondWeight/100, equityWeight/100];
-    
-    // Calculate expected return
-    const er = w[0] * bondReturn + w[1] * equityReturn;
-    
-    // Calculate standard deviation (simplified portfolio variance formula)
-    const variance = 
-      Math.pow(w[0], 2) * Math.pow(bondStd, 2) + 
-      Math.pow(w[1], 2) * Math.pow(equityStd, 2) + 
-      2 * w[0] * w[1] * bondStd * equityStd * correlation;
-    const stdDev = Math.sqrt(variance);
-    
-    // Calculate Sharpe ratio
-    const sharpe = (er - riskFreeRate) / stdDev;
-    
-    allocations.allocations.push({
-      bond_weight: bondWeight,
-      equity_weight: equityWeight,
-      expected_return: er,
-      std_dev: stdDev,
-      sharpe: sharpe
-    });
-  }
-  
-  // Recalculate minimum variance portfolio
-  const minVar = allocations.allocations.reduce((prev, current) => 
-    (current.std_dev < prev.std_dev) ? current : prev, allocations.allocations[0]);
-  
-  allocations.min_variance = {
-    Return: minVar.expected_return,
-    Risk: minVar.std_dev,
-    Weights: [minVar.bond_weight/100, minVar.equity_weight/100],
-    Sharpe: minVar.sharpe
-  };
-  
-  // Recalculate max Sharpe portfolio
-  const maxSharpe = allocations.allocations.reduce((prev, current) => 
-    (current.sharpe > prev.sharpe) ? current : prev, allocations.allocations[0]);
-  
-  allocations.max_sharpe = {
-    Return: maxSharpe.expected_return,
-    Risk: maxSharpe.std_dev,
-    Weights: [maxSharpe.bond_weight/100, maxSharpe.equity_weight/100],
-    Sharpe: maxSharpe.sharpe
-  };
-  
-  // Recalculate complete portfolio
-  const optimalY = risk_aversion_weight; // Use current risk-based weight
-  const rfWeight = 1 - optimalY;
-  const bondWeight = optimalY * maxSharpe.bond_weight/100;
-  const equityWeight = optimalY * maxSharpe.equity_weight/100;
-  const erComplete = optimalY * maxSharpe.expected_return + rfWeight * riskFreeRate;
-  const stdDevComplete = optimalY * maxSharpe.std_dev;
-  
-  allocations.complete_portfolio = {
-    y: optimalY,
-    rf_weight: rfWeight,
-    bond_weight: bondWeight,
-    equity_weight: equityWeight,
-    er_complete: erComplete,
-    std_dev_complete: stdDevComplete,
-    sharpe: maxSharpe.sharpe
-  };
-  
-  // Generate efficient frontier points (simplified)
-  allocations.efficient_frontier = allocations.allocations.map(a => ({
-    Return: a.expected_return,
-    Risk: a.std_dev,
-    Weights: [a.bond_weight/100, a.equity_weight/100]
-  }));
-  
-  return allocations;
-})()
 ```
