@@ -313,8 +313,14 @@ main() {
         cp "$latest_portfolio" reports/portfolio.xlsx || exit 1
         log "✅ Successfully created reports/portfolio.xlsx from $latest_portfolio"
     else
-        log "❌ No portfolio files found matching pattern 'portfolio-*.xlsx'"
-        exit 1
+        log "⚠️ No portfolio files found matching pattern 'portfolio-*.xlsx' - creating empty template"
+        # Check if template exists, otherwise create empty file
+        if [ -f "reports/portfolio_template.xlsx" ]; then
+            cp "reports/portfolio_template.xlsx" "reports/portfolio.xlsx"
+        else
+            touch "reports/portfolio.xlsx"
+        fi
+        log "✅ Created empty portfolio.xlsx file"
     fi
 
     log "Step 8/9: Fetching Quotes Datasets into a Single Dataset..."
