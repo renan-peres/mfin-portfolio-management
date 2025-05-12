@@ -273,31 +273,16 @@ main() {
     log "Starting execution of notebooks in sequence..."
     
     # Execute notebooks in sequence
-    log "Step 1/10: Scraping tickers..."
+    log "Step 1/4: Scraping tickers..."
     run_notebook "data/loaders/scrape_tickers.ipynb" || exit 1
     
-    log "Step 2/10: Scraping quotes..."
+    log "Step 2/4: Scraping quotes..."
     run_notebook "data/loaders/scrape_quotes.ipynb" || exit 1
-    
-    log "Step 3/10: Constructing equity portfolio..."
-    run_notebook "01_equity_portfolio_construction.ipynb" || exit 1
-    
-    log "Step 4/10: Run Bond Portfolio Construction..."
-    run_notebook "02_bond_portfolio_contruction.ipynb" || exit 1
-    
-    log "Step 5/10: Screening benchmark and building index model..."
-    run_notebook "03_benchmark_selection.ipynb" || exit 1
-    
-    log "Step 6/10: Run CAPM Model..."
-    run_notebook "04_capm_index_model.ipynb" || exit 1
-    
-    log "Step 7/10: Comparing Portfolio with benchmark using QuantStats..."
-    run_notebook "reports/01_benchmark_comparison_quantstats.ipynb" || exit 1
 
-    log "Step 8/10: Fetching Quotes Datasets into a Single Dataset..."
+    log "Step 3/4: Fetching Quotes Datasets into a Single Dataset..."
     run_notebook "data/fetch_datasets.ipynb" || exit 1
     
-    log "Step 9/10: Load .csv Files to DuckDB (data.db)..."
+    log "Step 4/4: Load .csv Files to DuckDB (data.db)..."
     if [ -f "data/duckdb_fetch_database.sh" ]; then
         chmod +x "data/duckdb_fetch_database.sh"
         ./data/duckdb_fetch_database.sh || exit 1
@@ -305,9 +290,6 @@ main() {
         log "❌ DuckDB script not found: data/duckdb_fetch_database.sh"
         exit 1
     fi
-    
-    log "Step 10/10: Generate Quarto Dashboard..."
-    quarto render "dashboard/index.qmd" --verbose || exit 1
     
     log "===== Pipeline completed successfully! ====="
 }

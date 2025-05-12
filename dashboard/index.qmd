@@ -49,7 +49,8 @@ from optimal_portfolio import *
 # --------------------------------------------------------------------------- #
 DATA_PATH = "../data/datasets"
 REPORTS_PATH = "../reports"
-PORTFOLIO_FILE = f"{REPORTS_PATH}/portfolio_2025-04-26.xlsx"
+REPORT_DATE = "2025-04-26"
+PORTFOLIO_FILE = f"{REPORTS_PATH}/portfolio-{REPORT_DATE}.xlsx"
 
 END_DATE   = (datetime.today() - BDay(1)).date()
 START_DATE = END_DATE - timedelta(days=5 * 365)
@@ -537,6 +538,39 @@ dynamicAllocations = (() => {
   
   return allocations;
 })()
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Extract the data enrichment process to a separate cell
+enrichedSecurityData = {
+  const data = equity_tickers ?? [];
+  if (data.length === 0) return [];
+
+  /* ─── Totals by asset class ───────────────────────────── */
+  let equityTotal = 0, bondTotal = 0;
+  data.forEach(d => {
+    if (d.Type === "Equity")  equityTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Bond") bondTotal += d.Risky_Pf_Weight;
+  });
+
+  // Pre-calculate all weights for each security
+  return data.slice().map(d => {
+    const classTotal = d.Type === "Equity" ? equityTotal : bondTotal;
+    const classWeight = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
+    const riskyPfWeight = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+    const completeWeight = riskyPfWeight * fixed_optimal_weight;
+    
+    return {
+      ...d,
+      classWeight,
+      riskyPfWeight,
+      completeWeight
+    };
+  }).sort((a, b) => b.completeWeight - a.completeWeight); // Sort by complete weight
+};
 ```
 
 # Portfolio

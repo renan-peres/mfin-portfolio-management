@@ -186,6 +186,22 @@ div[style*="overflow: auto"] table thead th,
   vertical-align: top !important;
 }
 
+// Interactive table styles
+.table-responsive {
+  tbody tr {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: rgba(116, 192, 252, 0.15) !important;
+    }
+    
+    &.selected-row {
+      background-color: #ffff9980 !important;
+      border-left: 3px solid #f0ad4e;
+    }
+  }
+}
+
 // ==========================================================================
 //  TABSETS
 // ==========================================================================

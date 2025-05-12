@@ -5,22 +5,11 @@
 //| output: false
 
 function securityAllocationTable() {
-  const data = equity_tickers ?? [];
-  if (data.length === 0)
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0)
     return html`<div>No ticker data available</div>`;
 
   // Get ticker prices from processed quotes data
   const tickerPrices = processedQuotesData ?? {};
-
-  /* ─── Totals by asset class ───────────────────────────── */
-  let equityTotal = 0, bondTotal = 0;
-  data.forEach(d => {
-    if (d.Type === "Equity")  equityTotal += d.Risky_Pf_Weight;
-    else if (d.Type === "Bond") bondTotal += d.Risky_Pf_Weight;
-  });
-
-  /* ─── Largest holding (optional row highlight) ────────── */
-  const maxRisky = Math.max(...data.map(d => d.Risky_Pf_Weight));
 
   /* ─── HTML table ──────────────────────────────────────── */
   return html`
@@ -42,21 +31,14 @@ function securityAllocationTable() {
           </tr>
         </thead>
         <tbody>
-          ${data
-            .slice()                                            // keep source intact
-            .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+          ${enrichedSecurityData
             .slice(0, 10)
             .map(d => {
-              const classTotal     = d.Type === "Equity" ? equityTotal : bondTotal;
-              const classWeight    = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
-              const riskyPfWeight  = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
-              const completeWeight = riskyPfWeight * fixed_optimal_weight;
-              
               // Get the last price for this ticker
               const lastPrice = tickerPrices[d.Ticker]?.lastPrice;
 
               // Calculate amount and shares
-              const amount = investment_amount * completeWeight;
+              const amount = investment_amount * d.completeWeight;
               const shares = lastPrice ? amount / lastPrice : 0;
 
               return html`
@@ -65,9 +47,9 @@ function securityAllocationTable() {
                   <td><strong>${d.Ticker}</strong></td>
                   <td>${d.Name}</td>
                   <td>${d.Sector}</td>
-                  <td>${formatPercent(classWeight)}</td>
-                  <td>${formatPercent(riskyPfWeight)}</td>
-                  <td>${formatPercent(completeWeight)}</td>
+                  <td>${formatPercent(d.classWeight)}</td>
+                  <td>${formatPercent(d.riskyPfWeight)}</td>
+                  <td>${formatPercent(d.completeWeight)}</td>
                   <td>${lastPrice !== undefined ? formatCurrency(lastPrice, "$", 2) : "N/A"}</td>
                   <td>${shares > 0 ? formatNumber(shares, 2) : "N/A"}</td>
                   <td>${formatCurrency(amount)}</td>
@@ -86,32 +68,16 @@ function securityAllocationTable() {
 
 ```{ojs}
 viewof equityTickersBarChart = {
-  // Grab the source array and short‑circuit if it’s empty
-  const data = equity_tickers ?? [];
-  if (data.length === 0) return html`<div>No ticker data available</div>`;
-
-  // Totals by asset class
-  let equityTotal = 0, bondTotal = 0;
-  data.forEach(d => {
-    if (d.Type === "Equity")      equityTotal += d.Risky_Pf_Weight;
-    else if (d.Type === "Bond")   bondTotal  += d.Risky_Pf_Weight;
-  });
-
-  // Top‑10 tickers, converted to complete‑portfolio weights
-  const barData = data
-    .slice()                                       // don’t mutate the source
-    .sort((a, b) => b.Risky_Pf_Weight - a.Risky_Pf_Weight)
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) 
+    return html`<div>No ticker data available</div>`;
+  
+  // Use the first 10 items from the already sorted enriched data
+  const barData = enrichedSecurityData
     .slice(0, 10)
-    .map(d => {
-      const classTotal      = d.Type === "Equity" ? equityTotal : bondTotal;
-      const classWeight     = classTotal > 0 ? d.Risky_Pf_Weight / classTotal : 0;
-      const riskyPfWeight   = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
-      const completeWeight  = riskyPfWeight * fixed_optimal_weight;
-      return {
-        asset:  d.Ticker,          // use the same “asset” key as the other chart
-        weight: completeWeight * 100   // %
-      };
-    });
+    .map(d => ({
+      asset: d.Ticker,
+      weight: d.completeWeight * 100  // %
+    }));
 
   // Bar chart
   return Plot.plot({
@@ -170,7 +136,7 @@ securityAllocationTable()
 html`
   <div class="card">
     <iframe 
-      src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier_2025-04-26.html"
+      src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/efficient_frontier-2025-04-26.html"
       frameborder="0" allow="clipboard-write" allowfullscreen>
     </iframe>
   </div>

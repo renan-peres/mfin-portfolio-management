@@ -1,15 +1,10 @@
 #!/bin/bash
 #
-# Portfolio Management Pipeline Orchestrator
+# Portfolio Management Pipeline Orchestrator (Weekly)
 # This script manages the execution of Jupyter notebooks in sequence
-# and handles errors gracefully.
-#
 
 # Exit immediately if a command exits with a non-zero status
 set -e
-
-# Enable debugging with -x flag (uncomment if needed)
-# set -x
 
 ##############################################################################
 # HELPER FUNCTIONS
@@ -26,6 +21,28 @@ check_dependency() {
     if ! command -v "$cmd" &> /dev/null; then
         log "❌ Required dependency not found: $cmd"
         exit 1
+    fi
+}
+
+duplicate() {
+    local src_file=$1
+    local dest_dir=$(dirname "$src_file")
+    local dest_file="${dest_dir}/portfolio.xlsx"
+    
+    if [ ! -f "$src_file" ]; then
+        log "❌ Source file not found: $src_file"
+        return 1
+    fi
+    
+    log "Copying $src_file to $dest_file"
+    cp "$src_file" "$dest_file"
+    
+    if [ $? -eq 0 ]; then
+        log "✅ File duplicated successfully"
+        return 0
+    else
+        log "❌ Failed to duplicate file"
+        return 1
     fi
 }
 
@@ -264,19 +281,46 @@ run_notebook() {
 main() {
     log "===== Portfolio Management Weekly Pipeline ====="
     
-    # Setup Quarto
-    setup_quarto
-    
     # Setup DuckDB
     setup_duckdb || exit 1
     
     log "Starting execution of notebooks in sequence..."
     
     # Execute notebooks in sequence   
-    log "Step 1/3: Scraping fundamentals..."
+    log "Step 1/9: Scraping fundamentals..."
     run_notebook "data/loaders/scrape_fundamentals.ipynb" || exit 1
     
-    log "Step 2/3: Load .csv Files to DuckDB (data.db)..."
+    log "Step 2/9: Constructing equity portfolio..."
+    run_notebook "01_equity_portfolio_construction.ipynb" || exit 1
+    
+    log "Step 3/9: Run Bond Portfolio Construction..."
+    run_notebook "02_bond_portfolio_contruction.ipynb" || exit 1
+    
+    log "Step 4/9: Screening benchmark and building index model..."
+    run_notebook "03_benchmark_selection.ipynb" || exit 1
+    
+    log "Step 5/9: Run CAPM Model..."
+    run_notebook "04_capm_index_model.ipynb" || exit 1
+    
+    log "Step 6/9: Comparing Portfolio with benchmark using QuantStats..."
+    run_notebook "reports/01_benchmark_comparison_quantstats.ipynb" || exit 1
+
+    log "Step 7/9: Duplicating latest Portfolio File and Rename to portfolio.xlsx ..."
+    cd ~/mfin-portfolio-management || exit 1
+    latest_portfolio=$(find reports -name "portfolio-*.xlsx" -type f | sort | tail -n 1)
+    if [ -n "$latest_portfolio" ]; then
+        log "Found latest portfolio file: $latest_portfolio"
+        cp "$latest_portfolio" reports/portfolio.xlsx || exit 1
+        log "✅ Successfully created reports/portfolio.xlsx from $latest_portfolio"
+    else
+        log "❌ No portfolio files found matching pattern 'portfolio-*.xlsx'"
+        exit 1
+    fi
+
+    log "Step 8/9: Fetching Quotes Datasets into a Single Dataset..."
+    run_notebook "data/fetch_datasets.ipynb" || exit 1
+
+    log "Step 9/9: Load .csv Files to DuckDB (data.db)..."
     if [ -f "data/duckdb_fetch_database.sh" ]; then
         chmod +x "data/duckdb_fetch_database.sh"
         ./data/duckdb_fetch_database.sh || exit 1
@@ -285,6 +329,9 @@ main() {
         exit 1
     fi
     
+    log "Step 10/10: Generate Quarto Dashboard..."
+    quarto render "dashboard/index.qmd" --verbose || exit 1
+
     log "===== Weekly Pipeline completed successfully! ====="
 }
 

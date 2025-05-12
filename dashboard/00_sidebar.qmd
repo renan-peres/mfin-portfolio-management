@@ -128,7 +128,6 @@ viewof time_horizon = createNumericInput({
 })
 ``` 
 
-
 ##### **Risky Portfolio:**
 
 ```{ojs}
@@ -168,6 +167,17 @@ viewof equity_weight = createAssetAllocationSlider({
 ```{ojs}
 //| echo: false
 //| output: false
+
+// Create a reactive version of fixed_optimal_weight
+viewof fixed_optimal_weight_input = {
+  const container = html`<div style="display: none;"></div>`;
+  
+  // Initialize with null (use calculated value initially)
+  container.value = null;
+  
+  return container;
+}
+
 // Use calculateRiskyPortfolioMetrics instead of manual calculations
 portfolio_metrics = calculateRiskyPortfolioMetrics(
   equity_weight,
@@ -216,10 +226,44 @@ fixed_data = calculateData(
 fixed_chart_data = fixed_data.chart_data;
 fixed_allocation_data = fixed_data.allocation_data;
 fixed_max_utility_idx = fixed_data.max_utility_idx;
-fixed_optimal_weight = fixed_data.optimal_weight;
+calculated_optimal_weight = fixed_data.optimal_weight;
 fixed_er_optimal = fixed_data.er_optimal;
 fixed_std_dev_optimal = fixed_data.std_dev_optimal;
 fixed_utility_optimal = fixed_data.utility_optimal;
+
+// Use either the user-selected weight from table click or the calculated optimal weight
+fixed_optimal_weight = fixed_optimal_weight_input !== null ? 
+  fixed_optimal_weight_input : calculated_optimal_weight;
+
+// Reset manual selection when key inputs change
+resetManualSelectionWatcher = {
+  // Create a composite key from the inputs we want to watch
+  const inputKey = `${rf_rate}-${market_view}-${risk_score}`;
+  
+  // Store this value for comparison
+  if (this.lastInputKey !== undefined && 
+      this.lastInputKey !== inputKey && 
+      fixed_optimal_weight_input !== null) {
+    
+    // Reset the fixed_optimal_weight_input to null
+    // This will cause fixed_optimal_weight to use calculated_optimal_weight
+    viewof fixed_optimal_weight_input.value = null;
+    viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
+    
+    // Remove highlighting from selected row (if we can access the DOM)
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        const selectedRows = document.querySelectorAll('.table-responsive .selected-row');
+        selectedRows.forEach(row => row.classList.remove('selected-row'));
+      }, 0);
+    }
+  }
+  
+  // Update last value for next comparison
+  this.lastInputKey = inputKey;
+  
+  return null; // This cell doesn't need to return a value
+}
 
 // Initialize base data reference
 initialData = initial_data;

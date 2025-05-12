@@ -6,9 +6,7 @@
 //| echo: false
 //| output: false
 
-/* ────────────────────────────────────────────────────────────────
-   1.  Core metrics builder (called by both renderers)
------------------------------------------------------------------*/
+
 function buildPortfolioMetrics() {
   if (!portfolioData || portfolioData.length === 0)
     return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
@@ -82,72 +80,6 @@ function buildPortfolioMetrics() {
     totals, totalRet, irr,
     tickerData
   };
-}
-
-/* ────────────────────────────────────────────────────────────────
-   2.  Summary card only
------------------------------------------------------------------*/
-function portfolioPerformanceCard() {
-  const m = buildPortfolioMetrics();
-  if (m.error) return m.error;
-
-  return html`
-    <div class="card">
-        <h5 class="card-title">Portfolio Historical Performance (5Y)</h5>
-        <table class="table table-sm mb-0">
-          <tbody>
-            <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
-            <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
-            <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
-            <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
-            <tr><th>Time Period:</th>
-                <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}
-                    (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
-          </tbody>
-        </table>
-    </div>`;
-}
-
-/* ────────────────────────────────────────────────────────────────
-   3.  Security‑level table only
------------------------------------------------------------------*/
-function securityPerformanceTable() {
-  const m = buildPortfolioMetrics();
-  if (m.error) return m.error;
-
-  return html`
-    <div class="table-responsive">
-      <h5 class="table-title">Individual Assets Performance</h5>
-      <table class="table table-sm table-hover">
-        <thead>
-          <tr>
-            <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
-            <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
-            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
-            <th>HPR</th><th>IRR</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Object.entries(m.tickerData)
-            .sort(([_t1, d1], [_t2, d2]) => d2.completeWeight - d1.completeWeight)
-            .map(([t, d]) => html`
-              <tr>
-                <td>${d.type}</td>
-                <td><strong>${t}</strong></td>
-                <td>${d.name}</td>
-                <td>${d.sector}</td>
-                <td>${formatPercent(d.assetClassWeight)}</td>
-                <td>${formatPercent(d.riskyPfWeight)}</td>
-                <td>${formatPercent(d.completeWeight)}</td>
-                <td>${formatCurrency(d.initialValue)}</td>
-                <td>${formatCurrency(d.currentValue)}</td>
-                <td>${formatPercent(d.totalReturn)}</td>
-                <td>${formatPercent(d.annualizedReturn)}</td>
-              </tr>
-            `)}
-        </tbody>
-      </table>
-    </div>`;
 }
 ```
 
@@ -291,10 +223,36 @@ processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
 #### Performance Summary Card {width=35%}
 
 ```{ojs}
+//| echo: false
+//| output: false
+
+function portfolioPerformanceCard() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
+  return html`
+    <div class="card">
+        <h5 class="card-title">Portfolio Historical Performance (5Y)</h5>
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
+            <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
+            <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
+            <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
+            <tr><th>Time Period:</th>
+                <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}
+                    (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
+          </tbody>
+        </table>
+    </div>`;
+};
+```
+
+```{ojs}
 portfolioPerformanceCard()
 ```
 
-#### Performance Over Time Chart {width=65%}
+#### Historical Performance Line Chart {width=65%}
 
 ```{ojs}
 //| echo: false
@@ -399,7 +357,10 @@ viewof portfolioValueChart = {
     },
     marks: [
       // Initial investment line & label
-      Plot.ruleY([initVal], { stroke: "#888", strokeDasharray: "4 4", strokeWidth: 1 }),
+      Plot.ruleY([initVal], {       
+        stroke: "#0b3040",
+        strokeWidth: 2.5,
+        strokeDasharray: "4 4" }),
       Plot.text([{ x: startDate, y: initVal }], {
         text: `Initial Investment: ${formatCurrency(initVal)}`,
         dy: -8, fontSize: 12, fontWeight: "bold", textAnchor: "start"
@@ -434,6 +395,50 @@ viewof portfolioValueChart = {
 #### Performance Summary Table
 
 ```{ojs}
+//| echo: false
+//| output: false
+
+function securityPerformanceTable() {
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+
+  return html`
+    <div class="table-responsive">
+      <h5 class="table-title">Individual Assets Performance</h5>
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
+            <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
+            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
+            <th>HPR</th><th>IRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(m.tickerData)
+            .sort(([_t1, d1], [_t2, d2]) => d2.completeWeight - d1.completeWeight)
+            .map(([t, d]) => html`
+              <tr>
+                <td>${d.type}</td>
+                <td><strong>${t}</strong></td>
+                <td>${d.name}</td>
+                <td>${d.sector}</td>
+                <td>${formatPercent(d.assetClassWeight)}</td>
+                <td>${formatPercent(d.riskyPfWeight)}</td>
+                <td>${formatPercent(d.completeWeight)}</td>
+                <td>${formatCurrency(d.initialValue)}</td>
+                <td>${formatCurrency(d.currentValue)}</td>
+                <td>${formatPercent(d.totalReturn)}</td>
+                <td>${formatPercent(d.annualizedReturn)}</td>
+              </tr>
+            `)}
+        </tbody>
+      </table>
+    </div>`;
+}
+```
+
+```{ojs}
 securityPerformanceTable()
 ```
 
@@ -446,7 +451,7 @@ html`
       <iframe 
         width="100%" 
         height="100%" 
-        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio_vs_benchmark_2025-04-26.html"
+        src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio_vs_benchmark-2025-04-26.html"
         frameborder="0"
         allowfullscreen
       ></iframe>
