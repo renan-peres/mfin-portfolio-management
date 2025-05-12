@@ -306,7 +306,6 @@ main() {
     run_notebook "reports/01_benchmark_comparison_quantstats.ipynb" || exit 1
 
     log "Step 7/9: Duplicating latest Portfolio File and Rename to portfolio.xlsx ..."
-    cd ~/mfin-portfolio-management || exit 1
     latest_portfolio=$(find reports -name "portfolio-*.xlsx" -type f | sort | tail -n 1)
     if [ -n "$latest_portfolio" ]; then
         log "Found latest portfolio file: $latest_portfolio"
