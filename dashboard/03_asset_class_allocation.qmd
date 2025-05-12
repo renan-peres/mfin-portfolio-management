@@ -24,7 +24,7 @@ function assetClassAllocationTable(howMany = Infinity) {
   /* ── render table ───────────────────────────────────── */
   return html`
     <div style="overflow-y: auto;">
-      <table class="table table-striped table-sm">
+      <table class="table-responsive">
      <h5 class="table-title">Key Portfolios</h5>
       <p>
         <thead>
@@ -366,7 +366,7 @@ function createEfficientFrontierTable() {
   
   return html`
     <div style="height: 400px; overflow-y: auto;">
-      <table class="table table-striped table-sm">
+      <table class="table-responsive">
         <thead>
           <tr>
             <th>Risk-Free Weight</th>

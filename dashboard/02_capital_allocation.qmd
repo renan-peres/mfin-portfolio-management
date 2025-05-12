@@ -18,7 +18,7 @@ function optimalMetricsTable() {
 
   /* Render */
   return html`
-    <table class="table table-striped table-sm">
+    <table class="table-responsive">
       <tbody>
         <tr><td>Sharpe Ratio</td>                 <td>${sharpe_ratio.toFixed(2)}</td></tr>
         <tr><td>Optimal Weight (Risky Pf.)</td>   <td>${formatPercent(fixed_optimal_weight)}</td></tr>
@@ -214,7 +214,7 @@ Plot.plot({
 ```{ojs}
 // Simple HTML table approach (more reliable than Inputs.table)
 html`
-<table class="table table-striped">
+<table class="table-responsive">
   <thead>
     <tr>
       <th>Risky Pf Weight</th>

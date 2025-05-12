@@ -1,5 +1,5 @@
 
-# {.sidebar width="290px"}
+# {.sidebar width="305px"}
 
 ##### **Market Info:**
 
@@ -103,7 +103,6 @@ md`**Risk Aversion Index: ${risk_aversion}**
 `
 ```
 
-<!-- 
 ```{ojs}
 // Create Investment Amount with currency formatting
 viewof investment_amount = createCurrencyInput({
@@ -128,7 +127,7 @@ viewof time_horizon = createNumericInput({
   decimals: 0
 })
 ``` 
--->
+
 
 ##### **Risky Portfolio:**
 

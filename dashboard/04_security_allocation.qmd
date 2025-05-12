@@ -9,6 +9,9 @@ function securityAllocationTable() {
   if (data.length === 0)
     return html`<div>No ticker data available</div>`;
 
+  // Get ticker prices from processed quotes data
+  const tickerPrices = processedQuotesData ?? {};
+
   /* ─── Totals by asset class ───────────────────────────── */
   let equityTotal = 0, bondTotal = 0;
   data.forEach(d => {
@@ -23,7 +26,6 @@ function securityAllocationTable() {
   return html`
     <div style="overflow-y: auto;">
       <h5 class="table-title">Security Allocation</h5>
-      <p>
       <table class="table table-striped table-sm">
         <thead>
           <tr>
@@ -34,6 +36,9 @@ function securityAllocationTable() {
             <th>Asset Class&nbsp;Weight</th>
             <th>Risky Pf&nbsp;Weight</th>
             <th>Complete Pf&nbsp;Weight</th>
+            <th>Last Price</th>
+            <th>Shares</th>
+            <th>Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -46,25 +51,31 @@ function securityAllocationTable() {
               const classWeight    = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
               const riskyPfWeight  = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
               const completeWeight = riskyPfWeight * fixed_optimal_weight;
+              
+              // Get the last price for this ticker
+              const lastPrice = tickerPrices[d.Ticker]?.lastPrice;
 
-              /* optional highlight for single largest holding */
-              // const bgColor = d.Risky_Pf_Weight === maxRisky ? "#ffff9980" : "";
+              // Calculate amount and shares
+              const amount = investment_amount * completeWeight;
+              const shares = lastPrice ? amount / lastPrice : 0;
 
               return html`
                 <tr>
                   <td>${d.Type}</td>
-                  <td>${d.Ticker}</td>
+                  <td><strong>${d.Ticker}</strong></td>
                   <td>${d.Name}</td>
                   <td>${d.Sector}</td>
                   <td>${formatPercent(classWeight)}</td>
                   <td>${formatPercent(riskyPfWeight)}</td>
                   <td>${formatPercent(completeWeight)}</td>
+                  <td>${lastPrice !== undefined ? formatCurrency(lastPrice, "$", 2) : "N/A"}</td>
+                  <td>${shares > 0 ? formatNumber(shares, 2) : "N/A"}</td>
+                  <td>${formatCurrency(amount)}</td>
                 </tr>
               `;
             })}
         </tbody>
       </table>
-    </p>
     </div>`;
 }
 ```
