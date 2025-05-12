@@ -6,7 +6,6 @@
 //| echo: false
 //| output: false
 
-
 function buildPortfolioMetrics() {
   if (!portfolioData || portfolioData.length === 0)
     return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
@@ -163,42 +162,105 @@ viewof time_horizon = createNumericInput({
 :::
  -->
 
-::: {.panel-tabset style="height: calc(100vh - 80px); min-height: 600px; width: 100%;"}
+::: {.panel-tabset style="height: 100%; margin-bottom: 2px;"}
 
 ### Holdings
 
-:::: {.columns style="height: 700px; width: 100%;"}
+:::: {.columns style="height: 600px; width: 100%;"}
 
-#### Asset Class Allocation 
-
-```{ojs}
-assetClassAllocationTable(3)
-```
-
-#### Forecast
+#### Porfolio Value {width=70%}
 
 ```{ojs}
 html`
-  <div class="card" style="height: 700px;">
-    <div class="card-body d-flex flex-column" style="padding: 0.75rem; height: 100%;">
-      <h5 class="card-title" style="margin-bottom: 0.5rem;">Expected Return</h5>
-      <div style="flex: 1; position: relative; min-height: 0;">
-        <iframe 
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 700px;"
-          id="capitalAlocation-embed" 
-          title="capitalAlocation Embed"
-          src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/anychart_js.html"
-          frameborder="0" allow="clipboard-write" allowfullscreen>
-        </iframe>
+  <div class="card">
+    <div class="card-body">
+      <table class="table table-sm mb-0">
+        <tbody>
+          <tr><th scope="row" style="width: 40%;">Initial Investment:</th><td>${formatCurrency(investment_amount)}</td></tr>
+          <tr><th scope="row" style="width: 40%;">Time Horizon:</th><td>${time_horizon.toFixed(1)} yrs</td></tr>
+        </tbody>
+      </table>
+      
+      <div class="mt-3">
+        <h5 class="table-title" style="margin-bottom: 0;">Key Portfolios</h5>
+        <div class="table-responsive">
+          ${assetClassAllocationTable(3)}
+        </div>
       </div>
     </div>
-  </div>
-`;
+  </div>`;
 ```
 
-::::
+#### Asset Class Allocation Chart {width=30%}
 
-#### Security Allocation
+```{ojs}
+viewof assetClassBarChart = {
+  const data = dynamicAllocations;
+
+  // Bar‑chart data
+  const barData = [
+    { asset: "Risk‑Free", weight: (1 - fixed_optimal_weight) * 100 },
+    { asset: "Bond",      weight:  fixed_optimal_weight * bond_weight   * 100 },
+    { asset: "Equity",    weight:  fixed_optimal_weight * equity_weight * 100 },
+  ];
+
+  /* NEW: sort a fresh copy in descending order of weight */
+  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
+
+  const chart = Plot.plot({
+    marginLeft: 70,
+    marginRight: 40,
+    marginTop: 0, 
+    marginBottom: 20, 
+    y: {
+      label: "",
+      domain: barDataSorted.map(d => d.asset),  
+      padding: 0.15,
+      tickFormat: d => d,
+    },
+    x: {
+      label: "",
+      domain: [0, d3.max(barDataSorted, d => d.weight) * 1.1],
+      grid: false,
+      axis: false,         // Hide the axis line completely
+      tickFormat: () => "" // Return empty strings as tick labels
+    },
+    marks: [
+      Plot.barX(barDataSorted, {
+        y: "asset",
+        x: "weight",
+        fill: "asset",
+        tip: true,
+        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
+      }),
+      Plot.text(barDataSorted, {
+        y: "asset",
+        x: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dx: 10,
+        textAnchor: "start",
+        fontWeight: "bold",
+        fontSize: 16
+      })
+    ]
+  });
+  
+  // Create container with heading
+  const container = html`
+  <div>
+    <h5 class="table-title" style="margin: 0; padding: 0;">Asset Class Allocation</h5>
+    ${chart}
+  </div>`;
+  
+  return container;
+}
+```
+
+:::
+
+:::: {.columns style="width: 100%;"}
+
+#### Security Allocation {width=70%}
 
 ```{ojs}
 //| echo: false
@@ -206,7 +268,83 @@ html`
 securityAllocationTable()
 ```
 
-### Fee Structure
+#### Bar Chart {width=30%}
+
+```{ojs}
+viewof securityBarChart = {
+  // Get portfolio data with security information
+  const metrics = buildPortfolioMetrics();
+  if (metrics.error) return html`<div class="alert alert-warning">No security data available</div>`;
+  
+  // Create bar chart data from ticker information
+  const barData = Object.entries(metrics.tickerData).map(([ticker, data]) => ({
+    ticker: ticker,
+    name: data.name,
+    type: data.type,
+    weight: data.completeWeight * 100 // Convert to percentage
+  }));
+  
+  // Sort by weight in descending order
+  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
+  
+  // Limit to top 10 securities if there are too many
+  const displayData = barDataSorted.slice(0, 10);
+  
+  const chart = Plot.plot({
+    marginLeft: 70,
+    marginRight: 40,
+    marginTop: 0, 
+    marginBottom: 20, 
+    y: {
+      label: "",
+      domain: displayData.map(d => d.ticker), // Use ticker for y-axis
+      padding: 0.15,
+      tickFormat: d => d,
+      fontWeight: "bold"
+    },
+    x: {
+      label: "",
+      domain: [0, d3.max(displayData, d => d.weight) * 1.1],
+      grid: false,
+      axis: false,
+      tickFormat: () => ""
+    },
+    color: {
+      domain: ["Equity", "Bond", "Risk-Free"],
+      range: ["#f28e2c", "#4e79a7", "#e15759"]
+    },
+    marks: [
+      Plot.barX(displayData, {
+        y: "ticker",
+        x: "weight",
+        fill: "type", // Color by asset type
+        tip: true,
+        title: d => `${d.ticker}: ${d.name}\n${d.weight.toFixed(1)}%`
+      }),
+      Plot.text(displayData, {
+        y: "ticker",
+        x: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dx: 10,
+        textAnchor: "start",
+        fontWeight: "bold",
+        fontSize: 16
+      })
+    ]
+  });
+  
+  // Create container with heading
+  const container = html`
+  <div>
+    <h5 class="table-title" style="margin: 0; padding: 0;">Security Allocation</h5>
+    ${chart}
+  </div>`;
+  
+  return container;
+}
+```
+
+:::
 
 ### Historical Performance 
 
@@ -231,8 +369,8 @@ function portfolioPerformanceCard() {
   if (m.error) return m.error;
 
   return html`
-    <div class="card">
-        <h5 class="card-title">Portfolio Historical Performance (5Y)</h5>
+    <div>
+        <h5>Portfolio Historical Performance (5Y)</h5>
         <table class="table table-sm mb-0">
           <tbody>
             <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
@@ -441,6 +579,31 @@ function securityPerformanceTable() {
 ```{ojs}
 securityPerformanceTable()
 ```
+
+### Projections and Fee Structure
+
+#### Forecast
+
+```{ojs}
+html`
+  <div class="card" style="height: 700px;">
+    <div class="card-body d-flex flex-column" style="padding: 0.75rem; height: 100%;">
+      <h5 class="card-title" style="margin-bottom: 0.5rem;">Expected Return</h5>
+      <div style="flex: 1; position: relative; min-height: 0;">
+        <iframe 
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 700px;"
+          id="capitalAlocation-embed" 
+          title="capitalAlocation Embed"
+          src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/anychart_js.html"
+          frameborder="0" allow="clipboard-write" allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  </div>
+`;
+```
+
+#### Fee Structure
 
 ### Benchmark Comparison
 

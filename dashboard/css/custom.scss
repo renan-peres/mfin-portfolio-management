@@ -200,6 +200,11 @@ div[style*="overflow: auto"] table thead th,
       border-left: 3px solid #f0ad4e;
     }
   }
+  
+  // Add explicit styling for clicked rows
+  tbody tr[style*="background-color"] {
+    border-left: 3px solid #f0ad4e;
+  }
 }
 
 // ==========================================================================
@@ -309,6 +314,14 @@ div[style*="overflow: auto"] table thead th,
   }
 }
 
+// Chart overflow control
+.cell-output-display:not(.no-overflow-x), 
+.knitsql-table:not(.no-overflow-x) {
+    overflow-x: auto;
+    // overflow-y: hidden;
+    overflow-y: auto;
+}
+
 // ==========================================================================
 //  IFRAME CARDS (IPS SECTION)
 // ==========================================================================
@@ -347,6 +360,45 @@ div[style*="overflow: auto"] table thead th,
     .card-body.html-fill-item.html-fill-container {
       padding: 0 !important;
     }
+  }
+}
+
+// Donut chart hover effects
+.donut-chart path {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.03);
+    transform-origin: center center;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
+  }
+}
+
+// Tooltip for donut chart
+.donut-tooltip {
+  position: absolute;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-left: 3px solid;
+  
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  
+  .tooltip-value {
+    font-size: 16px;
   }
 }
 

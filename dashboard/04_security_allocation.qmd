@@ -15,7 +15,7 @@ function securityAllocationTable() {
   return html`
     <div style="overflow-y: auto;">
       <h5 class="table-title">Security Allocation</h5>
-      <table class="table table-striped table-sm">
+      <table class="table-responsive">
         <thead>
           <tr>
             <th>Asset Class</th>
@@ -62,7 +62,7 @@ function securityAllocationTable() {
 }
 ```
 
-::: {.panel-tabset}
+::: {.panel-tabset style="height: calc(100vh - 80px); min-height: 600px; width: 100%;"}
 
 ## Security Distribution
 

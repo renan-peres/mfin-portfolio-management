@@ -25,7 +25,6 @@ function assetClassAllocationTable(howMany = Infinity) {
   const table = html`
     <div style="overflow-y: auto;">
       <table class="table-responsive">
-      <h5 class="table-title">Asset Class Allocation</h5>
       <p>
         <thead>
           <tr>
