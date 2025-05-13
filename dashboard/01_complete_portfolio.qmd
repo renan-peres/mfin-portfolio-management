@@ -88,24 +88,25 @@ viewof time_horizon = createNumericInput({
 
 :::: {.columns style="height: 600px; width: 100%;"}
 
-#### Investment Summary {width=70%}
+#### Portfolio Summary {width=70%}
 
 ```{ojs}
 html`
   <div>
-      <h5 class="table-title" style="margin-bottom: 0;">Investment Summary</h5>
+      <h5 class="table-title" style="margin-bottom: 0;">Portfolio Summary</h5>
       <table class="table table-sm mb-0">
         <tbody>
-          <tr><th scope="row" style="width: 30%;">Initial Investment:</th><td>${formatCurrency(investment_amount)}</td></tr>
+          <tr><th scope="row" style="width: 30%;">Allocation Date:</th><td>${d3.timeFormat("%B %d, %Y")(new Date(new Date(report_date).getTime() + 86400000))}</td></tr>
+          <tr><th scope="row" style="width: 30%;">Investment Amount:</th><td>${formatCurrency(investment_amount)}</td></tr>
           <tr><th scope="row" style="width: 30%;">Time Horizon:</th><td>${time_horizon.toFixed(1)} yrs</td></tr>
-          <tr><th scope="row" style="width: 30%;">Allocation Date:</th><td>${d3.timeFormat("%B, %d, %Y")(new Date(new Date(report_date).getTime() + 86400000))}</td></tr>
+          <tr><th scope="row" style="width: 30%;">Holdings:</th><td>${enrichedSecurityData ? enrichedSecurityData.length : 0}</td></tr>
         </tbody>
       </table>
       
-        <div class="table-responsive">
-          ${assetClassAllocationTable(3)}
-        </div>
+      <div class="table-responsive">
+        ${assetClassAllocationTable(3)}
       </div>
+    </div>
   </div>`;
 ```
 
@@ -455,7 +456,7 @@ viewof selectedEndDate = {
 }
 ```
 
-:::: {.columns style="height: calc(100vh - 750px); width: 100%;"}
+:::: {.columns style="height: calc(100vh - 680px); width: 100%;"}
 
 #### Performance Summary {width=35%}
 
