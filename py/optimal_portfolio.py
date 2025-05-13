@@ -934,8 +934,13 @@ def plot_efficient_frontier_interactive(
 
     # Tooltips
     def tooltip_from_weights(wts):
+        if wts is None:
+            return ""
+        
+        # Safely generate tooltip text by ensuring index is in range for both lists
+        valid_length = min(len(selected_tickers), len(wts))
         return "<br>".join(f"{selected_tickers[i]}: {wts[i]:.2%}"
-                           for i in range(n) if wts[i] > 0.001)
+                          for i in range(valid_length) if i < len(wts) and wts[i] > 0.001)
 
     # Optimal (tangency) portfolio
     opt_tooltip = tooltip_from_weights(optimal_weights) if optimal_weights is not None else ""

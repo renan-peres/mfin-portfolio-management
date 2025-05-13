@@ -61,3 +61,5 @@ transposed_df = optimal_portfolio_fundamentals.sort_values(by="Weight", ascendin
 # Display the result
 display(transposed_df)
 ```
+
+## Bond Fundamentals (Highlight TLT WITH YELLOW)

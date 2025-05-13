@@ -125,8 +125,8 @@ def find_best_benchmark_and_run_regressions(benchmark_excess_returns_df, stock_e
             correlation = float('nan')
         
         results.append({
-            'stock': stock,
-            'benchmark': best_benchmark,
+            'Equity': stock,
+            'Benchmark': best_benchmark,
             'intercept (alpha)': intercept,
             'slope (beta)': slope,
             'correlation': correlation,

@@ -142,6 +142,81 @@ export function createCurrencyInput({min, max, value, step, label, id = "", curr
     min, max, value, step, label, id, format: 'currency', currency, decimals
   });
 }
+
+export function createDateInput({
+  min, max, value, label, id = ""
+}) {
+  try {
+    // Input validation
+    if (!(min instanceof Date) || !(max instanceof Date) || !(value instanceof Date)) {
+      throw new Error("Date parameters must be Date objects");
+    }
+    
+    if (min > max) throw new Error("Min date must be before max date");
+    
+    if (value < min || value > max) {
+      value = new Date(Math.max(min.getTime(), Math.min(max.getTime(), value.getTime())));
+    }
+    
+    // Format dates for input
+    const formatDateForInput = date => date.toISOString().split('T')[0];
+    
+    // Create elements
+    const container = document.createElement("div");
+    container.className = "date-input-container";
+    
+    const labelEl = document.createElement("label");
+    labelEl.className = "date-input-label";
+    labelEl.textContent = label;
+    
+    const input = document.createElement("input");
+    input.type = "date";
+    input.min = formatDateForInput(min);
+    input.max = formatDateForInput(max);
+    input.value = formatDateForInput(value);
+    input.className = "date-input";
+    if (id) input.id = id;
+    
+    // Format for display
+    const formatDate = date => d3.timeFormat("%b %d, %Y")(date);
+    
+    const valueDisplay = document.createElement("div");
+    valueDisplay.className = "date-value-display";
+    // valueDisplay.textContent = formatDate(value);
+    
+    // Assemble the elements
+    container.append(labelEl, input, valueDisplay);
+    
+    // Event handling
+    input.oninput = () => {
+      const dateVal = new Date(input.value);
+      // valueDisplay.textContent = formatDate(dateVal);
+      container.value = dateVal;
+      container.dispatchEvent(new Event("input"));
+    };
+    
+    // Value property
+    Object.defineProperty(container, "value", {
+      get: () => new Date(input.value),
+      set: (v) => {
+        if (v instanceof Date) {
+          input.value = formatDateForInput(v);
+          valueDisplay.textContent = formatDate(v);
+        }
+      },
+      enumerable: true,
+      configurable: true
+    });
+    
+    return container;
+  } catch (e) {
+    console.error("Error creating date input:", e);
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "alert alert-danger";
+    errorDiv.textContent = `Error creating date input: ${e.message}`;
+    return errorDiv;
+  }
+}
   
 export function createAssetAllocationSlider({
   value, 
@@ -617,9 +692,11 @@ export function processQuotesData(daily_quotes, equity_tickers) {
       type: data.types[i]
     })).sort((a, b) => a.date - b.date);
     
-    // Get first and last prices
+    // Get first and last prices and dates
     const firstPrice = sorted[0].price;
     const lastPrice = sorted[sorted.length - 1].price;
+    const firstDate = sorted[0].date;
+    const lastDate = sorted[sorted.length - 1].date;
     const type = sorted[0].type;
     
     // Find weight if available
@@ -633,7 +710,14 @@ export function processQuotesData(daily_quotes, equity_tickers) {
       }
     }
     
-    processedData[ticker] = { firstPrice, lastPrice, weight, type };
+    processedData[ticker] = { 
+      firstPrice, 
+      lastPrice, 
+      firstDate,  // Store the first date
+      lastDate,   // Store the last date
+      weight, 
+      type 
+    };
   }
   
   return processedData;

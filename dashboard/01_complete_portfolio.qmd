@@ -2,86 +2,6 @@
 
 ::: {.column-screen}
 
-```{ojs}
-//| echo: false
-//| output: false
-
-function buildPortfolioMetrics() {
-  if (!portfolioData || portfolioData.length === 0)
-    return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
-
-  const tickerPrices = processedQuotesData ?? portfolioData.tickerFirstLastPrices;
-  if (!tickerPrices || Object.keys(tickerPrices).length === 0)
-    return { error: html`<div class="alert alert-warning">Incomplete portfolio data – missing price information</div>` };
-
-  const { startDate = new Date(), endDate = new Date() } = portfolioData.datasetDateRange ?? {};
-  const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
-
-  /* asset‑class totals & per‑ticker weights */
-  const classTotals = calculateAssetClassWeights(tickerPrices);
-  const tickerData  = {};
-  let validCount = 0;
-
-  for (const [ticker, price] of Object.entries(tickerPrices)) {
-    if (!price.firstPrice || !price.lastPrice || price.firstPrice <= 0 || price.lastPrice <= 0) continue;
-
-    const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
-    const type = info?.Type ?? price.type ?? "Equity";
-    validCount++;
-
-    const w = calculateTickerWeights(ticker, type, price,
-                                     classTotals, equity_weight, bond_weight,
-                                     fixed_optimal_weight);
-
-    const initial = investment_amount * w.completeWeight;
-    const shares  = initial / price.firstPrice;
-    const current = shares * price.lastPrice;
-    const totRet  = initial ? current / initial - 1 : 0;
-
-    let annRet = 0;
-    if (yearsDiff > 0 && totRet >= -1 && isFinite(totRet)) {
-      annRet = Math.pow(1 + totRet, 1 / yearsDiff) - 1;
-      if (!isFinite(annRet)) annRet = 0;
-    }
-
-    tickerData[ticker] = {
-      type,
-      name:   info?.Name ?? ticker,
-      sector: info?.Sector ?? "N/A",
-      assetClassWeight: w.assetClassWeight,
-      riskyPfWeight:    w.riskyPfWeight,
-      completeWeight:   w.completeWeight,
-      initialValue:     initial,
-      currentValue:     current,
-      totalReturn:      totRet,
-      annualizedReturn: annRet
-    };
-  }
-
-  if (validCount === 0)
-    return { error: html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>` };
-
-  /* portfolio totals */
-  const totals = Object.values(tickerData).reduce((a, d) => ({
-    initial: a.initial + d.initialValue,
-    current: a.current + d.currentValue
-  }), { initial: 0, current: 0 });
-
-  const totalRet = totals.initial ? totals.current / totals.initial - 1 : 0;
-  let   irr      = 0;
-  if (yearsDiff > 0 && totalRet >= -1 && isFinite(totalRet)) {
-    irr = Math.pow(1 + totalRet, 1 / yearsDiff) - 1;
-    if (!isFinite(irr)) irr = 0;
-  }
-
-  return {
-    startDate, endDate, yearsDiff,
-    totals, totalRet, irr,
-    tickerData
-  };
-}
-```
-
 <!-- 
 ## Inputs
 
@@ -168,26 +88,24 @@ viewof time_horizon = createNumericInput({
 
 :::: {.columns style="height: 600px; width: 100%;"}
 
-#### Porfolio Value {width=70%}
+#### Investment Summary {width=70%}
 
 ```{ojs}
 html`
-  <div class="card">
-    <div class="card-body">
+  <div>
+      <h5 class="table-title" style="margin-bottom: 0;">Investment Summary</h5>
       <table class="table table-sm mb-0">
         <tbody>
-          <tr><th scope="row" style="width: 40%;">Initial Investment:</th><td>${formatCurrency(investment_amount)}</td></tr>
-          <tr><th scope="row" style="width: 40%;">Time Horizon:</th><td>${time_horizon.toFixed(1)} yrs</td></tr>
+          <tr><th scope="row" style="width: 30%;">Initial Investment:</th><td>${formatCurrency(investment_amount)}</td></tr>
+          <tr><th scope="row" style="width: 30%;">Time Horizon:</th><td>${time_horizon.toFixed(1)} yrs</td></tr>
+          <tr><th scope="row" style="width: 30%;">Allocation Date:</th><td>${d3.timeFormat("%B, %d, %Y")(new Date(new Date(report_date).getTime() + 86400000))}</td></tr>
         </tbody>
       </table>
       
-      <div class="mt-3">
-        <h5 class="table-title" style="margin-bottom: 0;">Key Portfolios</h5>
         <div class="table-responsive">
           ${assetClassAllocationTable(3)}
         </div>
       </div>
-    </div>
   </div>`;
 ```
 
@@ -195,64 +113,66 @@ html`
 
 ```{ojs}
 viewof assetClassBarChart = {
-  const data = dynamicAllocations;
-
-  // Bar‑chart data
-  const barData = [
-    { asset: "Risk‑Free", weight: (1 - fixed_optimal_weight) * 100 },
-    { asset: "Bond",      weight:  fixed_optimal_weight * bond_weight   * 100 },
-    { asset: "Equity",    weight:  fixed_optimal_weight * equity_weight * 100 },
-  ];
-
-  /* NEW: sort a fresh copy in descending order of weight */
-  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
-
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
+    return html`<div class="alert alert-warning">No asset class data available</div>`;
+  }
+  
+  // Group by asset class and sum the complete weights
+  const assetClassWeights = {
+    "Equity": 0,
+    "Bond": 0,
+    "Risk‑Free": 0
+  };
+  
+  // Calculate total weight for each asset class
+  enrichedSecurityData.forEach(d => {
+    if (d.Type in assetClassWeights) {
+      assetClassWeights[d.Type] += d.completeWeight * 100;
+    }
+  });
+  
+  // Format data for plotting
+  const barData = Object.entries(assetClassWeights)
+    .map(([asset, weight]) => ({ asset, weight }))
+    .filter(d => d.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
+  
+  // Color map matching the security chart
+  const colorMap = {
+    "Equity": "#f28e2c", 
+    "Bond": "#4e79a7", 
+    "Risk‑Free": "#e15759"
+  };
+  
   const chart = Plot.plot({
-    marginLeft: 70,
-    marginRight: 40,
-    marginTop: 0, 
-    marginBottom: 20, 
-    y: {
-      label: "",
-      domain: barDataSorted.map(d => d.asset),  
-      padding: 0.15,
+    marginLeft: 70, marginRight: 40, marginTop: 0, marginBottom: 20,
+    y: { 
+      domain: barData.map(d => d.asset), 
+      padding: 0.15, 
       tickFormat: d => d,
+      label: null
     },
-    x: {
-      label: "",
-      domain: [0, d3.max(barDataSorted, d => d.weight) * 1.1],
-      grid: false,
-      axis: false,         // Hide the axis line completely
-      tickFormat: () => "" // Return empty strings as tick labels
-    },
+    x: { domain: [0, d3.max(barData, d => d.weight) * 1.1], axis: false, tickFormat: () => "" },
     marks: [
-      Plot.barX(barDataSorted, {
-        y: "asset",
-        x: "weight",
-        fill: "asset",
+      Plot.barX(barData, { 
+        y: "asset", 
+        x: "weight", 
+        fill: d => colorMap[d.asset], 
         tip: true,
-        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
+        title: d => `${d.asset}: ${d.weight.toFixed(1)}%` 
       }),
-      Plot.text(barDataSorted, {
-        y: "asset",
-        x: "weight",
+      Plot.text(barData, { 
+        y: "asset", 
+        x: "weight", 
         text: d => `${d.weight.toFixed(1)}%`,
-        dx: 10,
-        textAnchor: "start",
-        fontWeight: "bold",
-        fontSize: 16
+        dx: 10, 
+        textAnchor: "start", 
+        fontWeight: "bold", 
+        fontSize: 16 
       })
     ]
   });
-  
-  // Create container with heading
-  const container = html`
-  <div>
-    <h5 class="table-title" style="margin: 0; padding: 0;">Asset Class Allocation</h5>
-    ${chart}
-  </div>`;
-  
-  return container;
+  return html`<div><h5 class="table-title" style="margin:0;">Asset Class Distribution</h5>${chart}</div>`;
 }
 ```
 
@@ -264,83 +184,60 @@ viewof assetClassBarChart = {
 
 ```{ojs}
 //| echo: false
-
-securityAllocationTable()
+html`
+  <div>
+    <h5 class="table-title" style="margin-top:0;margin-bottom:0;">Security Allocation</h5>
+    <table class="table table-sm mt-0 mb-0">${securityAllocationTable()}</table>
+  </div>`
 ```
 
 #### Bar Chart {width=30%}
 
 ```{ojs}
 viewof securityBarChart = {
-  // Get portfolio data with security information
-  const metrics = buildPortfolioMetrics();
-  if (metrics.error) return html`<div class="alert alert-warning">No security data available</div>`;
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
+    return html`<div class="alert alert-warning">No security data available</div>`;
+  }
   
-  // Create bar chart data from ticker information
-  const barData = Object.entries(metrics.tickerData).map(([ticker, data]) => ({
-    ticker: ticker,
-    name: data.name,
-    type: data.type,
-    weight: data.completeWeight * 100 // Convert to percentage
-  }));
-  
-  // Sort by weight in descending order
-  const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
-  
-  // Limit to top 10 securities if there are too many
-  const displayData = barDataSorted.slice(0, 10);
-  
+  const displayData = enrichedSecurityData
+    .map(d => ({ 
+      ticker: d.Ticker, 
+      name: d.Name || d.Ticker, 
+      type: d.Type,
+      weight: d.completeWeight * 100 
+    }))
+    .slice(0, 10);
+
   const chart = Plot.plot({
-    marginLeft: 70,
-    marginRight: 40,
-    marginTop: 0, 
-    marginBottom: 20, 
-    y: {
-      label: "",
-      domain: displayData.map(d => d.ticker), // Use ticker for y-axis
+    marginLeft: 70, marginRight: 40, marginTop: 0, marginBottom: 20,
+    y: { 
+      domain: displayData.map(d => d.ticker), 
       padding: 0.15,
-      tickFormat: d => d,
-      fontWeight: "bold"
+      label: null 
     },
-    x: {
-      label: "",
-      domain: [0, d3.max(displayData, d => d.weight) * 1.1],
-      grid: false,
-      axis: false,
-      tickFormat: () => ""
-    },
-    color: {
-      domain: ["Equity", "Bond", "Risk-Free"],
-      range: ["#f28e2c", "#4e79a7", "#e15759"]
-    },
+    x: { domain: [0, d3.max(displayData, d => d.weight) * 1.1], axis: false, tickFormat: () => "" },
+    color: { domain: ["Equity", "Bond", "Risk‑Free"], range: ["#f28e2c", "#4e79a7", "#e15759"] },
     marks: [
-      Plot.barX(displayData, {
-        y: "ticker",
-        x: "weight",
-        fill: "type", // Color by asset type
-        tip: true,
-        title: d => `${d.ticker}: ${d.name}\n${d.weight.toFixed(1)}%`
+      Plot.barX(displayData, { 
+        y: "ticker", 
+        x: "weight", 
+        fill: "type",
+        tip: true, 
+        title: d => `${d.ticker}: ${d.name}\n${d.weight.toFixed(1)}%` 
       }),
-      Plot.text(displayData, {
-        y: "ticker",
-        x: "weight",
+      Plot.text(displayData, { 
+        y: "ticker", 
+        x: "weight", 
         text: d => `${d.weight.toFixed(1)}%`,
-        dx: 10,
-        textAnchor: "start",
-        fontWeight: "bold",
-        fontSize: 16
+        dx: 10, 
+        textAnchor: "start", 
+        fontWeight: "bold", 
+        fontSize: 16 
       })
     ]
   });
   
-  // Create container with heading
-  const container = html`
-  <div>
-    <h5 class="table-title" style="margin: 0; padding: 0;">Security Allocation</h5>
-    ${chart}
-  </div>`;
-  
-  return container;
+  return html`<div><h5 class="table-title" style="margin:0;">Security Distribution</h5>${chart}</div>`;
 }
 ```
 
@@ -351,14 +248,216 @@ viewof securityBarChart = {
 ```{ojs}
 //| echo: false
 //| output: false
+function buildPortfolioMetrics() {
+  if (!portfolioData || portfolioData.length === 0)
+    return { error: html`<div class="alert alert-warning">No portfolio data available</div>` };
 
-// Use the imported processQuotesData function
-processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
+  // Allow the line‑chart to override the dataset's end‑date
+  const range = portfolioData.datasetDateRange ?? {};
+  const startDate = range.startDate ?? new Date();
+  const endDateStr = typeof selectedEndDate === "string" ? selectedEndDate : null;
+  const endDate = endDateStr ? new Date(endDateStr) : (range.endDate ?? new Date());
+
+  const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
+
+  // Create ticker prices object with prices up to selectedEndDate
+  const tickerPrices = {};
+  
+  // If we have raw daily_quotes data (which we should)
+  if (daily_quotes?.Date && daily_quotes?.Ticker && daily_quotes?.Close) {
+    const tickers = new Set();
+    
+    // Get all unique tickers
+    for (let i = 0; i < daily_quotes.Ticker.length; i++) {
+      tickers.add(daily_quotes.Ticker[i]);
+    }
+    
+    // For each ticker, find first price and price at/before selected end date
+    for (const ticker of tickers) {
+      let firstDate = null;
+      let firstPrice = null;
+      let lastDate = null;
+      let lastPrice = null;
+      
+      // Find first and last price for this ticker
+      for (let i = 0; i < daily_quotes.Date.length; i++) {
+        if (daily_quotes.Ticker[i] !== ticker) continue;
+        
+        const date = new Date(daily_quotes.Date[i]);
+        const price = daily_quotes.Close[i];
+        
+        // Skip invalid prices
+        if (price <= 0 || isNaN(price)) continue;
+        
+        // First price
+        if (!firstDate || date < firstDate) {
+          firstDate = date;
+          firstPrice = price;
+        }
+        
+        // Last price before or equal to endDate
+        if (date <= endDate && (!lastDate || date >= lastDate)) {
+          lastDate = date;
+          lastPrice = price;
+        }
+      }
+      
+      // Store ticker data if we found valid prices
+      if (firstPrice && lastPrice) {
+        tickerPrices[ticker] = {
+          firstPrice,
+          lastPrice
+        };
+      }
+    }
+  } else {
+    // Fallback code remains unchanged
+    const fallbackPrices = processedQuotesData ?? portfolioData.tickerFirstLastPrices;
+    if (!fallbackPrices || Object.keys(fallbackPrices).length === 0) {
+      return { error: html`<div class="alert alert-warning">Incomplete portfolio data – missing price information</div>` };
+    }
+    
+    for (const [ticker, priceData] of Object.entries(fallbackPrices)) {
+      tickerPrices[ticker] = { 
+        firstPrice: priceData.firstPrice,
+        lastPrice: priceData.lastPrice
+      };
+    }
+  }
+
+  // Use enrichedSecurityData instead of recalculating weights
+  const tickerData = {};
+  let validCount = 0;
+
+  // First check if we have enrichedSecurityData
+  if (enrichedSecurityData && enrichedSecurityData.length > 0) {
+    for (const security of enrichedSecurityData) {
+      const ticker = security.Ticker;
+      
+      // Skip if we don't have price data for this ticker
+      if (!tickerPrices[ticker]) continue;
+      
+      const prices = tickerPrices[ticker];
+      if (!prices.firstPrice || !prices.lastPrice || prices.firstPrice <= 0 || prices.lastPrice <= 0) continue;
+      
+      validCount++;
+      
+      // Calculate values using weights from enrichedSecurityData
+      const initial = investment_amount * security.completeWeight;
+      const shares = initial / prices.firstPrice;
+      
+      // For Risk-Free assets, current value equals initial value regardless of date
+      const current = security.Type === "Risk‑Free" ? initial : shares * prices.lastPrice;
+      
+      // Calculate returns
+      const totRet = initial ? current / initial - 1 : 0;
+      
+      let annRet = 0;
+      if (yearsDiff > 0 && totRet >= -1 && isFinite(totRet)) {
+        annRet = Math.pow(1 + totRet, 1 / yearsDiff) - 1;
+        if (!isFinite(annRet)) annRet = 0;
+      }
+      
+      tickerData[ticker] = {
+        type: security.Type,
+        name: security.Name || ticker,
+        sector: security.Sector || "N/A",
+        assetClassWeight: security.classWeight,
+        riskyPfWeight: security.riskyPfWeight,
+        completeWeight: security.completeWeight,
+        initialValue: initial,
+        currentValue: current,
+        totalReturn: totRet,
+        annualizedReturn: annRet
+      };
+    }
+  } else {
+    // Fall back to original calculation if enrichedSecurityData is not available
+    const classTotals = calculateAssetClassWeights(tickerPrices);
+    
+    for (const [ticker, price] of Object.entries(tickerPrices)) {
+      if (!price.firstPrice || !price.lastPrice || price.firstPrice <= 0 || price.lastPrice <= 0) continue;
+
+      const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
+      const type = info?.Type ?? "Equity";
+      validCount++;
+
+      const w = calculateTickerWeights(
+        ticker, type, price,
+        classTotals, equity_weight, bond_weight,
+        fixed_optimal_weight
+      );
+
+      const initial = investment_amount * w.completeWeight;
+      const shares = initial / price.firstPrice;
+      
+      // For Risk-Free assets, current value equals initial value regardless of date
+      const current = type === "Risk‑Free" ? initial : shares * price.lastPrice;
+      
+      const totRet = initial ? current / initial - 1 : 0;
+
+      let annRet = 0;
+      if (yearsDiff > 0 && totRet >= -1 && isFinite(totRet)) {
+        annRet = Math.pow(1 + totRet, 1 / yearsDiff) - 1;
+        if (!isFinite(annRet)) annRet = 0;
+      }
+
+      tickerData[ticker] = {
+        type,
+        name: info?.Name ?? ticker,
+        sector: info?.Sector ?? "N/A",
+        assetClassWeight: w.assetClassWeight,
+        riskyPfWeight: w.riskyPfWeight,
+        completeWeight: w.completeWeight,
+        initialValue: initial,
+        currentValue: current,
+        totalReturn: totRet,
+        annualizedReturn: annRet
+      };
+    }
+  }
+
+  // Rest of the function remains unchanged
+  if (validCount === 0)
+    return { error: html`<div class="alert alert-danger">No valid ticker data available for portfolio calculations</div>` };
+
+  /* portfolio totals */
+  const totals = Object.values(tickerData).reduce(
+    (a, d) => ({ initial: a.initial + d.initialValue, current: a.current + d.currentValue }),
+    { initial: 0, current: 0 }
+  );
+
+  const totalRet = totals.initial ? totals.current / totals.initial - 1 : 0;
+  let irr = 0;
+  if (yearsDiff > 0 && totalRet >= -1 && isFinite(totalRet)) {
+    irr = Math.pow(1 + totalRet, 1 / yearsDiff) - 1;
+    if (!isFinite(irr)) irr = 0;
+  }
+
+  return { startDate, endDate, yearsDiff, totals, totalRet, irr, tickerData };
+}
 ```
 
-:::: {.columns style="height: calc(100vh - 650px); width: 100%;"}
 
-#### Performance Summary Card {width=35%}
+```{ojs}
+//| echo: false
+//| output: false
+
+processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
+
+/*────────────────────────────────────────────────────────────
+  2 ▸ hidden reactive controller for the clicked date
+────────────────────────────────────────────────────────────*/
+viewof selectedEndDate = {
+  const input = html`<input type="hidden">`;
+  input.value = (portfolioData?.datasetDateRange?.endDate ?? new Date()).toISOString();
+  return input;
+}
+```
+
+:::: {.columns style="height: calc(100vh - 750px); width: 100%;"}
+
+#### Performance Summary {width=35%}
 
 ```{ojs}
 //| echo: false
@@ -370,25 +469,95 @@ function portfolioPerformanceCard() {
 
   return html`
     <div>
-        <h5>Portfolio Historical Performance (5Y)</h5>
-        <table class="table table-sm mb-0">
-          <tbody>
-            <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
-            <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
-            <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
-            <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
-            <tr><th>Time Period:</th>
-                <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}
-                    (${m.yearsDiff.toFixed(1)} yrs)</td></tr>
-          </tbody>
-        </table>
+      <table class="table table-sm mb-0">
+        <tbody>
+          <tr><th>Time Period:</th>
+              <td>${d3.timeFormat("%b %d %Y")(m.startDate)} – ${d3.timeFormat("%b %d %Y")(m.endDate)}</td></tr>
+          <tr><th>Initial Investment:</th><td>${formatCurrency(m.totals.initial)}</td></tr>
+          <tr><th>Current Value:</th>     <td>${formatCurrency(m.totals.current)}</td></tr>
+          <tr><th>Holding Period Return:</th><td>${formatPercent(m.totalRet)}</td></tr>
+          <tr><th>IRR (Annualized):</th>  <td>${formatPercent(m.irr)}</td></tr>
+        </tbody>
+      </table>
     </div>`;
+};
+
+function createDateFilter() {
+  // Get portfolio metrics to extract date range
+  const metrics = buildPortfolioMetrics();
+  if (metrics.error) return html`<div class="alert alert-warning">Cannot create date filter: ${metrics.error}</div>`;
+  
+  // Get date range
+  const startDate = metrics.startDate;
+  const endDate = metrics.endDate || new Date();
+  const originalEndDate = portfolioData?.datasetDateRange?.endDate ?? new Date();
+  const currentDate = new Date(viewof selectedEndDate.value);
+  
+  // Create date input component
+  const dateInput = createDateInput({
+    min: startDate,
+    max: endDate,
+    value: currentDate,
+    label: "Portfolio Value as of:",
+    id: "portfolio-date-filter"
+  });
+  
+  // Add event listener to update selectedEndDate when the date input changes
+  dateInput.addEventListener("input", () => {
+    const input = viewof selectedEndDate;
+    input.value = dateInput.value.toISOString();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  
+  // Create reset button
+  const resetButton = document.createElement("button");
+  resetButton.textContent = "Reset";
+  resetButton.className = "btn btn-sm btn-outline-secondary";
+  resetButton.style.marginLeft = "10px";
+  resetButton.title = "Reset to the portfolio's final date";
+  
+  // Add event listener to reset the date
+  resetButton.addEventListener("click", () => {
+    // Update the date input
+    dateInput.value = originalEndDate;
+    
+    // Update selectedEndDate
+    const input = viewof selectedEndDate;
+    input.value = originalEndDate.toISOString();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  
+  // Create the container with flex display to align items
+  const container = document.createElement("div");
+  container.className = "date-filter d-flex align-items-center";
+  container.appendChild(dateInput);
+  container.appendChild(resetButton);
+  
+  return container;
 };
 ```
 
 ```{ojs}
-portfolioPerformanceCard()
+//| echo: false
+{
+  const m = buildPortfolioMetrics();
+  if (m.error) return m.error;
+  
+  // HTML with JS interpolation
+  return html`
+    <div>
+      <h5>Portfolio Performance (${m.yearsDiff.toFixed(1)} yrs)</h5>
+      <table class="table table-sm mt-0 mb-0">
+        ${createDateFilter()}
+        ${portfolioPerformanceCard()}
+      </table>
+    </div>
+  `;
+}
 ```
+
+##### Date Filter {height=25%}
+
 
 #### Historical Performance Line Chart {width=65%}
 
@@ -396,7 +565,7 @@ portfolioPerformanceCard()
 //| echo: false
 
 viewof portfolioValueChart = {
-  /* ─── Guard clauses ─────────────────────────────────── */
+  /* ─── Guards ─────────────────────────────────────────── */
   if (!daily_quotes?.Ticker || !daily_quotes?.Date || !daily_quotes?.Close)
     return html`<div class="alert alert-warning">No price time‑series data available for charting</div>`;
 
@@ -405,25 +574,43 @@ viewof portfolioValueChart = {
     return html`<div class="alert alert-warning">No ticker price information available</div>`;
 
   /* ─── Asset weights & shares ────────────────────────── */
-  const assetClassTotals = calculateAssetClassWeights(tickerPrices);
+  // Use enrichedSecurityData for more accurate type information when available
   const tickerWeights = {};
+  const tickerTypes = {};
+  
+  if (enrichedSecurityData && enrichedSecurityData.length > 0) {
+    for (const security of enrichedSecurityData) {
+      const ticker = security.Ticker;
+      if (!tickerPrices[ticker]) continue;
+      
+      tickerWeights[ticker] = {
+        weight: security.completeWeight,
+        type: security.Type
+      };
+      tickerTypes[ticker] = security.Type;
+    }
+  } else {
+    // Fall back to traditional method
+    const assetClassTotals = calculateAssetClassWeights(tickerPrices);
+    
+    for (const [ticker, priceData] of Object.entries(tickerPrices)) {
+      // skip invalid price rows
+      if (!priceData.firstPrice || !priceData.lastPrice || priceData.firstPrice <= 0 || priceData.lastPrice <= 0) continue;
 
-  for (const [ticker, priceData] of Object.entries(tickerPrices)) {
-    // skip invalid price rows
-    if (!priceData.firstPrice || !priceData.lastPrice || priceData.firstPrice <= 0 || priceData.lastPrice <= 0) continue;
+      const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
+      const type = info?.Type ?? priceData.type ?? "Equity";
 
-    const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
-    const type = info?.Type ?? priceData.type ?? "Equity";
-
-    tickerWeights[ticker] = {
-      weight: calculateTickerWeights(ticker, type, priceData,
-                                     assetClassTotals, equity_weight,
-                                     bond_weight, fixed_optimal_weight).completeWeight,
-      type
-    };
+      tickerWeights[ticker] = {
+        weight: calculateTickerWeights(ticker, type, priceData,
+                                       assetClassTotals, equity_weight,
+                                       bond_weight, fixed_optimal_weight).completeWeight,
+        type
+      };
+      tickerTypes[ticker] = type;
+    }
   }
 
-  /* ─── Daily close matrix date → {ticker:price} ─────── */
+  /* ─── Daily close matrix date → {ticker:price} ─────── */
   const dateTickerPrices = {};
   for (let i = 0; i < daily_quotes.Date.length; i++) {
     const date   = new Date(daily_quotes.Date[i]).toISOString().split("T")[0];
@@ -442,28 +629,50 @@ viewof portfolioValueChart = {
     return html`<div class="alert alert-warning">Cannot find a date where all tickers have valid price data</div>`;
 
   /* ─── Shares per ticker based on initial weights ───── */
-  const tickerShares = Object.fromEntries(
-    Object.keys(tickerWeights).map(t => {
-      const initPx = dateTickerPrices[earliest][t];
-      const initInv = investment_amount * tickerWeights[t].weight;
-      return [t, initInv / initPx];
-    })
-  );
+  const tickerShares = {};
+  const tickerInitialValues = {};
+  
+  for (const ticker of Object.keys(tickerWeights)) {
+    const initPx = dateTickerPrices[earliest][ticker];
+    const initInv = investment_amount * tickerWeights[ticker].weight;
+    tickerInitialValues[ticker] = initInv;
+    
+    // Calculate shares only for non-risk-free assets
+    if (tickerTypes[ticker] !== "Risk‑Free") {
+      tickerShares[ticker] = initInv / initPx;
+    }
+  }
 
-  /* ─── Portfolio value time‑series ───────────────────── */
+  /* ─── Portfolio value time‑series with special Risk-Free handling ───────────────────── */
   const portfolioTS = sortedDates.flatMap(date => {
     const prices = dateTickerPrices[date];
-    const valid  = Object.keys(tickerWeights).every(t => Number.isFinite(prices?.[t]));
-    if (!valid) return [];
-    const pv = Object.keys(tickerWeights)
-      .reduce((sum, t) => sum + prices[t] * tickerShares[t], 0);
+    // We only need price data for non-risk-free assets
+    const validPrices = Object.keys(tickerWeights)
+      .filter(t => tickerTypes[t] !== "Risk‑Free")
+      .every(t => Number.isFinite(prices?.[t]));
+      
+    if (!validPrices) return [];
+    
+    // Calculate portfolio value with special handling for Risk-Free assets
+    let pv = 0;
+    
+    for (const ticker of Object.keys(tickerWeights)) {
+      if (tickerTypes[ticker] === "Risk‑Free") {
+        // Risk-Free assets maintain initial value
+        pv += tickerInitialValues[ticker];
+      } else {
+        // Regular assets follow market prices
+        pv += prices[ticker] * tickerShares[ticker];
+      }
+    }
+    
     return [{ Date: new Date(date), Close: pv }];
   });
 
   if (portfolioTS.length === 0)
     return html`<div class="alert alert-warning">Not enough data points to generate chart</div>`;
 
-  /* ─── Performance summary numbers ───────────────────── */
+  /* The rest of the function remains unchanged */
   const initVal   = portfolioTS[0].Close;
   const currVal   = portfolioTS.at(-1).Close;
   const totalRet  = initVal ? currVal / initVal - 1 : 0;
@@ -472,19 +681,15 @@ viewof portfolioValueChart = {
   const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
   const perfColor = totalRet >= 0 ? "#28a745" : "#dc3545";
 
-  /* ─── Chart ─────────────────────────────────────────── */
-  return Plot.plot({
-    marginLeft: 80,
-    marginRight: 20,
+  /* ─── Plot ───────────────────────────────────────────── */
+  const plot = Plot.plot({
+    marginLeft: 80, marginRight: 20,
     style: { fontSize: "14px", background: "transparent", overflow: "visible" },
     x: {
       type: "time",
       label: "Date",
       domain: [startDate, endDate],
-      tickFormat: d => {
-        const m = d.getMonth(), y = d.getFullYear().toString().slice(-2);
-        return `Q${Math.floor(m / 3) + 1}'${y}`;
-      }
+      tickFormat: d => `Q${Math.floor(d.getMonth() / 3) + 1}'${d.getFullYear().toString().slice(-2)}`
     },
     y: {
       grid: true,
@@ -494,25 +699,16 @@ viewof portfolioValueChart = {
       tickFormat: d => `$${d3.format(",")(d.toFixed(0))}`
     },
     marks: [
-      // Initial investment line & label
-      Plot.ruleY([initVal], {       
-        stroke: "#0b3040",
-        strokeWidth: 2.5,
-        strokeDasharray: "4 4" }),
+      Plot.ruleY([initVal], { stroke: "#0b3040", strokeWidth: 2.5, strokeDasharray: "4 4" }),
       Plot.text([{ x: startDate, y: initVal }], {
         text: `Initial Investment: ${formatCurrency(initVal)}`,
         dy: -8, fontSize: 12, fontWeight: "bold", textAnchor: "start"
       }),
-
-      // Filled area + portfolio line
       Plot.areaY(portfolioTS, { x: "Date", y: "Close", fill: perfColor, fillOpacity: 0.1, curve: "natural" }),
       Plot.lineY(portfolioTS, {
         x: "Date", y: "Close", stroke: perfColor, strokeWidth: 3, curve: "natural",
         tip: { format: { y: v => formatCurrency(v) } }
       }),
-
-      // Endpoint dot and labels
-      Plot.dot([portfolioTS.at(-1)], { x: "Date", y: "Close", r: 6, stroke: "white", fill: perfColor }),
       Plot.text([portfolioTS.at(-1)], {
         x: "Date", y: "Close",
         text: `Current Value: ${formatCurrency(currVal)}`,
@@ -522,9 +718,122 @@ viewof portfolioValueChart = {
         x: "Date", y: "Close",
         text: `${totalRet >= 0 ? "+" : ""}${(totalRet * 100).toFixed(2)}%`,
         dx: 5, dy: 15, fontSize: 14, fontWeight: "bold", fill: perfColor
-      })
+      }),
+      // Add pointer interactivity elements
+      Plot.ruleX(portfolioTS, Plot.pointerX({x: "Date", stroke: perfColor, strokeWidth: 1.5, strokeDasharray: "4 4"})),
+      Plot.dot(portfolioTS, Plot.pointerX({x: "Date", y: "Close", fill: perfColor, stroke: "white", strokeWidth: 2, r: 5}))
     ]
   });
+
+  /* ─── Interactivity: broadcast clicked date ─────────── */
+  const xScale = plot.scale("x");
+  const yScale = plot.scale("y");
+  
+  // Create loading overlay and container
+  const container = html`<div style="position: relative;">
+    <div class="chart-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+         background: rgba(255,255,255,0.7); z-index: 10; align-items: center; justify-content: center;">
+      <div style="text-align: center;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div style="margin-top: 10px; font-weight: bold;">Updating metrics...</div>
+      </div>
+    </div>
+    ${plot}
+    <div class="hover-tooltip" style="position: absolute; display: none; background: white; 
+         border: 1px solid #ddd; border-radius: 3px; padding: 8px; pointer-events: none;
+         box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 20; font-size: 14px;"></div>
+    <div class="hover-dot" style="position: absolute; width: 12px; height: 12px; border-radius: 50%; 
+         background-color: ${perfColor}; border: 2px solid white; display: none; transform: translate(-50%, -50%); 
+         pointer-events: none; z-index: 15;"></div>
+  </div>`;
+  
+  const loadingOverlay = container.querySelector(".chart-loading-overlay");
+  const hoverTooltip = container.querySelector(".hover-tooltip");
+  const hoverDot = container.querySelector(".hover-dot");
+  
+  // Add click counter
+  let clickCount = 0;
+  
+  // Add hover functionality using absolute positioning instead of SVG
+  plot.addEventListener("pointermove", (event) => {
+    const { left, top } = plot.getBoundingClientRect();
+    const px = event.clientX - left;
+    const date = xScale.invert(px);
+    
+    if (!date || isNaN(date)) {
+      hoverDot.style.display = "none";
+      hoverTooltip.style.display = "none";
+      return;
+    }
+    
+    // Find the closest data point
+    const closest = portfolioTS.reduce((best, d) => 
+      Math.abs(d.Date - date) < Math.abs(best.Date - date) ? d : best
+    );
+    
+    // Position the dot at the data point
+    const dotX = xScale(closest.Date);
+    const dotY = yScale(closest.Close);
+    
+    if (isNaN(dotX) || isNaN(dotY)) {
+      hoverDot.style.display = "none";
+      return;
+    }
+    
+    // Update dot position and make visible using absolute positioning
+    hoverDot.style.left = `${dotX}px`;
+    hoverDot.style.top = `${dotY}px`;
+    hoverDot.style.display = "block";
+    
+    // Show tooltip with date and value
+    hoverTooltip.innerHTML = `
+      <div><strong>${d3.timeFormat("%b %d, %Y")(closest.Date)}</strong></div>
+      <div>Value: ${formatCurrency(closest.Close)}</div>
+    `;
+    hoverTooltip.style.display = "block";
+    
+    // Position tooltip near the dot but ensure it stays within chart bounds
+    const tooltipX = Math.min(event.clientX - left + 10, plot.clientWidth - hoverTooltip.offsetWidth - 5);
+    const tooltipY = Math.max(event.clientY - top - hoverTooltip.offsetHeight - 10, 5);
+    hoverTooltip.style.transform = `translate(${tooltipX}px, ${tooltipY}px)`;
+  });
+  
+  // Hide dot when mouse leaves the chart
+  plot.addEventListener("pointerleave", () => {
+    hoverDot.style.display = "none";
+    hoverTooltip.style.display = "none";
+  });
+  
+  // Replace the existing click handler with this simplified version
+  plot.addEventListener("click", ev => {
+    const { left } = plot.getBoundingClientRect();
+    const px = ev.clientX - left;
+    const date = xScale.invert(px);
+    if (!date || isNaN(date)) return;
+    
+    // Find nearest data point to click position
+    const closest = portfolioTS
+      .reduce((best, d) => Math.abs(d.Date - date) < Math.abs(best.Date - date) ? d : best);
+    
+    // Show loading overlay for filtering operations
+    loadingOverlay.style.display = "flex";
+    
+    // Update selectedEndDate
+    const input = viewof selectedEndDate;
+    input.value = closest.Date.toISOString();
+    
+    // Use requestAnimationFrame for smoother UI updates
+    requestAnimationFrame(() => {
+      input.dispatchEvent(new CustomEvent("input", { bubbles: true }));
+      
+      // Hide loading overlay after a short delay
+      setTimeout(() => {
+        loadingOverlay.style.display = "none";
+      }, 100);
+    });
+  });
+
+  return container;
 }
 ```
 
@@ -542,34 +851,26 @@ function securityPerformanceTable() {
 
   return html`
     <div class="table-responsive">
-      <h5 class="table-title">Individual Assets Performance</h5>
+      <h5 class="table-title">Security Performance (${m.yearsDiff.toFixed(1)} yrs)</h5>
       <table class="table table-sm table-hover">
         <thead>
           <tr>
             <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
             <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
-            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th>
-            <th>HPR</th><th>IRR</th>
+            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th><th>HPR</th><th>IRR</th>
           </tr>
         </thead>
         <tbody>
           ${Object.entries(m.tickerData)
-            .sort(([_t1, d1], [_t2, d2]) => d2.completeWeight - d1.completeWeight)
-            .map(([t, d]) => html`
+            .sort(([_1,d1],[_2,d2]) => d2.completeWeight - d1.completeWeight)
+            .map(([t,d]) => html`
               <tr>
-                <td>${d.type}</td>
-                <td><strong>${t}</strong></td>
-                <td>${d.name}</td>
-                <td>${d.sector}</td>
-                <td>${formatPercent(d.assetClassWeight)}</td>
-                <td>${formatPercent(d.riskyPfWeight)}</td>
+                <td>${d.type}</td><td><strong>${t}</strong></td><td>${d.name}</td><td>${d.sector}</td>
+                <td>${formatPercent(d.assetClassWeight)}</td><td>${formatPercent(d.riskyPfWeight)}</td>
                 <td>${formatPercent(d.completeWeight)}</td>
-                <td>${formatCurrency(d.initialValue)}</td>
-                <td>${formatCurrency(d.currentValue)}</td>
-                <td>${formatPercent(d.totalReturn)}</td>
-                <td>${formatPercent(d.annualizedReturn)}</td>
-              </tr>
-            `)}
+                <td>${formatCurrency(d.initialValue)}</td><td>${formatCurrency(d.currentValue)}</td>
+                <td>${formatPercent(d.totalReturn)}</td><td>${formatPercent(d.annualizedReturn)}</td>
+              </tr>`)}
         </tbody>
       </table>
     </div>`;

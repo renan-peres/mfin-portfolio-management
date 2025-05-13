@@ -22,6 +22,7 @@ function optimalMetricsTable() {
       <tbody>
         <tr><td>Sharpe Ratio</td>                 <td>${sharpe_ratio.toFixed(2)}</td></tr>
         <tr><td>Optimal Weight (Risky Pf.)</td>   <td>${formatPercent(fixed_optimal_weight)}</td></tr>
+        <tr><td>Optimal Weight (Risk-free Asset)</td>   <td>${formatPercent(1- fixed_optimal_weight)}</td></tr>
         <tr><td>Expected Return @ Optimal</td>    <td>${formatPercent(er_optimal)}</td></tr>
         <tr><td>Std. Deviation @ Optimal</td>     <td>${formatPercent(std_dev_optimal)}</td></tr>
         <tr><td>Utility @ Optimal</td>            <td>${formatPercent(fixed_utility_optimal)}</td></tr>
@@ -168,10 +169,16 @@ capitalAllocationPlot = Plot.plot({
 ### Overview
 
 ```{ojs}
-optimalMetricsTable()
+html`
+  <div>
+    <h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Capital Allocation</h5>
+    <table class="table table-sm mt-0 mb-0">
+    ${optimalMetricsTable()}
+    </table>
+  </div>`;
 ```
 
-## Utility vs. Weight (Risky Assets)
+## Utility vs. Risky Pf Weight
 
 ```{ojs}
 Plot.plot({
@@ -214,25 +221,26 @@ Plot.plot({
 ```{ojs}
 // Simple HTML table approach (more reliable than Inputs.table)
 html`
-<table class="table-responsive">
-  <thead>
-    <tr>
-      <th>Risky Pf Weight</th>
-      <th>Expected Return</th>
-      <th>Standard Deviation</th>
-      <th>Utility</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${fixed_allocation_data.map((d, i) => html`
-      <tr ${i === fixed_max_utility_idx ? 'style="background-color: #ffff9980;"' : ''}>
-        <td>${d.Weight_Pct}</td>
-        <td>${formatPercent(d.Expected_Return)}</td>
-        <td>${formatPercent(d.Standard_Deviation)}</td>
-        <td>${formatPercent(d.Utility)}${i === fixed_max_utility_idx ? ' ★' : ''}</td>
-      </tr>
-    `)}
-  </tbody>
-</table>
-`
+  <div>
+    <table class="table-responsive mt-0 mb-0">
+      <thead>
+        <tr>
+          <th>Risky Pf Weight</th>
+          <th>Expected Return</th>
+          <th>Standard Deviation</th>
+          <th>Utility</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${fixed_allocation_data.map((d, i) => html`
+          <tr ${i === fixed_max_utility_idx ? 'style="background-color: #ffff9980;"' : ''}>
+            <td>${d.Weight_Pct}</td>
+            <td>${formatPercent(d.Expected_Return)}</td>
+            <td>${formatPercent(d.Standard_Deviation)}</td>
+            <td>${formatPercent(d.Utility)}${i === fixed_max_utility_idx ? ' ★' : ''}</td>
+          </tr>
+        `)}
+      </tbody>
+    </table>
+  </div>`;
 ```

@@ -1,6 +1,6 @@
 ---
-title: "Investment Portfolio Construction"
-logo: img/hult_logo.png
+title: "Portfolio Construction: Apr 26, 2025"
+logo: img/logo.png
 format:
   dashboard:
     orientation: columns
@@ -14,6 +14,12 @@ format:
     nav-buttons:
       - icon: github
         href: https://github.com/renan-peres/mfin-portfolio-management
+      - icon: file-earmark-excel
+        href: https://raw.githubusercontent.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio-2025-04-26.xlsx
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="icon" type="image/x-icon" href="img/logo.png">
 execute:
   warning: false
   echo: false
@@ -55,26 +61,34 @@ PORTFOLIO_FILE = f"{REPORTS_PATH}/portfolio-{REPORT_DATE}.xlsx"
 END_DATE   = (datetime.today() - BDay(1)).date()
 START_DATE = END_DATE - timedelta(days=5 * 365)
 
-# --------------------------------------------------------------------------- #
-# Risk-Free Rate                                                              #
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# Load sheets
+# ---------------------------------------------------------------------------
 
-# Load and process data
-daily_risk_free_df = pd.read_excel(PORTFOLIO_FILE, sheet_name="Daily Prices", index_col=0)['^IRX']
+# Risk-Free Rate                                                              #
+risk_free_df = pd.read_excel(PORTFOLIO_FILE, sheet_name="risk_free", index_col=0)
+RISK_FREE = risk_free_df[risk_free_df['Ticker'] == '^IRX']['Close'].iloc[-1] / 100
 # RISK_FREE  = 0.0433                              # 3‑month T‑Bill
-RISK_FREE = daily_risk_free_df.iloc[-1] / 100 
+
+sheets       = pd.read_excel(PORTFOLIO_FILE, sheet_name=None)
+equity_pf    = sheets["equity"].set_index("Ticker")
+bond_pf      = sheets["bond"].set_index("Ticker")
+risk_free_pf = sheets["risk_free"].set_index("Ticker")
+benchmark_pf = sheets["benchmark"].set_index("Equity")
 
 # --------------------------------------------------------------------------- #
 # Helper functions                                                           #
 # --------------------------------------------------------------------------- #
 def melt_price(df: pd.DataFrame,
                equity: list[str],
-               bond: list[str]) -> pd.DataFrame:
+               bond: list[str],
+               risk_free: list[str]) -> pd.DataFrame:
     """Return a long‑format price table with a ‘Type’ column."""
     out = (df.reset_index()
              .melt('Date', var_name='Ticker', value_name='Close'))
     out['Type'] = np.where(out['Ticker'].isin(equity), 'Equity',
-                   np.where(out['Ticker'].isin(bond),   'Bond',   'Other'))
+                  np.where(out['Ticker'].isin(bond),   'Bond',
+                  np.where(out['Ticker'].isin(risk_free),   'Risk-Free',   'Other')))
     return out
 
 
@@ -101,18 +115,15 @@ def prep_price(df: pd.DataFrame, date_col: str = "Date") -> pd.DataFrame:
     # force everything except the index to numeric
     return df.apply(pd.to_numeric, errors="coerce").sort_index()
 
-# ---------------------------------------------------------------------------
-# Load sheets ­­­— no more TypeError
-# ---------------------------------------------------------------------------
-sheets       = pd.read_excel(PORTFOLIO_FILE, sheet_name=None)
-equity_pf    = sheets["Portfolio Allocation"].set_index("Ticker")
-bond_pf      = sheets["Bond ETFs"].set_index("Ticker")
-
-daily_px     = prep_price(sheets["Daily Prices"])
-monthly_px   = prep_price(sheets["Monthly Prices"])
+# --------------------------------------------------------------------------- #
+# Daily returns, correlation, volatility                                     #
+# --------------------------------------------------------------------------- #
+daily_px     = prep_price(sheets["daily_quotes"])
+monthly_px   = prep_price(sheets["monthly_quotes"])
 
 equity_tk      = equity_pf.index.to_list()
 bond_tk        = [bond_pf["Price Change Sensitivity"].idxmax()]  # highest Px‑chg‑sens.
+risk_free_tk   = risk_free_pf.index.to_list()
 
 daily_px.index   = pd.to_datetime(daily_px.index)
 monthly_px.index = pd.to_datetime(monthly_px.index)
@@ -120,9 +131,6 @@ monthly_px.index = pd.to_datetime(monthly_px.index)
 daily_px = daily_px.loc[daily_px.index.notna()].dropna(how='any')
 monthly_px = monthly_px.loc[monthly_px.index.notna()].dropna(how='any')
 
-# --------------------------------------------------------------------------- #
-# Daily returns, correlation, volatility                                     #
-# --------------------------------------------------------------------------- #
 eq_ret = daily_px[equity_tk].pct_change(fill_method=None)
 bd_ret = daily_px[bond_tk[0]].pct_change(fill_method=None)
 
@@ -164,21 +172,6 @@ opt_vol  = np.sqrt(opt_var)
 opt_sr   = (opt_ret - RISK_FREE) / opt_vol
 
 # --------------------------------------------------------------------------- #
-# Portfolio tables                                                           #
-# --------------------------------------------------------------------------- #
-eq_tbl = (equity_pf[["Name", "Sector", "Weight"]]
-          .assign(Weight=lambda x: x["Weight"] * w_eq,
-                  Type="Equity")
-          .reset_index())
-
-bd_tbl = (bond_pf.loc[bond_tk, ["Name"]]
-          .assign(Sector="Bond ETF", Weight=w_bond, Type="Bond")
-          .reset_index())
-
-risky_pf = pd.concat([eq_tbl, bd_tbl], ignore_index=True)[
-           ["Type", "Ticker", "Name", "Sector", "Weight"]]
-
-# --------------------------------------------------------------------------- #
 # Results                                                                     #
 # --------------------------------------------------------------------------- #
 print(f"Optimal bond weight   : {w_bond:.2%}")
@@ -187,9 +180,11 @@ print(f"Expected return       : {opt_ret:.2%}")
 print(f"Volatility            : {opt_vol:.2%}")
 print(f"Sharpe ratio          : {opt_sr:.4f}")
 
-# If you still need long‑format prices:
-daily_long   = melt_price(daily_px,   equity_tk, bond_tk)
-monthly_long = melt_price(monthly_px, equity_tk, bond_tk)
+# long‑format quotes:
+daily_long   = melt_price(daily_px,   equity_tk, bond_tk, risk_free_tk)
+monthly_long = melt_price(monthly_px, equity_tk, bond_tk, risk_free_tk)
+
+daily_long
 ```
 
 ```{python}
@@ -229,6 +224,22 @@ if 'Weight' in equity_num.columns:
 # 1 ·  BUILD PORTFOLIO TABLES (numeric)                                       #
 # --------------------------------------------------------------------------- #
 
+eq_tbl = (equity_pf[["Name", "Sector", "Weight"]]
+          .assign(Weight=lambda x: x["Weight"] * w_eq,
+                  Type="Equity")
+          .reset_index())
+
+bd_tbl = (bond_pf.loc[bond_tk, ["Name"]]
+          .assign(Sector="Bond ETF", Weight=w_bond, Type="Bond")
+          .reset_index())
+
+risky_pf = pd.concat([eq_tbl, bd_tbl], ignore_index=True)[
+           ["Type", "Ticker", "Name", "Sector", "Weight"]]
+
+risk_free_tbl = (risk_free_df.drop(columns=["Close"], errors="ignore")
+          .assign(Sector="Treasury Bond", Weight=0, Type="Risk‑Free", Name="13-Week Treasury Bill", Equity_Pf_Weight=0, Risky_Pf_Weight=0)
+          .reset_index(drop=True))
+
 # ---------- EQUITY  (numeric) ----------------------------------------------
 equity_tickers_df = (
     equity_num.reset_index()[['Ticker', 'Name', 'Sector', 'Weight']]
@@ -260,7 +271,7 @@ bond_df = (
 )
 
 # ---------- COMBINED  (numeric) --------------------------------------------
-risky_portfolio_num = pd.concat([equity_tickers_df, bond_df], ignore_index=True)
+risky_portfolio_num = pd.concat([equity_tickers_df, bond_df, risk_free_tbl], ignore_index=True)
 
 # --------------------------------------------------------------------------- #
 # 2 · DISPLAY copies (string‑formatting only here)                            #
@@ -300,7 +311,7 @@ equity_tickers_disp['Weight'] = equity_tickers_disp['Weight'].map('{:.2%}'.forma
 bond_disp = bond_df.copy()
 bond_disp['Weight'] = bond_disp['Weight'].map('{:.2%}'.format)
 
-risky_portfolio_df = pd.concat([equity_tickers_disp, bond_disp], ignore_index=True)
+risky_portfolio_df = pd.concat([equity_tickers_disp, bond_disp, risk_free_tbl], ignore_index=True)
 ```
 
 ```{python}
@@ -350,6 +361,7 @@ asset_allocation_data = calculate_allocations(
 # ─────────────────────────────────────────────────────────────────────────────
 ojs_define(
     # defaults for interactive controls
+    report_date            = REPORT_DATE,
     default_rf_rate        = default_params["rf_rate"],
     default_er_risky       = default_params["er_risky"],
     default_std_dev_risky  = default_params["std_dev_risky"],
@@ -390,6 +402,7 @@ createRangeInput = utils.createRangeInput
 createPercentInput = utils.createPercentInput
 createNumericInput = utils.createNumericInput
 createCurrencyInput = utils.createCurrencyInput
+createDateInput = utils.createDateInput
 createAssetAllocationSlider = utils.createAssetAllocationSlider
 createHoldingsTable = utils.createHoldingsTable
 calculatePortfolioStats = utils.calculatePortfolioStats
@@ -550,25 +563,50 @@ enrichedSecurityData = {
   if (data.length === 0) return [];
 
   /* ─── Totals by asset class ───────────────────────────── */
-  let equityTotal = 0, bondTotal = 0;
+  let equityTotal = 0, bondTotal = 0, rfTotal = 0;
   data.forEach(d => {
     if (d.Type === "Equity")  equityTotal += d.Risky_Pf_Weight;
     else if (d.Type === "Bond") bondTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Risk‑Free") rfTotal += d.Risky_Pf_Weight;
   });
 
   // Pre-calculate all weights for each security
   return data.slice().map(d => {
-    const classTotal = d.Type === "Equity" ? equityTotal : bondTotal;
-    const classWeight = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
-    const riskyPfWeight = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
-    const completeWeight = riskyPfWeight * fixed_optimal_weight;
+    // Select the appropriate asset class total
+    let classTotal;
+    if (d.Type === "Equity") classTotal = equityTotal;
+    else if (d.Type === "Bond") classTotal = bondTotal;
+    else if (d.Type === "Risk‑Free") classTotal = rfTotal;
+    else classTotal = 0;
     
-    return {
-      ...d,
-      classWeight,
-      riskyPfWeight,
-      completeWeight
-    };
+    // Calculate class weight (with special case for Risk-Free)
+    let classWeight;
+    if (d.Type === "Risk‑Free") {
+      classWeight = 1.0; // Risk-Free assets have 100% weight in their class
+    } else {
+      classWeight = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
+    }
+    
+    // Handle Risk-Free asset class differently
+    if (d.Type === "Risk‑Free") {
+      return {
+        ...d,
+        classWeight, // Now correctly set to 1.0 (100%)
+        riskyPfWeight: 0, // Risk-free assets are not part of the risky portfolio
+        completeWeight: 1 - fixed_optimal_weight // The weight is the remainder after risky allocation
+      };
+    } else {
+      // For Equity and Bond, use the regular calculation
+      const riskyPfWeight = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+      const completeWeight = riskyPfWeight * fixed_optimal_weight;
+      
+      return {
+        ...d,
+        classWeight,
+        riskyPfWeight,
+        completeWeight
+      };
+    }
   }).sort((a, b) => b.completeWeight - a.completeWeight); // Sort by complete weight
 };
 ```
