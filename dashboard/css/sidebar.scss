@@ -1,0 +1,345 @@
+/*-- scss:defaults --*/
+
+// ==========================================================================
+//  VARIABLES
+// ==========================================================================
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
+
+// ==========================================================================
+//  TOOLBAR & COLLAPSIBLE COMPONENTS
+// ==========================================================================
+
+// Base toolbar styling
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: linear-gradient(to bottom, $background-light, $background-light);
+  border-right: 1px solid $border-light;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  color: $text-primary;
+  
+  // Input components inside toolbar
+  .ojs-in-a-box-waiting-for-module-import.observablehq,
+  .ojs-inputs-container {
+    width: 250px;
+    min-width: 200px;
+    margin-top: 10px;
+  }
+  
+  > * {
+    margin-bottom: 10px;
+  }
+  
+  // Section headers
+  .quarto-dashboard & h5 {
+    color: $text-dark !important; 
+    font-weight: 600 !important;
+    border-top: solid 1px #e3e3e3;
+    flex-wrap: wrap;
+  }
+}
+
+// Collapsible toolbar functionality
+.collapsible-toolbar {
+  position: relative;
+  padding-top: 40px;
+  transition: max-height 0.2s ease, opacity 0.25s ease;
+  overflow: hidden;
+  max-height: 800px;
+  
+  // Collapsed state
+  &.collapsed {
+    max-height: 40px;
+    opacity: 0.9;
+    
+    > *:not(.toolbar-toggle) {
+      visibility: hidden;
+    }
+  }
+  
+  // Toggle button
+  .toolbar-toggle {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    background: $table-header-background-color;
+    color: white;
+    width: 30px;
+    height: 20px;
+    border-radius: 0 0 4px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.1s ease;
+    
+    &:hover {
+      background: darken($table-header-background-color, 10%);
+    }
+    
+    // Arrow indicator - points UP by default
+    &::after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 6px solid white;
+      transition: transform 0.3s ease;
+    }
+  }
+  
+  // First element after toggle needs space
+  > div:nth-child(2) {
+    margin-top: 10px;
+  }
+}
+
+// Collapsed state arrow - points DOWN when collapsed
+.collapsible-toolbar.collapsed .toolbar-toggle::after {
+  transform: rotate(180deg);
+}
+
+// ==========================================================================
+//  CUSTOM INPUT COMPONENTS
+// ==========================================================================
+
+// Range slider container
+.input-slider-container {
+  margin-top: 4px;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: $standard-border-radius;
+  padding: 6px;
+  border: 2px solid $border-light;
+}
+
+// Slider label
+.input-slider-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: $text-dark;
+  font-size: 0.9rem;
+}
+
+// Range slider input
+.range-slider {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  background: linear-gradient(to right, $primary-light, $primary-blue);
+  border-radius: 3px;
+  border: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: #fff;
+    border: 2px solid $primary-blue;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  }
+  
+  &::-moz-range-thumb {
+    background: #fff;
+    border: 2px solid $primary-blue;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Slider labels container
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  
+  .min-label, .max-label {
+    font-size: 0.8rem;
+    color: $text-primary;
+  }
+  
+  .value-label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: $primary-blue;
+  }
+}
+
+// Asset allocation slider
+.allocation-slider-container {
+  padding-bottom: 10px;
+}
+
+.optimize-btn-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.optimize-btn {
+  margin-bottom: 12px;
+  background-color: $table-header-background-color !important;
+  color: white;
+  border-color: $table-header-background-color;
+}
+
+.allocation-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  
+  .asset1-label, .asset2-label {
+    font-weight: bold;
+  }
+}
+
+// ==========================================================================
+//  SIDEBAR ENHANCEMENTS
+// ==========================================================================
+
+.sidebar {
+  background: linear-gradient(to bottom, $background-light, $background-light);
+  border-right: 1px solid $border-light;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  color: $text-primary;
+  
+  // Section headers
+  .quarto-dashboard & h5 {
+    color: $text-dark !important; 
+    font-weight: 600 !important;
+    border-bottom: 2px solid darken($text-dark, 10%);
+    padding-bottom: 6px;
+    margin-top: 14px !important; 
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 1.05rem;
+    text-shadow: none;
+  }
+
+  // First h5 element - no top margin
+  .quarto-dashboard & section:first-of-type h5:first-of-type {
+    margin-top: 0 !important;
+  }
+
+  // Observable list output adjustments
+  .ojs-in-a-box-waiting-for-module-import ul, 
+  .ojs-in-a-box-waiting-for-module-import ol {
+    padding-left: 1rem !important;
+    margin-bottom: 5px;
+  }
+
+  // Input containers
+  .form-group {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: $standard-border-radius;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid $border-light;
+    
+    label {
+      color: $text-dark;
+      font-weight: 500;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    
+    // Inputs
+    input, select {
+      background-color: #ffffff;
+      border: 1px solid #d9e3ff;
+      border-left: 2px solid $primary-blue;
+      box-shadow: $small-shadow;
+      
+      &:focus {
+        border-left-color: darken($primary-blue, 5%);
+        box-shadow: 0 0 0 0.2rem rgba($primary-blue, 0.2);
+      }
+    }
+  }
+  
+  // Text styling
+  p {
+    color: $text-primary;
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem !important;
+    margin-top: 0.2rem !important;
+  }
+
+  li {
+    color: $text-primary;
+    font-size: 0.9rem;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  strong, b {
+    color: $dark-black;
+    font-weight: 600;
+  }
+  
+  // Asset allocation display
+  .allocation-display {
+    background: rgba(225, 235, 255, 0.5);
+    border-radius: $standard-border-radius;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid $border-light;
+  }
+  
+  .allocation-slider-container {
+    padding-bottom: 4px;
+    padding-top: 0.3em;
+  }
+
+  // Buttons
+  button {
+    background: linear-gradient(to right, $primary-blue, $primary-blue);
+    margin-bottom: 0;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: linear-gradient(to right, darken($primary-blue, 5%), darken($primary-light, 10%));
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+  }
+}

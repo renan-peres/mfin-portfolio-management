@@ -5,8 +5,10 @@ format:
   dashboard:
     orientation: columns
     theme:
-      - yeti
-      - css/custom.scss
+      - css/styles.scss
+      - css/sidebar.scss
+      - css/charts.scss
+      - css/tables.scss
     html-math-method: katex
     code-fold: true
     self-contained: true
@@ -122,7 +124,7 @@ daily_px     = prep_price(sheets["daily_quotes"])
 monthly_px   = prep_price(sheets["monthly_quotes"])
 
 equity_tk      = equity_pf.index.to_list()
-bond_tk        = [bond_pf["Price Change Sensitivity"].idxmax()]  # highest Px‑chg‑sens.
+bond_tk        = [bond_pf["Price Change Sensitivity (Expected Return)"].idxmax()]  # highest Px‑chg‑sens.
 risk_free_tk   = risk_free_pf.index.to_list()
 
 daily_px.index   = pd.to_datetime(daily_px.index)
@@ -151,7 +153,7 @@ corr_eq_bd = eq_port_m.corr(bd_ret_m)
 eq_cov   = eq_ret.cov() * 252
 eq_vol   = np.sqrt(weights @ eq_cov @ weights)
 bond_vol = bond_pf.loc[bond_tk[0], "Standard_Deviation"]    # ‹assumption›
-bond_ret = bond_pf.loc[bond_tk[0], "Price Change Sensitivity"]  # ‹assumption›
+bond_ret = bond_pf.loc[bond_tk[0], "Price Change Sensitivity (Expected Return)"]  # ‹assumption›
 eq_ret_a = weights @ equity_pf["Expected Return"]           # ‹assumption›
 
 cov_eq_bd = corr_eq_bd * eq_vol * bond_vol
@@ -183,8 +185,6 @@ print(f"Sharpe ratio          : {opt_sr:.4f}")
 # long‑format quotes:
 daily_long   = melt_price(daily_px,   equity_tk, bond_tk, risk_free_tk)
 monthly_long = melt_price(monthly_px, equity_tk, bond_tk, risk_free_tk)
-
-daily_long
 ```
 
 ```{python}

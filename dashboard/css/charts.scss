@@ -1,0 +1,226 @@
+/*-- scss:defaults --*/
+
+// ==========================================================================
+//  VARIABLES
+// ==========================================================================
+
+// Asset class colors
+$risk-free-color: #4CAF50 !default; // Green
+$bond-color: #2196F3 !default;      // Blue
+$equity-color: #FF9800 !default;    // Orange
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
+
+// Plot visualization settings
+$plot-margin-left: 60px !default;
+$plot-margin-right: 20px !default;
+$plot-margin-top: 20px !default;
+$plot-margin-bottom: 30px !default;
+
+// ==========================================================================
+//  PLOT.JS VISUALIZATIONS
+// ==========================================================================
+
+[class^="plot-"] {
+  font-size: 12px;
+  width: 100% !important;
+  min-height: 400px;
+  padding-right: -12px;
+
+  // Axis text
+  [aria-label="x-axis label"] text,
+  [aria-label="y-axis label"] text,
+  [aria-label="x-axis tick label"] text,
+  [aria-label="y-axis tick label"] text {
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  // Plot title
+  [aria-label="title"] text {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  // Legend text
+  [aria-label="legend"] text {
+    font-size: 12px;
+  }
+}
+
+// Add a class for customizable charts
+.chart-customizable[class^="plot-"] {
+  font-size: inherit;
+  
+  [aria-label="x-axis label"] text,
+  [aria-label="y-axis label"] text,
+  [aria-label="x-axis tick label"] text,
+  [aria-label="y-axis tick label"] text,
+  [aria-label="title"] text,
+  [aria-label="legend"] text {
+    font-size: inherit;
+  }
+}
+
+// Enhanced chart container styling
+.chart-customizable {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 0 !important;
+  
+  svg {
+    height: 100% !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+  
+  // Force height on chart containers
+  &.plot-container {
+    min-height: 100% !important;
+    flex: 1 !important;
+  }
+}
+
+
+// Donut chart hover effects
+.donut-chart path {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.03);
+    transform-origin: center center;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
+  }
+}
+
+// Tooltip for donut chart
+.donut-tooltip {
+  position: absolute;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-left: 3px solid;
+  
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  
+  .tooltip-value {
+    font-size: 16px;
+  }
+}
+
+// ==========================================================================
+//  SVG VISUALIZATIONS
+// ==========================================================================
+
+// SVG handling - default behavior for all SVGs
+svg[width][height][viewBox] {
+  width: 100% !important;
+  max-width: 100%;
+  min-height: 0 !important;
+  display: block;
+}
+
+// Special handling for bar charts only
+.bar-chart svg[width][height][viewBox] {
+  max-height: 800px !important;  // Slightly less padding in cards
+  height: calc(100% - 100px) !important;      // Explicit height calculation
+  min-height: 0 !important;
+  overflow-block: hidden;
+  overflow-x: auto !important;
+  overflow-y: clip !important;
+}
+
+// For SVGs that need to fill the entire space with no padding
+.full-height-svg svg[width][height][viewBox] {
+  max-height: 100% !important;
+  height: 100% !important;
+}
+
+// Control overflow for elements containing SVGs inside cards
+.card .cell-output-display:not(.no-overflow-x):has(svg), 
+.card .knitsql-table:not(.no-overflow-x):has(svg) {
+    overflow-x: auto !important;
+    overflow-y: clip !important;
+}
+
+// General case for non-card contexts
+.cell-output-display:not(.no-overflow-x):has(svg), 
+.knitsql-table:not(.no-overflow-x):has(svg) {
+    overflow-x: auto;
+    overflow-y: clip;
+}
+
+// Special case for bar charts to maintain current behavior
+.bar-chart .cell-output-display:has(svg), 
+.bar-chart .knitsql-table:has(svg) {
+    overflow-block: hidden;
+    overflow-x: auto !important;
+    overflow-y: clip !important;
+}
+
+// Donut chart hover effects
+.donut-chart path {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.03);
+    transform-origin: center center;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
+  }
+}
+
+// Tooltip for donut chart
+.donut-tooltip {
+  position: absolute;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border-left: 3px solid;
+  
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  
+  .tooltip-value {
+    font-size: 16px;
+  }
+}

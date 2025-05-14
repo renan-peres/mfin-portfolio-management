@@ -190,6 +190,4 @@ display(optimal_portfolio_ef)
 
 :::
 
-## Bond Valuation
-
 ## Covariances

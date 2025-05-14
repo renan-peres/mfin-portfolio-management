@@ -6,7 +6,7 @@
 
 ### Holdings
 
-:::: {.columns style="height: 50%; width: 100%;"}
+:::: {.columns}
 
 #### Portfolio Summary {width=70%}
 
@@ -388,7 +388,7 @@ viewof selectedEndDate = {
 }
 ```
 
-:::: {.columns style="height: 45%; width: 100%;"}
+:::: {.columns}
 
 #### Performance Summary {width=35%}
 
@@ -610,7 +610,12 @@ viewof portfolioValueChart = {
       type: "time",
       label: "Date:",
       domain: [startDate, endDate],
-      tickFormat: d => `Q${Math.floor(d.getMonth() / 3) + 1}'${d.getFullYear().toString().slice(-2)}`
+      tickFormat: d => {
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        // Show full date at beginning of years, only months otherwise
+        return month === 0 ? d3.timeFormat("%Y")(d) : d3.timeFormat("%b")(d);
+      }
     },
     y: {
       grid: true,
@@ -803,13 +808,19 @@ function securityPerformanceTable() {
 
   return html`
     <div class="table-responsive">
-      <h5 class="table-title">Security Performance (${m.yearsDiff.toFixed(1)} yrs)</h5>
+      <h5 class="table-title">Security Performance (${m.yearsDiff.toFixed(1)} yrs)</h5>
       <table class="table table-sm table-hover">
         <thead>
           <tr>
-            <th>Asset&nbsp;Class</th><th>Ticker</th><th>Name</th><th>Sector</th>
-            <th>Asset&nbsp;Class&nbsp;Wgt</th><th>Risky&nbsp;Pf&nbsp;Wgt</th><th>Complete&nbsp;Pf&nbsp;Wgt</th>
-            <th>Initial&nbsp;Value</th><th>Current&nbsp;Value</th><th>HPR</th><th>IRR</th>
+            <th>Asset&nbsp;Class</th>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Sector</th>
+            <th>Complete&nbsp;Pf&nbsp;Wgt</th>
+            <th>Initial&nbsp;Value</th>
+            <th>Current&nbsp;Value</th>
+            <th>HPR</th>
+            <th>IRR</th>
           </tr>
         </thead>
         <tbody>
@@ -817,11 +828,15 @@ function securityPerformanceTable() {
             .sort(([_1,d1],[_2,d2]) => d2.completeWeight - d1.completeWeight)
             .map(([t,d]) => html`
               <tr>
-                <td>${d.type}</td><td><strong>${t}</strong></td><td>${d.name}</td><td>${d.sector}</td>
-                <td>${formatPercent(d.assetClassWeight)}</td><td>${formatPercent(d.riskyPfWeight)}</td>
+                <td>${d.type}</td>
+                <td><strong>${t}</strong></td>
+                <td>${d.name}</td>
+                <td>${d.sector}</td>
                 <td>${formatPercent(d.completeWeight)}</td>
-                <td>${formatCurrency(d.initialValue)}</td><td>${formatCurrency(d.currentValue)}</td>
-                <td>${formatPercent(d.totalReturn)}</td><td>${formatPercent(d.annualizedReturn)}</td>
+                <td>${formatCurrency(d.initialValue)}</td>
+                <td>${formatCurrency(d.currentValue)}</td>
+                <td>${formatPercent(d.totalReturn)}</td>
+                <td>${formatPercent(d.annualizedReturn)}</td>
               </tr>`)}
         </tbody>
       </table>
@@ -881,17 +896,30 @@ function calculateProjectionData() {
   // Calculate compound growth over time horizon with annual compounding
   const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
   
-  // Calculate base projections and ±20% bounds for uncertainty visualization
+  // Initial uncertainty bound percentage (5%)
+  const initialBoundPct = 0.05;
+  // Annual compound growth rate for uncertainty (10%)
+  const boundGrowthRate = 0.10;
+  
+  // Calculate base projections with compounding uncertainty bounds
   const projectionData = yearsArray.map(year => {
+    // Calculate projected value based on expected return
     const projectedValue = investment_amount * Math.pow(1 + portfolioExpectedReturn, year);
-    const upperBound = projectedValue * 1.2; // 20% higher
-    const lowerBound = projectedValue * 0.8; // 20% lower
+    
+    // Calculate uncertainty percentage for this year (compounded)
+    // Year 0 has no uncertainty (it's the current value)
+    const boundPct = year === 0 ? 0 : initialBoundPct * Math.pow(1 + boundGrowthRate, year - 1);
+    
+    // Apply uncertainty bounds
+    const upperBound = projectedValue * (1 + boundPct);
+    const lowerBound = projectedValue * (1 - boundPct);
     
     return {
       year,
       value: projectedValue,
       upperBound,
       lowerBound,
+      boundPct: boundPct * 100, // Store for display
       gain: projectedValue - investment_amount,
       returnPct: (projectedValue / investment_amount - 1) * 100
     };
@@ -900,6 +928,7 @@ function calculateProjectionData() {
   const finalValue = projectionData[projectionData.length - 1].value;
   const finalUpper = projectionData[projectionData.length - 1].upperBound;
   const finalLower = projectionData[projectionData.length - 1].lowerBound;
+  const finalBoundPct = projectionData[projectionData.length - 1].boundPct;
   const totalReturn = (finalValue / investment_amount - 1) * 100;
   const annualizedReturn = portfolioExpectedReturn * 100;
   
@@ -908,6 +937,7 @@ function calculateProjectionData() {
     finalValue,
     finalUpper,
     finalLower,
+    finalBoundPct,
     totalReturn,
     annualizedReturn,
     portfolioExpectedReturn
@@ -924,7 +954,7 @@ viewof portfolioProjectionSummary = {
     return html`<div class="alert alert-warning">${projData.error}</div>`;
   }
   
-  const {finalValue, finalUpper, finalLower, totalReturn, annualizedReturn} = projData;
+  const {finalValue, finalUpper, finalLower, finalBoundPct, totalReturn, annualizedReturn} = projData;
   
   // Create summary card
   return html`
@@ -933,37 +963,37 @@ viewof portfolioProjectionSummary = {
         <h5 class="table-title">Portfolio Growth Projection</h5>
         <div class="row">
           <div class="col-md-6">
-            <table class="table table-sm">
+            <table class="table table-sm mb-0">
               <tbody>
                 <tr>
-                  <th>Initial Investment:</th>
+                  <th style="width: 50%">Investment Amount:</th>
                   <td>${formatCurrency(investment_amount)}</td>
                 </tr>
                 <tr>
-                  <th>Time Horizon:</th>
+                  <th style="width: 50%">Time Horizon:</th>
                   <td>${time_horizon} years</td>
-                </tr>
-                <tr>
-                  <th>Expected Annual Return:</th>
-                  <td>${annualizedReturn.toFixed(2)}%</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="col-md-6">
-            <table class="table table-sm">
+            <table class="table table-sm mb-0">
               <tbody>
                 <tr>
-                  <th>Projected Final Value:</th>
+                  <th style="width: 50%">Projected Final Value:</th>
                   <td>${formatCurrency(finalValue)}</td>
                 </tr>
                 <tr>
-                  <th>Range (±20%):</th>
+                  <th style="width: 50%">Uncertainty (±${finalBoundPct.toFixed(2)}%):</th>
                   <td>${formatCurrency(finalLower)} - ${formatCurrency(finalUpper)}</td>
                 </tr>
                 <tr>
-                  <th>Total Return:</th>
+                  <th style="width: 50%">Holding Period Return:</th>
                   <td>${totalReturn.toFixed(2)}%</td>
+                </tr>
+                <tr>
+                  <th style="width: 50%">IRR (Annualized):</th>
+                  <td>${annualizedReturn.toFixed(2)}%</td>
                 </tr>
               </tbody>
             </table>
@@ -991,7 +1021,7 @@ viewof portfolioProjectionChart = {
   
   // Create the projection chart
   const plot = Plot.plot({
-    marginLeft: 80,
+    marginLeft: 90,
     marginRight: 40,
     marginTop: 30,
     marginBottom: 40,
@@ -1002,14 +1032,13 @@ viewof portfolioProjectionChart = {
     },
     x: {
       label: "Year",
-      grid: true,
+      // grid: true,
       domain: [0, Math.ceil(time_horizon)]
     },
     y: {
       label: "Portfolio Value ($)",
       grid: true,
-      transform: d => d / 1000,
-      tickFormat: d => `$${d}K`,
+      tickFormat: d => `$${d3.format(",")(d.toFixed(0))}`
     },
     marks: [
       // Uncertainty bounds area (±20%)
@@ -1099,11 +1128,12 @@ viewof portfolioProjectionChart = {
         x: "year",
         y: "value",
         title: d => `Year ${d.year}
-Value: ${formatCurrency(d.value)}
-Upper (+20%): ${formatCurrency(d.upperBound)}
-Lower (-20%): ${formatCurrency(d.lowerBound)}
-Gain: ${formatCurrency(d.gain)}
-Return: ${d.returnPct.toFixed(2)}%`,
+        Value: ${formatCurrency(d.value)}
+        Uncertainty: ±${d.boundPct.toFixed(2)}%
+        Upper: ${formatCurrency(d.upperBound)}
+        Lower: ${formatCurrency(d.lowerBound)}
+        Gain: ${formatCurrency(d.gain)}
+        Return: ${d.returnPct.toFixed(2)}%`,
       }))
     ]
   });
@@ -1114,7 +1144,7 @@ Return: ${d.returnPct.toFixed(2)}%`,
 
 :::
 
-### Fee Structure and Impact 
+### Fee Structure
 
 ```{ojs}
 //| echo: false

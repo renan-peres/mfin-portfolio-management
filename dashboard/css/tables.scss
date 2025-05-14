@@ -1,0 +1,118 @@
+/*-- scss:defaults --*/
+
+// ==========================================================================
+//  VARIABLES
+// ==========================================================================
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
+
+
+// Table Style Variables
+$table-breakpoint: 480px !default;
+$table-background-color: #FFF !default;
+$table-text-color: #1c1c1c !default;
+$table-outer-border: 1px solid #167F92 !default;
+$table-cell-border: 1px solid #D9E4E6 !default;
+$table-border-radius: 10px !default;
+$table-highlight-color: #EAF3F3 !default;
+$table-header-background-color: #0b3040 !default;
+$table-header-text-color: #FFF !default;
+$table-header-border: 1px solid #FFF !default;
+
+// ==========================================================================
+//  TABLE STYLES
+// ==========================================================================
+
+// Base table styles
+.panel-tabset .card-body.html-fill-container table {
+  margin: 1em 0;
+  width: 100%;
+  overflow: hidden;
+  background: $table-background-color;
+  color: $table-text-color;
+  border-radius: $table-border-radius;
+  
+  tr {
+    border: $table-cell-border;
+    
+    &:nth-child(odd) {
+      background-color: $table-highlight-color;
+    }
+  }
+  
+  th {
+    border: $table-header-border;
+    background-color: $table-header-background-color;
+    color: $table-header-text-color;
+    padding: 0.8em;
+    text-align: left;
+    vertical-align: top !important;
+  }
+  
+  td {
+    padding: 0.8em;
+    border: $table-cell-border;
+    text-align: left;
+    word-wrap: break-word;
+  }
+}
+
+// Sticky headers
+.panel-tabset .card-body.html-fill-container table thead th,
+table thead th,
+div[style*="overflow-y: auto"] table thead th,
+div[style*="overflow: auto"] table thead th,
+.table-responsive table thead th,
+.dt-container table thead th,
+.ojs-in-a-box-waiting-for-module-import table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: $table-header-background-color;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  vertical-align: top !important;
+}
+
+// Interactive table styles
+.table-responsive {
+  tbody tr {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: rgba(116, 192, 252, 0.15) !important;
+    }
+    
+    &.selected-row {
+      background-color: #ffff9980 !important;
+      border-left: 3px solid #f0ad4e;
+    }
+  }
+  
+  // Add explicit styling for clicked rows
+  tbody tr[style*="background-color"] {
+    border-left: 3px solid #f0ad4e;
+  }
+}
+
+// Table title styling
+h5.table-title {
+  margin-top: 1rem !important;
+  margin-bottom: 0rem !important;
+  padding-left: 0rem;
+  font-size: 1.2rem;
+  color: $text-dark !important;
+  font-weight: 700;  // or simply use: font-weight: bold;
+}
