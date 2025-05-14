@@ -495,7 +495,7 @@ function createDateFilter() {
 //| echo: false
 
 viewof portfolioValueChart = {
-  /* ─── Guards ─────────────────────────────────────────── */
+  /* ─── Input Validation ───────────────────────────────── */
   if (!daily_quotes?.Ticker || !daily_quotes?.Date || !daily_quotes?.Close)
     return html`<div class="alert alert-warning">No price time‑series data available for charting</div>`;
 
@@ -503,28 +503,23 @@ viewof portfolioValueChart = {
   if (Object.keys(tickerPrices).length === 0)
     return html`<div class="alert alert-warning">No ticker price information available</div>`;
 
-  /* ─── Asset weights & shares ────────────────────────── */
-  // Use enrichedSecurityData for more accurate type information when available
+  /* ─── Prepare Asset Weights & Types ────────────────── */
   const tickerWeights = {};
   const tickerTypes = {};
   
-  if (enrichedSecurityData && enrichedSecurityData.length > 0) {
-    for (const security of enrichedSecurityData) {
+  // Use enriched security data if available, otherwise calculate weights
+  if (enrichedSecurityData?.length > 0) {
+    enrichedSecurityData.forEach(security => {
       const ticker = security.Ticker;
-      if (!tickerPrices[ticker]) continue;
-      
-      tickerWeights[ticker] = {
-        weight: security.completeWeight,
-        type: security.Type
-      };
-      tickerTypes[ticker] = security.Type;
-    }
+      if (tickerPrices[ticker]) {
+        tickerWeights[ticker] = { weight: security.completeWeight, type: security.Type };
+        tickerTypes[ticker] = security.Type;
+      }
+    });
   } else {
-    // Fall back to traditional method
     const assetClassTotals = calculateAssetClassWeights(tickerPrices);
     
     for (const [ticker, priceData] of Object.entries(tickerPrices)) {
-      // skip invalid price rows
       if (!priceData.firstPrice || !priceData.lastPrice || priceData.firstPrice <= 0 || priceData.lastPrice <= 0) continue;
 
       const info = Array.isArray(equity_tickers) ? equity_tickers.find(t => t.Ticker === ticker) : {};
@@ -532,33 +527,33 @@ viewof portfolioValueChart = {
 
       tickerWeights[ticker] = {
         weight: calculateTickerWeights(ticker, type, priceData,
-                                       assetClassTotals, equity_weight,
-                                       bond_weight, fixed_optimal_weight).completeWeight,
+                                    assetClassTotals, equity_weight,
+                                    bond_weight, fixed_optimal_weight).completeWeight,
         type
       };
       tickerTypes[ticker] = type;
     }
   }
 
-  /* ─── Daily close matrix date → {ticker:price} ─────── */
+  /* ─── Create Price Data Matrix by Date ─────────────── */
   const dateTickerPrices = {};
   for (let i = 0; i < daily_quotes.Date.length; i++) {
-    const date   = new Date(daily_quotes.Date[i]).toISOString().split("T")[0];
+    const date = new Date(daily_quotes.Date[i]).toISOString().split("T")[0];
     const ticker = daily_quotes.Ticker[i];
-    const close  = daily_quotes.Close[i];
+    const close = daily_quotes.Close[i];
     if (!dateTickerPrices[date]) dateTickerPrices[date] = {};
     dateTickerPrices[date][ticker] = close;
   }
   const sortedDates = Object.keys(dateTickerPrices).sort();
 
-  /* ─── Earliest date with full data set ─────────────── */
+  /* ─── Find Starting Date with Complete Data ─────────── */
   const earliest = sortedDates.find(date =>
     Object.keys(tickerWeights).every(t => Number.isFinite(dateTickerPrices[date]?.[t]))
   );
   if (!earliest)
     return html`<div class="alert alert-warning">Cannot find a date where all tickers have valid price data</div>`;
 
-  /* ─── Shares per ticker based on initial weights ───── */
+  /* ─── Calculate Initial Investments & Shares ───────── */
   const tickerShares = {};
   const tickerInitialValues = {};
   
@@ -573,27 +568,23 @@ viewof portfolioValueChart = {
     }
   }
 
-  /* ─── Portfolio value time‑series with special Risk-Free handling ───────────────────── */
+  /* ─── Generate Portfolio Time Series ───────────────── */
   const portfolioTS = sortedDates.flatMap(date => {
     const prices = dateTickerPrices[date];
-    // We only need price data for non-risk-free assets
+    // We only need valid prices for non-risk-free assets
     const validPrices = Object.keys(tickerWeights)
       .filter(t => tickerTypes[t] !== "Risk‑Free")
       .every(t => Number.isFinite(prices?.[t]));
       
     if (!validPrices) return [];
     
-    // Calculate portfolio value with special handling for Risk-Free assets
+    // Calculate portfolio value
     let pv = 0;
-    
     for (const ticker of Object.keys(tickerWeights)) {
-      if (tickerTypes[ticker] === "Risk‑Free") {
-        // Risk-Free assets maintain initial value
-        pv += tickerInitialValues[ticker];
-      } else {
-        // Regular assets follow market prices
-        pv += prices[ticker] * tickerShares[ticker];
-      }
+      // Risk-Free assets maintain initial value, others follow market prices
+      pv += tickerTypes[ticker] === "Risk‑Free" 
+        ? tickerInitialValues[ticker]
+        : prices[ticker] * tickerShares[ticker];
     }
     
     return [{ Date: new Date(date), Close: pv }];
@@ -602,16 +593,16 @@ viewof portfolioValueChart = {
   if (portfolioTS.length === 0)
     return html`<div class="alert alert-warning">Not enough data points to generate chart</div>`;
 
-  /* The rest of the function remains unchanged */
-  const initVal   = portfolioTS[0].Close;
-  const currVal   = portfolioTS.at(-1).Close;
-  const totalRet  = initVal ? currVal / initVal - 1 : 0;
+  /* ─── Calculate Performance Metrics ───────────────── */
+  const initVal = portfolioTS[0].Close;
+  const currVal = portfolioTS.at(-1).Close;
+  const totalRet = initVal ? currVal / initVal - 1 : 0;
   const startDate = portfolioTS[0].Date;
-  const endDate   = portfolioTS.at(-1).Date;
+  const endDate = portfolioTS.at(-1).Date;
   const yearsDiff = (endDate - startDate) / (1000 * 60 * 60 * 24 * 365);
   const perfColor = totalRet >= 0 ? "#28a745" : "#dc3545";
 
-  /* ─── Plot ───────────────────────────────────────────── */
+  /* ─── Create Plot ──────────────────────────────────── */
   const plot = Plot.plot({
     marginLeft: 80, marginRight: 20,
     style: { fontSize: "14px", background: "transparent", overflow: "visible" },
@@ -629,14 +620,27 @@ viewof portfolioValueChart = {
       tickFormat: d => `$${d3.format(",")(d.toFixed(0))}`
     },
     marks: [
+      // Initial investment reference line
       Plot.ruleY([initVal], { stroke: "#0b3040", strokeWidth: 2.5, strokeDasharray: "4 4" }),
       Plot.text([{ x: startDate, y: initVal }], {
         text: `Initial Investment: ${formatCurrency(initVal)}`,
         dy: -8, fontSize: 12, fontWeight: "bold", textAnchor: "start"
       }),
-      Plot.areaY(portfolioTS, { x: "Date", y: "Close", fill: perfColor, fillOpacity: 0.1, curve: "natural" }),
+      
+      // Portfolio value area and line
+      Plot.areaY(portfolioTS, { 
+        x: "Date", 
+        y: "Close", 
+        fill: perfColor, 
+        fillOpacity: 0.1, 
+        curve: "natural" 
+      }),
       Plot.lineY(portfolioTS, {
-        x: "Date", y: "Close", stroke: perfColor, strokeWidth: 3, curve: "natural",
+        x: "Date", 
+        y: "Close", 
+        stroke: perfColor, 
+        strokeWidth: 3, 
+        curve: "natural",
         tip: { 
           format: { 
             x: d => d3.timeFormat("%b %d, %Y")(d),
@@ -648,6 +652,8 @@ viewof portfolioValueChart = {
           "Gain:": d => d.Close
         }
       }),
+      
+      // Current value annotations
       Plot.text([portfolioTS.at(-1)], {
         x: "Date", y: "Close",
         text: `Current Value: ${formatCurrency(currVal)}`,
@@ -658,17 +664,30 @@ viewof portfolioValueChart = {
         text: `${totalRet >= 0 ? "+" : ""}${(totalRet * 100).toFixed(2)}%`,
         dx: 5, dy: 15, fontSize: 14, fontWeight: "bold", fill: perfColor
       }),
-      // Add pointer interactivity elements
-      Plot.ruleX(portfolioTS, Plot.pointerX({x: "Date", stroke: perfColor, strokeWidth: 1.5, strokeDasharray: "4 4"})),
-      Plot.dot(portfolioTS, Plot.pointerX({x: "Date", y: "Close", fill: perfColor, stroke: "white", strokeWidth: 2, r: 5}))
+      
+      // Hover interaction elements
+      Plot.ruleX(portfolioTS, Plot.pointerX({
+        x: "Date", 
+        stroke: perfColor, 
+        strokeWidth: 1.5, 
+        strokeDasharray: "4 4"
+      })),
+      Plot.dot(portfolioTS, Plot.pointerX({
+        x: "Date", 
+        y: "Close", 
+        fill: perfColor, 
+        stroke: "white", 
+        strokeWidth: 2, 
+        r: 5
+      }))
     ]
   });
 
-  /* ─── Interactivity: broadcast clicked date ─────────── */
+  /* ─── Create Interactive Container ──────────────────── */
   const xScale = plot.scale("x");
   const yScale = plot.scale("y");
   
-  // Create loading overlay and container
+  // Create container with loading overlay and hover elements
   const container = html`<div style="position: relative;">
     <div class="chart-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
          background: rgba(255,255,255,0.7); z-index: 10; align-items: center; justify-content: center;">
@@ -690,10 +709,7 @@ viewof portfolioValueChart = {
   const hoverTooltip = container.querySelector(".hover-tooltip");
   const hoverDot = container.querySelector(".hover-dot");
   
-  // Add click counter
-  let clickCount = 0;
-  
-  // Add hover functionality using absolute positioning instead of SVG
+  /* ─── Add Hover Interaction ────────────────────────── */
   plot.addEventListener("pointermove", (event) => {
     const { left, top } = plot.getBoundingClientRect();
     const px = event.clientX - left;
@@ -719,7 +735,7 @@ viewof portfolioValueChart = {
       return;
     }
     
-    // Update dot position and make visible using absolute positioning
+    // Update hover elements
     hoverDot.style.left = `${dotX}px`;
     hoverDot.style.top = `${dotY}px`;
     hoverDot.style.display = "block";
@@ -731,44 +747,41 @@ viewof portfolioValueChart = {
     `;
     hoverTooltip.style.display = "block";
     
-    // Position tooltip near the dot but ensure it stays within chart bounds
+    // Position tooltip with boundary checking
     const tooltipX = Math.min(event.clientX - left + 10, plot.clientWidth - hoverTooltip.offsetWidth - 5);
     const tooltipY = Math.max(event.clientY - top - hoverTooltip.offsetHeight - 10, 5);
     hoverTooltip.style.transform = `translate(${tooltipX}px, ${tooltipY}px)`;
   });
   
-  // Hide dot when mouse leaves the chart
+  // Hide elements when pointer leaves chart
   plot.addEventListener("pointerleave", () => {
     hoverDot.style.display = "none";
     hoverTooltip.style.display = "none";
   });
   
-  // Replace the existing click handler with this simplified version
+  /* ─── Add Click Interaction ─────────────────────────── */
   plot.addEventListener("click", ev => {
     const { left } = plot.getBoundingClientRect();
     const px = ev.clientX - left;
     const date = xScale.invert(px);
     if (!date || isNaN(date)) return;
     
-    // Find nearest data point to click position
-    const closest = portfolioTS
-      .reduce((best, d) => Math.abs(d.Date - date) < Math.abs(best.Date - date) ? d : best);
+    // Find nearest data point
+    const closest = portfolioTS.reduce((best, d) => 
+      Math.abs(d.Date - date) < Math.abs(best.Date - date) ? d : best
+    );
     
-    // Show loading overlay for filtering operations
+    // Show loading overlay
     loadingOverlay.style.display = "flex";
     
-    // Update selectedEndDate
+    // Update selected date and trigger event
     const input = viewof selectedEndDate;
     input.value = closest.Date.toISOString();
     
-    // Use requestAnimationFrame for smoother UI updates
+    // Update UI
     requestAnimationFrame(() => {
       input.dispatchEvent(new CustomEvent("input", { bubbles: true }));
-      
-      // Hide loading overlay after a short delay
-      setTimeout(() => {
-        loadingOverlay.style.display = "none";
-      }, 100);
+      setTimeout(() => loadingOverlay.style.display = "none", 100);
     });
   });
 
@@ -820,8 +833,557 @@ function securityPerformanceTable() {
 securityPerformanceTable()
 ```
 
-### Projections and Fee Structure
+### Growth Projections
 
+:::: {.columns style="width: 100%;"}
+
+#### Projection Summary {width=35%}
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Calculate portfolio projection data for use in both summary and chart
+function calculateProjectionData() {
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
+    return { error: "No portfolio data available for projection" };
+  }
+  
+  // Expected returns for each security
+  const expectedReturns = {};
+  let portfolioExpectedReturn = 0;
+  
+  // Get expected returns from enrichedSecurityData if available
+  // Otherwise use default expected return from er_optimal
+  enrichedSecurityData.forEach(security => {
+    // Use either security's expected return or asset class average
+    let securityReturn;
+    if (security.Type === "Equity") {
+      securityReturn = security["Expected Return"] ? 
+        parseFloat(security["Expected Return"]) : (calc_equity_return || 0.237);
+    } else if (security.Type === "Bond") {
+      securityReturn = bond_ret || 0.04;
+    } else if (security.Type === "Risk-Free") {
+      securityReturn = rf_rate;
+    } else {
+      securityReturn = 0.05; // Default fallback
+    }
+    
+    expectedReturns[security.Ticker] = securityReturn;
+    portfolioExpectedReturn += security.completeWeight * securityReturn;
+  });
+  
+  // Use er_optimal if we couldn't calculate a weighted expected return
+  if (portfolioExpectedReturn === 0) {
+    portfolioExpectedReturn = er_optimal || 0.08;
+  }
+  
+  // Calculate compound growth over time horizon with annual compounding
+  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
+  
+  // Calculate base projections and ±20% bounds for uncertainty visualization
+  const projectionData = yearsArray.map(year => {
+    const projectedValue = investment_amount * Math.pow(1 + portfolioExpectedReturn, year);
+    const upperBound = projectedValue * 1.2; // 20% higher
+    const lowerBound = projectedValue * 0.8; // 20% lower
+    
+    return {
+      year,
+      value: projectedValue,
+      upperBound,
+      lowerBound,
+      gain: projectedValue - investment_amount,
+      returnPct: (projectedValue / investment_amount - 1) * 100
+    };
+  });
+
+  const finalValue = projectionData[projectionData.length - 1].value;
+  const finalUpper = projectionData[projectionData.length - 1].upperBound;
+  const finalLower = projectionData[projectionData.length - 1].lowerBound;
+  const totalReturn = (finalValue / investment_amount - 1) * 100;
+  const annualizedReturn = portfolioExpectedReturn * 100;
+  
+  return {
+    projectionData,
+    finalValue,
+    finalUpper,
+    finalLower,
+    totalReturn,
+    annualizedReturn,
+    portfolioExpectedReturn
+  };
+};
+```
+
+
+```{ojs}
+// Display projection summary card
+viewof portfolioProjectionSummary = {
+  const projData = calculateProjectionData();
+  if (projData.error) {
+    return html`<div class="alert alert-warning">${projData.error}</div>`;
+  }
+  
+  const {finalValue, finalUpper, finalLower, totalReturn, annualizedReturn} = projData;
+  
+  // Create summary card
+  return html`
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="table-title">Portfolio Growth Projection</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th>Initial Investment:</th>
+                  <td>${formatCurrency(investment_amount)}</td>
+                </tr>
+                <tr>
+                  <th>Time Horizon:</th>
+                  <td>${time_horizon} years</td>
+                </tr>
+                <tr>
+                  <th>Expected Annual Return:</th>
+                  <td>${annualizedReturn.toFixed(2)}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th>Projected Final Value:</th>
+                  <td>${formatCurrency(finalValue)}</td>
+                </tr>
+                <tr>
+                  <th>Range (±20%):</th>
+                  <td>${formatCurrency(finalLower)} - ${formatCurrency(finalUpper)}</td>
+                </tr>
+                <tr>
+                  <th>Total Return:</th>
+                  <td>${totalReturn.toFixed(2)}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+```
+
+#### Projection Chart {width=65%}
+
+```{ojs}
+//| echo: false
+
+// Display portfolio projection chart
+viewof portfolioProjectionChart = {
+  const projData = calculateProjectionData();
+  if (projData.error) {
+    return html`<div class="alert alert-warning">${projData.error}</div>`;
+  }
+  
+  const {projectionData} = projData;
+  
+  // Create the projection chart
+  const plot = Plot.plot({
+    marginLeft: 80,
+    marginRight: 40,
+    marginTop: 30,
+    marginBottom: 40,
+    style: { 
+      fontSize: "14px", 
+      background: "transparent", 
+      overflow: "visible" 
+    },
+    x: {
+      label: "Year",
+      grid: true,
+      domain: [0, Math.ceil(time_horizon)]
+    },
+    y: {
+      label: "Portfolio Value ($)",
+      grid: true,
+      transform: d => d / 1000,
+      tickFormat: d => `$${d}K`,
+    },
+    marks: [
+      // Uncertainty bounds area (±20%)
+      Plot.areaY(projectionData, {
+        x: "year",
+        y1: "lowerBound",
+        y2: "upperBound",
+        fill: "#28a745",
+        fillOpacity: 0.1,
+      }),
+      // Upper bound line
+      Plot.lineY(projectionData, {
+        x: "year",
+        y: "upperBound",
+        stroke: "#28a745",
+        strokeOpacity: 0.4,
+        strokeWidth: 1.5,
+        strokeDasharray: "3 3"
+      }),
+      // Lower bound line
+      Plot.lineY(projectionData, {
+        x: "year",
+        y: "lowerBound",
+        stroke: "#28a745",
+        strokeOpacity: 0.4,
+        strokeWidth: 1.5,
+        strokeDasharray: "3 3"
+      }),
+      // Main projection line
+      Plot.lineY(projectionData, {
+        x: "year",
+        y: "value",
+        stroke: "#28a745",
+        strokeWidth: 3
+      }),
+      // Initial investment reference line
+      Plot.ruleY([investment_amount], { 
+        stroke: "#6c757d", 
+        strokeWidth: 2, 
+        strokeDasharray: "4 4" 
+      }),
+      Plot.text([{year: 0, value: investment_amount}], {
+        x: "year",
+        y: "value",
+        dy: -10,
+        text: () => `Initial Investment: ${formatCurrency(investment_amount)}`,
+        fontSize: 12
+      }),
+      // Final value indicator
+      Plot.dot(projectionData.filter(d => d.year === Math.ceil(time_horizon)), {
+        x: "year",
+        y: "value",
+        r: 6,
+        fill: "#28a745",
+        stroke: "white",
+        strokeWidth: 2
+      }),
+      // Final value label
+      Plot.text(projectionData.filter(d => d.year === Math.ceil(time_horizon)), {
+        x: "year",
+        y: "value",
+        dy: -15,
+        text: d => `${formatCurrency(d.value)}`,
+        fontSize: 14,
+        fontWeight: "bold"
+      }),
+      // Upper bound value label
+      Plot.text(projectionData.filter(d => d.year === Math.ceil(time_horizon)), {
+        x: "year",
+        y: "upperBound",
+        dy: -5,
+        text: d => `Upper: ${formatCurrency(d.upperBound)}`,
+        fontSize: 11,
+        fill: "#28a745"
+      }),
+      // Lower bound value label
+      Plot.text(projectionData.filter(d => d.year === Math.ceil(time_horizon)), {
+        x: "year",
+        y: "lowerBound",
+        dy: 15,
+        text: d => `Lower: ${formatCurrency(d.lowerBound)}`,
+        fontSize: 11,
+        fill: "#28a745"
+      }),
+      // Enhanced tooltip for interactive exploration
+      Plot.tip(projectionData, Plot.pointerX({
+        x: "year",
+        y: "value",
+        title: d => `Year ${d.year}
+Value: ${formatCurrency(d.value)}
+Upper (+20%): ${formatCurrency(d.upperBound)}
+Lower (-20%): ${formatCurrency(d.lowerBound)}
+Gain: ${formatCurrency(d.gain)}
+Return: ${d.returnPct.toFixed(2)}%`,
+      }))
+    ]
+  });
+  
+  return plot;
+}
+```
+
+:::
+
+### Fee Structure and Impact 
+
+```{ojs}
+//| echo: false
+
+// Create fee structure controls
+viewof managementFee = createPercentInput({
+  min: 0,
+  max: 0.025,
+  value: 0.01,
+  step: 0.0005,
+  label: "Annual Management Fee:"
+})
+
+viewof transactionCost = createPercentInput({
+  min: 0,
+  max: 0.01,
+  value: 0.002,
+  step: 0.0001,
+  label: "Transaction Cost (One-time):"
+})
+
+viewof otherFees = createPercentInput({
+  min: 0,
+  max: 0.01,
+  value: 0.0005,
+  step: 0.0001,
+  label: "Other Annual Fees:"
+})
+
+// Calculate the impact of fees
+viewof feeImpactAnalysis = {
+  // Get current portfolio data
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
+    return html`<div class="alert alert-warning">No portfolio data available for fee analysis</div>`;
+  }
+  
+  // Calculate expected portfolio return
+  let portfolioExpectedReturn = 0;
+  
+  // Use er_optimal as our expected return baseline
+  portfolioExpectedReturn = er_optimal || 0.08;
+  
+  // Calculate compound growth with and without fees
+  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
+  
+  // Calculate value with no fees
+  const noFeesData = yearsArray.map(year => {
+    const value = investment_amount * Math.pow(1 + portfolioExpectedReturn, year);
+    return { year, value };
+  });
+  
+  // Calculate value with fees
+  const totalAnnualFee = managementFee + otherFees;
+  const withFeesData = yearsArray.map(year => {
+    // Apply one-time transaction cost at the beginning
+    let initialAmount = year === 0 ? 
+      investment_amount : 
+      investment_amount * (1 - transactionCost);
+    
+    // Apply compounding with reduced return due to annual fees
+    const value = initialAmount * Math.pow(1 + (portfolioExpectedReturn - totalAnnualFee), year);
+    return { year, value };
+  });
+  
+  // Calculate total fees paid
+  const finalValueNoFees = noFeesData[noFeesData.length - 1].value;
+  const finalValueWithFees = withFeesData[withFeesData.length - 1].value;
+  const totalFeesCost = finalValueNoFees - finalValueWithFees;
+  const feeImpactPercent = (totalFeesCost / finalValueNoFees) * 100;
+  
+  // Create combined dataset for chart
+  const combinedData = [];
+  for (let i = 0; i < yearsArray.length; i++) {
+    combinedData.push({
+      year: yearsArray[i],
+      noFees: noFeesData[i].value,
+      withFees: withFeesData[i].value,
+      feeCost: noFeesData[i].value - withFeesData[i].value
+    });
+  }
+  
+  // Create the fee impact chart
+  const plot = Plot.plot({
+    marginLeft: 70,
+    marginRight: 40,
+    marginTop: 30,
+    marginBottom: 40,
+    style: { 
+      fontSize: "14px", 
+      background: "transparent"
+    },
+    x: {
+      label: "Year",
+      grid: true,
+      domain: [0, Math.ceil(time_horizon)]
+    },
+    y: {
+      label: "Portfolio Value ($)",
+      grid: true,
+      transform: d => d / 1000,
+      tickFormat: d => `$${d}K`,
+    },
+    marks: [
+      // No fees line
+      Plot.lineY(combinedData, {
+        x: "year",
+        y: "noFees",
+        stroke: "#28a745",
+        strokeWidth: 3,
+        curve: "monotone"
+      }),
+      // With fees line
+      Plot.lineY(combinedData, {
+        x: "year",
+        y: "withFees",
+        stroke: "#dc3545",
+        strokeWidth: 3,
+        curve: "monotone"
+      }),
+      // Fees area
+      Plot.areaY(combinedData, {
+        x: "year",
+        y1: "withFees",
+        y2: "noFees",
+        fill: "#dc3545",
+        fillOpacity: 0.2,
+        curve: "monotone"
+      }),
+      // Legend
+      Plot.text([{year: Math.ceil(time_horizon) * 0.2, value: finalValueNoFees * 0.9}], {
+        x: "year",
+        y: "value",
+        text: "Without Fees",
+        fill: "#28a745",
+        fontWeight: "bold"
+      }),
+      Plot.text([{year: Math.ceil(time_horizon) * 0.2, value: finalValueNoFees * 0.85}], {
+        x: "year",
+        y: "value",
+        text: "With Fees",
+        fill: "#dc3545",
+        fontWeight: "bold"
+      }),
+      // Tips for interactive exploration
+      Plot.tip(combinedData, Plot.pointerX({
+        x: "year",
+        title: d => `Year ${d.year}\nNo Fees: ${formatCurrency(d.noFees)}\nWith Fees: ${formatCurrency(d.withFees)}\nFee Cost: ${formatCurrency(d.feeCost)}`
+      }))
+    ]
+  });
+  
+  // Create summary and impact analysis
+  const summary = html`
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="card-title">Fee Impact Summary</h6>
+        <table class="table table-sm">
+          <tbody>
+            <tr>
+              <th>Projected Value (No Fees):</th>
+              <td>${formatCurrency(finalValueNoFees)}</td>
+            </tr>
+            <tr>
+              <th>Projected Value (With Fees):</th>
+              <td>${formatCurrency(finalValueWithFees)}</td>
+            </tr>
+            <tr>
+              <th>Total Fee Cost:</th>
+              <td>${formatCurrency(totalFeesCost)}</td>
+            </tr>
+            <tr>
+              <th>Fee Impact (% of Returns):</th>
+              <td>${feeImpactPercent.toFixed(2)}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>${plot}</div>
+  `;
+  
+  return summary;
+}
+```
+
+#### Year-by-Year Projection Table
+
+```{ojs}
+//| echo: false
+
+// Generate detailed year-by-year projection table with fee impact
+function createProjectionTable() {
+  // Get current portfolio data
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
+    return html`<div class="alert alert-warning">No portfolio data available for projection table</div>`;
+  }
+  
+  // Calculate expected portfolio return
+  let portfolioExpectedReturn = er_optimal || 0.08;
+  const totalAnnualFee = managementFee + otherFees;
+  const netReturn = portfolioExpectedReturn - totalAnnualFee;
+  
+  // Calculate year-by-year projection
+  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
+  const tableData = yearsArray.map(year => {
+    // Initial value calculation
+    let startValue = year === 0 ? 
+      investment_amount : 
+      tableData[year-1].endValue;
+    
+    // Apply transaction cost at the beginning if it's year 0
+    if (year === 0) {
+      startValue = startValue * (1 - transactionCost);
+    }
+    
+    // Calculate returns and fees
+    const investmentReturn = year === 0 ? 0 : startValue * portfolioExpectedReturn;
+    const annualFees = year === 0 ? investment_amount * transactionCost : startValue * totalAnnualFee;
+    const endValue = startValue + investmentReturn - annualFees;
+    
+    return {
+      year,
+      startValue,
+      investmentReturn,
+      annualFees,
+      endValue,
+      cumulativeReturn: endValue / investment_amount - 1
+    };
+  });
+  
+  // Create HTML table
+  const table = html`
+    <div class="table-responsive">
+      <h5 class="table-title">Year-by-Year Portfolio Projection</h5>
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Starting Value</th>
+            <th>Investment Return</th>
+            <th>Annual Fees</th>
+            <th>Ending Value</th>
+            <th>Cumulative Return</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableData.map(row => html`
+            <tr>
+              <td>${row.year}</td>
+              <td>${formatCurrency(row.startValue)}</td>
+              <td>${row.year === 0 ? '—' : formatCurrency(row.investmentReturn)}</td>
+              <td>${formatCurrency(row.annualFees)}</td>
+              <td>${formatCurrency(row.endValue)}</td>
+              <td>${formatPercent(row.cumulativeReturn)}</td>
+            </tr>
+          `)}
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  return table;
+}
+
+// Render the projection table
+createProjectionTable()
+```
+
+<!-- 
 #### Forecast
 
 ```{ojs}
@@ -842,8 +1404,7 @@ html`
   </div>
 `;
 ```
-
-#### Fee Structure
+ -->
 
 ### Benchmark Comparison
 
