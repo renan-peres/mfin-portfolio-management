@@ -6,7 +6,7 @@
 
 ### Holdings
 
-:::: {.columns style="height: 45%; width: 100%;"}
+:::: {.columns style="height: 50%; width: 100%;"}
 
 #### Portfolio Summary {width=70%}
 
@@ -381,10 +381,6 @@ function buildPortfolioMetrics() {
 //| output: false
 
 processedQuotesData = processQuotesData(daily_quotes, equity_tickers);
-
-/*────────────────────────────────────────────────────────────
-  2 ▸ hidden reactive controller for the clicked date
-────────────────────────────────────────────────────────────*/
 viewof selectedEndDate = {
   const input = html`<input type="hidden">`;
   input.value = (portfolioData?.datasetDateRange?.endDate ?? new Date()).toISOString();
@@ -392,7 +388,7 @@ viewof selectedEndDate = {
 }
 ```
 
-:::: {.columns style="height: calc(100vh - 680px); width: 100%;"}
+:::: {.columns style="height: 45%; width: 100%;"}
 
 #### Performance Summary {width=35%}
 

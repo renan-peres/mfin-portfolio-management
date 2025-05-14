@@ -120,7 +120,7 @@ path {
 // SVG handling
 svg[width][height][viewBox] {
   width: 100% !important;
-  height: 100% !important; // Changed from 'auto' to '100%'
+  height: 100% !important; 
   max-width: 100%;
   max-height: 100%;
   display: block;
@@ -135,6 +135,17 @@ svg[width][height][viewBox] {
 .dt-layout-table {
   overflow: auto;
   max-width: 100%;
+}
+
+// Make sure columns respect their height
+.columns {
+  display: flex;
+  
+  > div {
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+  }
 }
 
 // ==========================================================================
@@ -302,7 +313,7 @@ h5.table-title {
 // ==========================================================================
 
 [class^="plot-"] {
-  font-size: 12px; // Removed !important
+  font-size: 12px;
   width: 100% !important;
   min-height: 400px;
   padding-right: -12px;
@@ -312,23 +323,23 @@ h5.table-title {
   [aria-label="y-axis label"] text,
   [aria-label="x-axis tick label"] text,
   [aria-label="y-axis tick label"] text {
-    font-size: 14px; // Removed !important
+    font-size: 14px;
     font-weight: 400;
   }
 
   // Plot title
   [aria-label="title"] text {
-    font-size: 18px; // Removed !important
+    font-size: 18px;
     font-weight: 500;
   }
 
   // Legend text
   [aria-label="legend"] text {
-    font-size: 12px; // Removed !important
+    font-size: 12px;
   }
 }
 
-// Add a class for customizable charts that overrides nothing
+// Add a class for customizable charts
 .chart-customizable[class^="plot-"] {
   font-size: inherit;
   
@@ -339,6 +350,27 @@ h5.table-title {
   [aria-label="title"] text,
   [aria-label="legend"] text {
     font-size: inherit;
+  }
+}
+
+// Enhanced chart container styling
+.chart-customizable {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 0 !important;
+  
+  svg {
+    height: 100% !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+  
+  // Force height on chart containers
+  &.plot-container {
+    min-height: 100% !important;
+    flex: 1 !important;
   }
 }
 
@@ -792,64 +824,7 @@ h5.table-title {
   }
 }
 
-// Ensure height is properly propagated for chart containers
-.chart-customizable {
-  height: 100% !important;
-  
-  svg {
-    height: 100% !important;
-    width: 100% !important;
-  }
-}
 
-// Make sure columns respect their height
-.columns {
-  display: flex;
-  
-  > div {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-// Hide the OJS loading box completely without taking space
-.quarto-ojs-hide.ojs-in-a-box-waiting-for-module-import.observablehq {
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  position: absolute !important;
-  visibility: hidden !important;
-}
-
-// Fix for any parent containers that might still be reserving space
-.ojs-in-a-box-waiting-for-module-import {
-  min-height: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-// Enhanced chart container styling
-.chart-customizable {
-  height: 100% !important;
-  width: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  
-  svg {
-    height: 100% !important;
-    width: 100% !important;
-    flex: 1 !important;
-  }
-  
-  // Force height on chart containers
-  &.plot-container {
-    min-height: 100% !important;
-    flex: 1 !important;
-  }
-}
 
 // ==========================================================================
 //  CARD LAYOUT ADJUSTMENTS
