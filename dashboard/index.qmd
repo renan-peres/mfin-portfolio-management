@@ -391,10 +391,11 @@ ojs_define(
 
 ```{ojs}
 //| output: false
-// Use dynamic import for utility functions
-utils = await import("./js/portfolio-utils.js")
+utils = await import("./js/utils.js")
+constants = await import("./js/constants.js")
+assetColors = constants.assetColors
 
-// Define each function from the imported module
+// Use dynamic import for utility functions
 formatCurrency = utils.formatCurrency
 formatNumber = utils.formatNumber
 formatPercent = utils.formatPercent

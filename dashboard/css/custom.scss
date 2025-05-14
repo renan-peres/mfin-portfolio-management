@@ -8,6 +8,11 @@
 $navbar-bg: #01090c !default;
 $navbar-fg: #ffffff !default;
 
+// Asset class colors
+$risk-free-color: #4CAF50 !default; // Green
+$bond-color: #2196F3 !default;      // Blue
+$equity-color: #FF9800 !default;    // Orange
+
 // Brand colors
 $dark-black: #000000 !default;
 $primary-blue: #1c7ed6 !default;
@@ -115,7 +120,7 @@ path {
 // SVG handling
 svg[width][height][viewBox] {
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important; // Changed from 'auto' to '100%'
   max-width: 100%;
   max-height: 100%;
   display: block;
@@ -207,6 +212,15 @@ div[style*="overflow: auto"] table thead th,
   }
 }
 
+// Table title styling
+h5.table-title {
+  margin-top: 1rem !important;
+  margin-bottom: 0rem !important;
+  padding-left: 0rem;
+  font-size: 1.1rem;
+  color: $text-dark !important;
+}
+
 // ==========================================================================
 //  TABSETS
 // ==========================================================================
@@ -288,7 +302,7 @@ div[style*="overflow: auto"] table thead th,
 // ==========================================================================
 
 [class^="plot-"] {
-  font-size: 12px !important;
+  font-size: 12px; // Removed !important
   width: 100% !important;
   min-height: 400px;
   padding-right: -12px;
@@ -298,28 +312,34 @@ div[style*="overflow: auto"] table thead th,
   [aria-label="y-axis label"] text,
   [aria-label="x-axis tick label"] text,
   [aria-label="y-axis tick label"] text {
-    font-size: 14px !important;
+    font-size: 14px; // Removed !important
     font-weight: 400;
   }
 
   // Plot title
   [aria-label="title"] text {
-    font-size: 18px !important;
+    font-size: 18px; // Removed !important
     font-weight: 500;
   }
 
   // Legend text
   [aria-label="legend"] text {
-    font-size: 12px !important;
+    font-size: 12px; // Removed !important
   }
 }
 
-// Chart overflow control
-.cell-output-display:not(.no-overflow-x), 
-.knitsql-table:not(.no-overflow-x) {
-    overflow-x: auto;
-    // overflow-y: hidden;
-    overflow-y: auto;
+// Add a class for customizable charts that overrides nothing
+.chart-customizable[class^="plot-"] {
+  font-size: inherit;
+  
+  [aria-label="x-axis label"] text,
+  [aria-label="y-axis label"] text,
+  [aria-label="x-axis tick label"] text,
+  [aria-label="y-axis tick label"] text,
+  [aria-label="title"] text,
+  [aria-label="legend"] text {
+    font-size: inherit;
+  }
 }
 
 // ==========================================================================
@@ -772,3 +792,152 @@ div[style*="overflow: auto"] table thead th,
   }
 }
 
+// Ensure height is properly propagated for chart containers
+.chart-customizable {
+  height: 100% !important;
+  
+  svg {
+    height: 100% !important;
+    width: 100% !important;
+  }
+}
+
+// Make sure columns respect their height
+.columns {
+  display: flex;
+  
+  > div {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// Hide the OJS loading box completely without taking space
+.quarto-ojs-hide.ojs-in-a-box-waiting-for-module-import.observablehq {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  visibility: hidden !important;
+}
+
+// Fix for any parent containers that might still be reserving space
+.ojs-in-a-box-waiting-for-module-import {
+  min-height: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+// Enhanced chart container styling
+.chart-customizable {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  
+  svg {
+    height: 100% !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+  
+  // Force height on chart containers
+  &.plot-container {
+    min-height: 100% !important;
+    flex: 1 !important;
+  }
+}
+
+// ==========================================================================
+//  CARD LAYOUT ADJUSTMENTS
+// ==========================================================================
+
+// Remove padding from dashboard card bodies
+.quarto-dashboard .card .card-body {
+  padding-block: 0 !important;
+  margin: 0 !important;
+}
+
+// // Portfolio chart specific fixes
+// .portfolio-chart-container {
+//   height: 400px !important;
+//   min-height: 400px !important;
+//   width: 100% !important;
+//   position: relative !important;
+//   display: block !important;
+//   overflow: visible !important;
+  
+//   .chart-customizable {
+//     height: 100% !important;
+//     width: 100% !important;
+//     min-height: 400px !important;
+    
+//     svg {
+//       height: 100% !important; 
+//       width: 100% !important;
+//     }
+//   }
+// }
+
+// // Fix column layout for historical performance tab
+// .columns > [class*="width=65%"] {
+//   min-height: 400px !important;
+//   height: 400px !important;
+// }
+
+// ==========================================================================
+// TRANSPARENT CARD BORDER ADJUSTMENTS
+// ==========================================================================
+
+// // More aggressive card styling to remove ALL visual borders/backgrounds
+// .quarto-dashboard .card {
+//   border: none !important;
+//   box-shadow: none !important;
+//   background: transparent !important;
+  
+//   // Remove border and background from card header
+//   .card-header {
+//     border: none !important;
+//     background: transparent !important;
+//     box-shadow: none !important;
+//   }
+  
+//   // Remove ALL styling from card body that could create visual borders
+//   .card-body {
+//     padding: 0 !important;
+//     margin: 0 !important;
+//     border: none !important;
+//     border-top: none !important;
+//     border-bottom: none !important;
+//     box-shadow: none !important;
+//     background: transparent !important;
+    
+//     // Target any additional divs that might be creating borders
+//     > div {
+//       border: none !important;
+//       box-shadow: none !important;
+//     }
+//   }
+  
+//   // Remove any potential footer styling
+//   .card-footer {
+//     border: none !important;
+//     background: transparent !important;
+//     box-shadow: none !important;
+//   }
+// }
+
+// // Fix for bslib cards specifically
+// .bslib-card.card[data-full-screen="false"] {
+//   border: none !important;
+//   box-shadow: none !important;
+//   background: transparent !important;
+// }
+
+// // Fix for any dividers within the tabs
+// .nav-tabs {
+//   border-bottom: none !important;
+// }

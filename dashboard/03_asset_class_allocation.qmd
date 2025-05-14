@@ -61,7 +61,7 @@ function assetClassAllocationTable(howMany = Infinity) {
 
             if (idx === maxSharpeIdx) { name = `${prefix}: Optimal`;           bg = "#ffff9980"; }
             else if (idx === minVarIdx) { name = `${prefix}: Minimum Variance`;  }
-            else if (idx === maxReturnIdx) { name = `${prefix}: Maximum Return`; }
+            else if (idx === maxReturnIdx) { name = `${prefix}: Maximum Variance`; }
 
             // Create row with click handler
             const row = html`
@@ -145,21 +145,21 @@ function assetClassAllocationTable(howMany = Infinity) {
 viewof portfolioBarChart = {
   const data = dynamicAllocations;
 
-  // Bar‑chart data
+  // Bar‑chart data with standard hyphen in "Risk-Free" to match constants.js
   const barData = [
-    { asset: "Risk‑Free", weight: (1 - fixed_optimal_weight) * 100 },
+    { asset: "Risk-Free", weight: (1 - fixed_optimal_weight) * 100 },
     { asset: "Bond",      weight:  fixed_optimal_weight * bond_weight   * 100 },
     { asset: "Equity",    weight:  fixed_optimal_weight * equity_weight * 100 },
   ];
 
-  /* NEW: sort a fresh copy in descending order of weight */
+  /* Sort a fresh copy in descending order of weight */
   const barDataSorted = [...barData].sort((a, b) => b.weight - a.weight);
 
   return Plot.plot({
     marginLeft: 60,
     x: {
       label: "",
-      domain: barDataSorted.map(d => d.asset),   // use sorted order on the x‑axis
+      domain: barDataSorted.map(d => d.asset),
       padding: 0.3
     },
     y: {
@@ -172,7 +172,7 @@ viewof portfolioBarChart = {
       Plot.barY(barDataSorted, {
         x: "asset",
         y: "weight",
-        fill: "asset",
+        fill: d => assetColors[d.asset],  // This will now correctly match the keys in constants.js
         tip: true,
         title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
       }),
@@ -239,17 +239,17 @@ viewof efficientFrontierPlot = {
       ], {
         x: "x",
         y: "y",
-        stroke: "orange",
-        strokeWidth: 2.5,
-        strokeDasharray: "4 4"
+        stroke: assetColors["Risk-Free"], 
+        strokeWidth: 2.5
       }),
       
       // Efficient frontier
       Plot.line(frontier, {
         x: "Risk", 
         y: "Return",
-        stroke: "green",
+        stroke: assetColors["Equity"], 
         strokeWidth: 3,
+        strokeDasharray: "4 4",
         curve: "basis"
       }),
       
@@ -293,14 +293,14 @@ viewof efficientFrontierPlot = {
       Plot.dot([{x: 0, y: rf_rate}], {
         x: "x",
         y: "y",
-        fill: "black",
+        fill: assetColors["Risk‑Free"], // Use risk-free color
         r: 7,
         stroke: "white",
         strokeWidth: 1.5,
         tip: true,
         title: `Risk-Free Asset\nReturn: ${formatPercent(rf_rate)}`
       }),
-      
+
       // Add interactive rule to follow mouse
       Plot.ruleY(Plot.pointer({y: "y"}), {
         stroke: "gray", 
@@ -312,7 +312,7 @@ viewof efficientFrontierPlot = {
       Plot.text([
         {x: minVar.Risk, y: minVar.Return, text: "Min Variance", dx: 10, dy: -10},
         {x: maxSharpe.Risk, y: maxSharpe.Return, text: "Max Sharpe", dx: 10, dy: -10},
-        {x: 0.005, y: rf_rate, text: "Risk-Free", dx: 10, dy: 10}
+        {x: 0.005, y: rf_rate, text: "Risk-Free Rate", dx: 10, dy: 10}
       ], {
         x: "x",
         y: "y",

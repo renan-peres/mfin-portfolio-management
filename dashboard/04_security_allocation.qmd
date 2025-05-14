@@ -77,8 +77,31 @@ viewof equityTickersBarChart = {
     .slice(0, 10)
     .map(d => ({
       asset: d.Ticker,
-      weight: d.completeWeight * 100  // %
+      weight: d.completeWeight * 100,  // %
+      type: d.Type === "Risk‑Free" ? "Risk-Free" : d.Type // Handle dash style differences
     }));
+  
+  // Group securities by asset type to create color gradient scales
+  const groupedByType = d3.group(barData, d => d.type);
+  
+  // Create a color function that generates gradients for asset classes with multiple securities
+  const getSecurityColor = (d) => {
+    const baseColor = assetColors[d.type];
+    const securities = groupedByType.get(d.type);
+    
+    // If there's only one security in this asset class, use the base color
+    if (securities.length <= 1) return baseColor;
+    
+    // Otherwise create a gradient based on position in the group
+    const index = securities.findIndex(s => s.asset === d.asset);
+    const position = index / (securities.length - 1); // 0 to 1
+    
+    // Create a gradient from the base color to a lighter version
+    return d3.interpolate(
+      baseColor, 
+      d3.color(baseColor).brighter(0.8)
+    )(position);
+  };
 
   // Bar chart
   return Plot.plot({
@@ -98,9 +121,9 @@ viewof equityTickersBarChart = {
       Plot.barY(barData, {
         x: "asset",
         y: "weight",
-        fill: "asset",
+        fill: getSecurityColor, // Use our custom gradient function
         tip: true,
-        title: d => `${d.asset}: ${d.weight.toFixed(1)}%`
+        title: d => `${d.asset} (${d.type}): ${d.weight.toFixed(1)}%`
       }),
       Plot.text(barData, {
         x: "asset",
@@ -110,8 +133,7 @@ viewof equityTickersBarChart = {
         fontWeight: "bold",
         fontSize: 16
       })
-    ],
-    color: { legend: false }
+    ]
   });
 }
 ```
