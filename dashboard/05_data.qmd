@@ -62,7 +62,7 @@ transposed_equity_fundamentals = optimal_portfolio_fundamentals.sort_values(by="
 display(transposed_equity_fundamentals)
 ```
 
-## Bond Valuation (Highlight TLT)
+## Bond Valuation
 
 ```{python}
 bond_valuation = bond_pf.copy() 

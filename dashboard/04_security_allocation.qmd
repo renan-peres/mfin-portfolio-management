@@ -149,7 +149,7 @@ securityAllocationTable()
 
 ::: {.panel-tabset style="height: calc(100vh - 450px); overflow-y: auto;"} -->
 
-## Equity Efficient Frontier 
+## Efficient Frontier (Equities)
 
 :::: {.rows}
 
@@ -168,13 +168,7 @@ html`
 
 ### Equities Weighted Retun {height=30%}
 
-```{ojs}
-//| echo: false
-html`
-  <div>
-    <h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Allocation</h5>
-  </div>`;
-```
+<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Allocation</h5>
 
 ```{python}
 # Order Columns
@@ -190,4 +184,29 @@ display(optimal_portfolio_ef)
 
 :::
 
-## Covariances
+## Covariances (Equities)
+
+ <h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Correlation Matrix</h5>
+
+```{python}
+display(eq_correl)
+```
+
+<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Covariance Matrix</h5>
+
+```{python}
+display(eq_cov)
+```
+
+<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Covariance Matrix (Weighted)</h5>
+
+```{python}
+display(pd.DataFrame([weights.values], columns=weights.index, index=["Weight"]))
+```
+
+```{python}
+display(eq_cov_weighted)
+```
+
+
+## Bond Sensitivity to YTM

@@ -120,6 +120,9 @@ def prep_price(df: pd.DataFrame, date_col: str = "Date") -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # Daily returns, correlation, volatility                                     #
 # --------------------------------------------------------------------------- #
+
+## STOCK DATA
+
 daily_px     = prep_price(sheets["daily_quotes"])
 monthly_px   = prep_price(sheets["monthly_quotes"])
 
@@ -133,6 +136,7 @@ monthly_px.index = pd.to_datetime(monthly_px.index)
 daily_px = daily_px.loc[daily_px.index.notna()].dropna(how='any')
 monthly_px = monthly_px.loc[monthly_px.index.notna()].dropna(how='any')
 
+## RETURNS 
 eq_ret = daily_px[equity_tk].pct_change(fill_method=None)
 bd_ret = daily_px[bond_tk[0]].pct_change(fill_method=None)
 
@@ -140,18 +144,23 @@ bd_ret = daily_px[bond_tk[0]].pct_change(fill_method=None)
 common  = eq_ret.dropna().index.intersection(bd_ret.dropna().index)
 eq_ret, bd_ret = eq_ret.loc[common], bd_ret.loc[common]
 
-weights   = equity_pf["Weight"]                             # keep ticker index!
+weights   = equity_pf["Weight"]                          
 eq_port_d = eq_ret.dot(weights)
 
 # monthly simple returns (matches Excel)
 eq_port_m = eq_port_d.resample("ME").sum()
 bd_ret_m  = bd_ret.resample("ME").sum()
 
-corr_eq_bd = eq_port_m.corr(bd_ret_m)
-
-# annualised vols and covariance
-eq_cov   = eq_ret.cov() * 252
+## CORRELATION & COVARIANCES  
+eq_correl = eq_ret.corr() # correlation matrix for equity securities
+eq_cov   = eq_ret.cov() * 252 # annualised vols and covariance
+eq_cov_weighted = np.outer(weights, weights) * eq_cov # Calculate weighted covariance matrix
 eq_vol   = np.sqrt(weights @ eq_cov @ weights)
+portfolio_variance = eq_cov_weighted.sum().sum()  # Should equal weights @ eq_cov @ 
+portfolio_vol = np.sqrt(portfolio_variance)    # Should equal eq_vol
+
+corr_eq_bd = eq_port_m.corr(bd_ret_m) # Correlation between Equities and Bonds
+
 bond_vol = bond_pf.loc[bond_tk[0], "Standard_Deviation"]    # ‹assumption›
 bond_ret = bond_pf.loc[bond_tk[0], "Price Change Sensitivity (Expected Return)"]  # ‹assumption›
 eq_ret_a = weights @ equity_pf["Expected Return"]           # ‹assumption›
