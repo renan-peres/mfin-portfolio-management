@@ -483,7 +483,7 @@ function createDateFilter() {
       <table class="table table-sm mt-0 mb-0">
         ${createDateFilter()}
         ${portfolioPerformanceCard()}
-        ${assetClassAllocationTable(3)}
+        ${simplifiedAllocationTable(3)}
       </table>
     </div>
   `;
@@ -849,7 +849,7 @@ function securityPerformanceTable() {
 securityPerformanceTable()
 ```
 
-### Projections & Fees {style="height: 50%; overflow-y: auto;"}
+### Growth Projection & Fees {style="height: 50%; overflow-y: auto;"}
 
 :::: {.columns}
 
@@ -949,7 +949,95 @@ function calculateProjectionData() {
 ##### Summary Card
 
 ```{ojs}
-// Display combined projection summary card with simplified fee structure controls
+//| echo: false
+//| output: false
+
+// Modify simplifiedAllocationTable to update radio buttons when rows are clicked
+function simplifiedAllocationTable(howMany = 3) {
+  // Get the full table
+  const fullTable = assetClassAllocationTable(howMany);
+  
+  // Create a new container for our filtered table
+  const container = html`<div class="table-responsive" style="margin-top: 15px;">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Portfolio</th>
+          <th>Weights</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>`;
+  
+  // Find rows in the original table
+  const originalRows = fullTable.querySelectorAll('tr[data-idx]');
+  const newTableBody = container.querySelector('tbody');
+  
+  // Copy only the Portfolio and Weights columns (first and second cells)
+  originalRows.forEach(originalRow => {
+    const cells = originalRow.querySelectorAll('td');
+    if (cells.length >= 2) {
+      const newRow = html`<tr data-idx="${originalRow.getAttribute('data-idx')}" data-row-pos="${originalRow.getAttribute('data-row-pos')}">
+        <td>${cells[0].innerHTML}</td>
+        <td>${cells[1].innerHTML}</td>
+      </tr>`;
+      
+      // Copy the portfolioData for click handler
+      newRow.portfolioData = originalRow.portfolioData;
+      
+      // Add the click handler
+      newRow.addEventListener('click', function() {
+        if (this.portfolioData) {
+          // Update fixed_optimal_weight_input
+          viewof fixed_optimal_weight_input.value = this.portfolioData.riskyWeight;
+          viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
+          
+          // Update equity_weight slider
+          const equitySlider = viewof equity_weight;
+          if (equitySlider) {
+            const sliderInput = equitySlider.querySelector('input');
+            if (sliderInput) {
+              sliderInput.value = this.portfolioData.equityWeight;
+              sliderInput.dispatchEvent(new Event("input"));
+            }
+            
+            equitySlider.value = this.portfolioData.equityWeight;
+            equitySlider.dispatchEvent(new Event("input"));
+          }
+          
+          // Highlight the selected row
+          container.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+          this.classList.add('selected-row');
+          
+          // Get portfolio type from the cell text content
+          const cellText = this.querySelector('td').textContent.trim();
+          let portfolioType = "Optimal Portfolio"; // Default
+          
+          if (cellText.includes("Minimum Variance")) {
+            portfolioType = "Minimum Variance";
+          } else if (cellText.includes("Maximum Variance")) {
+            portfolioType = "Maximum Variance";
+          }
+          
+          // Update the radio button state
+          const portfolioTypeRadios = document.querySelectorAll('input[name="portfolioType"]');
+          portfolioTypeRadios.forEach(radio => {
+            radio.checked = (radio.value === portfolioType);
+          });
+        }
+      });
+      
+      newTableBody.appendChild(newRow);
+    }
+  });
+  
+  return container;
+}
+```
+
+
+```{ojs}
 viewof portfolioProjectionSummary = {
   const projData = calculateProjectionData();
   if (projData.error) {
@@ -961,19 +1049,48 @@ viewof portfolioProjectionSummary = {
   // Create a container for our component
   const container = html`<div></div>`;
   
-  // Create fee structure type radio buttons
-  const feeTypeRadio = html`<form style="margin-bottom: 10px;">
-    <div class="form-label">
-      <input type="radio" name="feeType" id="annual-only" value="Annual Only" checked>
-      <label for="annual-only" style="margin-right: 15px;">Annual Only</label>
-      
-      <input type="radio" name="feeType" id="front-load" value="Front-Load">
-      <label for="front-load" style="margin-right: 15px;">Front-Load</label>
-      
-      <input type="radio" name="feeType" id="back-load" value="Back-Load">
-      <label for="back-load">Back-Load</label>
-    </div>
-  </form>`;
+  // Store the current portfolio type selection in a closure variable
+  // This persists between renders
+  const state = {
+    selectedPortfolioType: "Optimal Portfolio",
+    selectedFeeType: "Annual Only"
+  };
+  
+  // Create portfolio type radio buttons with label
+  const portfolioTypeRadio = html`
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+      <div class="form-label" style="flex: 1;">
+        <input type="radio" name="portfolioType" id="optimal" value="Optimal Portfolio" 
+          ${state.selectedPortfolioType === "Optimal Portfolio" ? "checked" : ""}>
+        <label for="optimal" style="margin-right: 15px;">Optimal Portfolio</label>
+        
+        <input type="radio" name="portfolioType" id="min-var" value="Minimum Variance" 
+          ${state.selectedPortfolioType === "Minimum Variance" ? "checked" : ""}>
+        <label for="min-var" style="margin-right: 15px;">Minimum Variance</label>
+        
+        <input type="radio" name="portfolioType" id="max-var" value="Maximum Variance" 
+          ${state.selectedPortfolioType === "Maximum Variance" ? "checked" : ""}>
+        <label for="max-var">Maximum Variance</label>
+      </div>
+    </div>`;
+    
+  // Create fee structure type radio buttons with label in front
+  const feeTypeRadio = html`
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+      <div class="form-label" style="flex: 1;">
+        <input type="radio" name="feeType" id="annual-only" value="Annual Only" 
+          ${state.selectedFeeType === "Annual Only" ? "checked" : ""}>
+        <label for="annual-only" style="margin-right: 15px;">Annual Only</label>
+        
+        <input type="radio" name="feeType" id="front-load" value="Front-Load" 
+          ${state.selectedFeeType === "Front-Load" ? "checked" : ""}>
+        <label for="front-load" style="margin-right: 15px;">Front-Load</label>
+        
+        <input type="radio" name="feeType" id="back-load" value="Back-Load" 
+          ${state.selectedFeeType === "Back-Load" ? "checked" : ""}>
+        <label for="back-load">Back-Load</label>
+      </div>
+    </div>`;
   
   // Define fixed fee values based on fee type
   const frontLoadValue = 0.03;  // 3.0% front load fee
@@ -985,12 +1102,96 @@ viewof portfolioProjectionSummary = {
   };
   const txnCostValue = 0.002;  // 0.20% transaction cost
   
+  // Add a function to update radio buttons based on portfolio type
+  function updatePortfolioTypeRadio(portfolioType) {
+    // Find all radio buttons
+    const radioButtons = portfolioTypeRadio.querySelectorAll('input[name="portfolioType"]');
+    
+    // Update the checked state based on portfolio type
+    radioButtons.forEach(radio => {
+      if (radio.value === portfolioType) {
+        radio.checked = true;
+      } else {
+        radio.checked = false;
+      }
+    });
+    
+    // Update the state to reflect this change
+    state.selectedPortfolioType = portfolioType;
+  }
+  
+  // Function to update portfolio type and weights
+  function updatePortfolioType() {
+    // Get the selected portfolio type
+    const selectedType = [...portfolioTypeRadio.querySelectorAll('input[name="portfolioType"]')]
+      .find(radio => radio.checked)?.value || "Optimal Portfolio";
+    
+    // Update our persisted state
+    state.selectedPortfolioType = selectedType;
+    
+    // Look for both the original table and the simplified table
+    const tables = document.querySelectorAll('.table-responsive');
+    
+    if (tables.length > 0) {
+      let targetRow = null;
+      
+      // Search through all tables for the matching row
+      tables.forEach(table => {
+        const rows = table.querySelectorAll('tr[data-idx]');
+        
+        rows.forEach(row => {
+          // Check the text content of the first cell to match the portfolio type
+          const firstCell = row.querySelector('td');
+          if (firstCell && firstCell.textContent) {
+            const cellText = firstCell.textContent.trim();
+            
+            if ((state.selectedPortfolioType === "Optimal Portfolio" && cellText.includes("Optimal")) ||
+                (state.selectedPortfolioType === "Minimum Variance" && cellText.includes("Minimum Variance")) ||
+                (state.selectedPortfolioType === "Maximum Variance" && cellText.includes("Maximum Variance"))) {
+              targetRow = row;
+            }
+          }
+        });
+      });
+      
+      // If we found a matching row, simulate a click on it
+      if (targetRow && targetRow.portfolioData) {
+        // Update fixed_optimal_weight_input
+        viewof fixed_optimal_weight_input.value = targetRow.portfolioData.riskyWeight;
+        viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
+        
+        // Update equity_weight slider
+        const equitySlider = viewof equity_weight;
+        if (equitySlider) {
+          const sliderInput = equitySlider.querySelector('input');
+          if (sliderInput) {
+            sliderInput.value = targetRow.portfolioData.equityWeight;
+            sliderInput.dispatchEvent(new Event("input"));
+          }
+          
+          equitySlider.value = targetRow.portfolioData.equityWeight;
+          equitySlider.dispatchEvent(new Event("input"));
+        }
+        
+        // Highlight the selected row in all tables
+        document.querySelectorAll('tr[data-idx]').forEach(r => r.classList.remove('selected-row'));
+        targetRow.classList.add('selected-row');
+        
+        // Also trigger the input event to update any dependent visualizations
+        viewof equity_weight.dispatchEvent(new Event("input"));
+      }
+    }
+  }
+  
   // Function to render the content based on selected fee type
   function updateContent() {
     // Get the selected fee type
     const selectedFeeType = [...feeTypeRadio.querySelectorAll('input[name="feeType"]')]
       .find(radio => radio.checked)?.value || "Annual Only";
-      
+    
+    // Update state with selected fee type
+    state.selectedFeeType = selectedFeeType;
+    
     // Get the appropriate management fee for the selected fee structure
     const mgmtFeeValue = mgmtFeeValues[selectedFeeType];
     
@@ -1026,13 +1227,29 @@ viewof portfolioProjectionSummary = {
     // Generate the summary card HTML
     const summaryCard = html`
     <div>
-      <table class="table table-sm mb-0">
+      <table class="table table-sm mb-0 mb-1">
           <h5 class="table-title">Portfolio Projection Summary (${time_horizon} yrs)</h5>
+
+          <!-- Portfolio type controls -->
+          <div class="row">
+            <div class="col-md-12 mb-0">
+            <h5 class="table-subtitle">Portfolio</h5>
+              ${portfolioTypeRadio}
+            </div>
+          </div>
+
+          <!-- Simplified fee structure controls -->
+          <div class="row">
+            <div class="col-md-12 mb-0">
+              <h5 class="table-subtitle">Fee Structure</h5>
+              ${feeTypeRadio}
+            </div>
+          </div>
 
           <!-- Projection summary data -->
           <div class="row w-100 mx-0" style="width: 100%;">
             <div class="col-md-6 px-0">
-              <table class="table table-sm mb-0" style="width: 100%;">
+              <table class="table table-sm mb-0 mt-0" style="width: 100%;">
                 <tbody>
                   <tr>
                     <th style="width: 50%">Investment Amount:</th>
@@ -1043,32 +1260,26 @@ viewof portfolioProjectionSummary = {
                     <td>${time_horizon} years</td>
                   </tr>
                   <tr>
+                    <th style="width: 50%">Selected Portfolio:</th>
+                    <td>${state.selectedPortfolioType}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Fee Structure:</th>
+                    <td>${state.selectedFeeType}</td>
+                  </tr>
+                </table>
+              </div>
+
+            <div class="col-md-6 px-0">
+              <table class="table table-sm mb-0" style="width: 100%;">
+                <tbody>
+                  <tr>
                     <th style="width: 50%">Projected Final Value:</th>
                     <td>${formatCurrency(finalValue)}</td>
                   </tr>
                   <tr>
                     <th style="width: 50%">Uncertainty Range (±${finalBoundPct.toFixed(2)}%):</th>
                     <td>${formatCurrency(finalLower)} - ${formatCurrency(finalUpper)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <hr>
-            
-            <!-- Simplified fee structure controls -->
-            <div class="row">
-              <div class="col-md-12">
-                <h5 class="table-title">Fee Structure</h5>
-                ${feeTypeRadio}
-              </div>
-            </div>
-
-              <table class="table table-sm mb-0" style="width: 100%;">
-                <tbody>
-                  <tr>
-                    <th style="width: 50%">Fee Structure:</th>
-                    <td>${selectedFeeType}</td>
                   </tr>
                   <tr>
                     <th style="width: 50%">Projected Cash Fees:</th>
@@ -1087,7 +1298,6 @@ viewof portfolioProjectionSummary = {
                     <td>${annualizedReturn.toFixed(2)}%</td>
                   </tr>
                 </tbody>
-                ${assetClassAllocationTable(3)}
               </table>
             </div>
           </div>
@@ -1098,14 +1308,34 @@ viewof portfolioProjectionSummary = {
     // Replace the container's contents with the new summary card
     container.innerHTML = '';
     container.appendChild(summaryCard);
+    
+    // Make sure radio buttons reflect the current state
+    updatePortfolioTypeRadio(state.selectedPortfolioType);
+    
+    // Also update fee type radio buttons
+    feeTypeRadio.querySelectorAll('input[name="feeType"]').forEach(radio => {
+      radio.checked = (radio.value === state.selectedFeeType);
+    });
   }
   
-  // Add event listeners to the radio buttons
+  // Add event listeners to the fee type radio buttons
   feeTypeRadio.querySelectorAll('input[name="feeType"]').forEach(radio => {
     radio.addEventListener('change', updateContent);
   });
   
-  // Initial render
+  // Add event listeners to the portfolio type radio buttons
+  portfolioTypeRadio.querySelectorAll('input[name="portfolioType"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      // Explicitly update our state variable when radio changes
+      state.selectedPortfolioType = radio.value;
+      
+      // Then update the portfolio and content
+      updatePortfolioType();
+      updateContent();
+    });
+  });
+  
+  // Initial renders
   updateContent();
   
   // Return the container
@@ -1117,28 +1347,26 @@ viewof portfolioProjectionSummary = {
 //| echo: false
 //| output: false
 
-// Helper function to calculate fee scenario with passed parameters
 function calculateFeeScenario(feeType, portfolioReturn, yearsArray, 
                           frontLoadFeeValue, backLoadFeeValue, managementFeeValue, transactionCostValue) {
   const result = [];
   const totalYears = Math.ceil(time_horizon);
   
   for (let year = 0; year <= totalYears; year++) {
-    let valueBefore, valueAfter, cashFee, oppCost;
+    let valueBefore, valueAfter, cashFee;
     
     if (year === 0) {
       valueBefore = investment_amount;
       
-      // Apply initial fees
+      // Apply initial fees - ONLY for Front-Load
       if (feeType === "Front-Load") {
         cashFee = valueBefore * frontLoadFeeValue;
         valueAfter = valueBefore - cashFee;
       } else {
-        cashFee = valueBefore * transactionCostValue;
-        valueAfter = valueBefore - cashFee;
+        // No fees for Annual Only and Back-Load in year 0
+        cashFee = 0;
+        valueAfter = valueBefore;
       }
-      
-      oppCost = cashFee; // At year 0, opportunity cost equals the cash fee
     } else {
       // Get previous year's ending value as this year's starting value
       valueBefore = result[year-1].valueAfterFees * (1 + portfolioReturn);
@@ -1152,11 +1380,12 @@ function calculateFeeScenario(feeType, portfolioReturn, yearsArray,
       }
       
       valueAfter = valueBefore - cashFee;
-      
-      // Calculate opportunity cost (what the fees would have grown to)
-      const prevOppCost = result[year-1].oppCostFees;
-      oppCost = prevOppCost * (1 + portfolioReturn) + cashFee;
     }
+    
+    // Calculate opportunity cost for this specific fee
+    // This is what the fee would grow to by the end if invested at the risk-free rate
+    const yearsRemaining = totalYears - year;
+    const oppCost = cashFee * Math.pow(1 + rf_rate, yearsRemaining);
     
     result.push({
       year,
@@ -1316,9 +1545,8 @@ viewof portfolioProjectionChart = {
 //| echo: false
 //| output: false
 
-// Helper function to create fee comparison table with passed parameters
 function createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, backLoadData,
-                              frontLoadFeeValue, managementFeeValue, backLoadFeeValue) {
+                             frontLoadFeeValue, annualOnlyFeeValue, frontLoadMgmtFeeValue, backLoadMgmtFeeValue, backLoadFeeValue) {
   // Only show first and last years if time horizon > 5 years
   const displayYears = time_horizon > 5 
     ? [0, 1, 2, Math.floor(time_horizon / 2), time_horizon - 1, time_horizon]
@@ -1334,9 +1562,9 @@ function createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, bac
         <thead>
           <tr>
             <th rowspan="2">Period</th>
-            <th colspan="4" style="text-align: center; background-color:rgb(209, 161, 2);">Front-Load (${(frontLoadFeeValue*100).toFixed(1)}% + ${(managementFeeValue*100).toFixed(2)}% annual)</th>
-            <th colspan="4" style="text-align: center; background-color:rgb(0, 131, 0);">Annual Only (${(managementFeeValue*100).toFixed(2)}% annual)</th>
-            <th colspan="4" style="text-align: center; background-color:rgb(151, 23, 0);">Back-Load (${(backLoadFeeValue*100).toFixed(1)}% + ${(managementFeeValue*100).toFixed(2)}% annual)</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(209, 161, 2);">Front-Load (${(frontLoadFeeValue*100).toFixed(1)}% + ${(frontLoadMgmtFeeValue*100).toFixed(2)}% annual)</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(0, 131, 0);">Annual Only (${(annualOnlyFeeValue*100).toFixed(2)}% annual)</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(151, 23, 0);">Back-Load (${(backLoadFeeValue*100).toFixed(1)}% + ${(backLoadMgmtFeeValue*100).toFixed(2)}% annual)</th>
           </tr>
           <tr>
             <th>Principal before fees</th>
@@ -1381,15 +1609,15 @@ function createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, bac
             <td>Total</td>
             <td></td>
             <td>${formatCurrency(frontLoadData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
-            <td>${formatCurrency(frontLoadData[frontLoadData.length-1].oppCostFees)}</td>
+            <td>${formatCurrency(frontLoadData.reduce((sum, row) => sum + row.oppCostFees, 0))}</td>
             <td>${formatPercent((frontLoadData[frontLoadData.length-1].valueAfterFees / investment_amount - 1))}</td>
             <td></td>
             <td>${formatCurrency(annualOnlyData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
-            <td>${formatCurrency(annualOnlyData[annualOnlyData.length-1].oppCostFees)}</td>
+            <td>${formatCurrency(annualOnlyData.reduce((sum, row) => sum + row.oppCostFees, 0))}</td>
             <td>${formatPercent((annualOnlyData[annualOnlyData.length-1].valueAfterFees / investment_amount - 1))}</td>
             <td></td>
             <td>${formatCurrency(backLoadData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
-            <td>${formatCurrency(backLoadData[backLoadData.length-1].oppCostFees)}</td>
+            <td>${formatCurrency(backLoadData.reduce((sum, row) => sum + row.oppCostFees, 0))}</td>
             <td>${formatPercent((backLoadData[backLoadData.length-1].valueAfterFees / investment_amount - 1))}</td>
           </tr>
         </tbody>
@@ -1402,7 +1630,6 @@ function createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, bac
 ```{ojs}
 //| echo: false
 
-// Define the createFeeComparisonDisplay function that will properly call createFeeComparisonTable
 function createFeeComparisonDisplay() {
   // Define fee values
   const frontLoadFeeValue = 0.03;  // 3.0% front load fee
@@ -1426,9 +1653,18 @@ function createFeeComparisonDisplay() {
   const backLoadData = calculateFeeScenario("Back-Load", portfolioExpectedReturn, yearsArray, 
                                      0, backLoadFeeValue, mgmtFeeValues["Back-Load"], txnCostValue);
   
-  // Call createFeeComparisonTable with all required parameters
-  return createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, backLoadData,
-                             frontLoadFeeValue, mgmtFeeValues["Annual Only"], backLoadFeeValue);
+  // Call createFeeComparisonTable with all required parameters including separate management fees
+  return createFeeComparisonTable(
+    yearsArray, 
+    frontLoadData, 
+    annualOnlyData, 
+    backLoadData,
+    frontLoadFeeValue, 
+    mgmtFeeValues["Annual Only"], 
+    mgmtFeeValues["Front-Load"],
+    mgmtFeeValues["Back-Load"],
+    backLoadFeeValue
+  );
 }
 
 // Display the fee comparison table

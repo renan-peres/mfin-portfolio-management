@@ -116,3 +116,8 @@ h5.table-title {
   color: $text-dark !important;
   font-weight: 700;  // or simply use: font-weight: bold;
 }
+
+.selected-row {
+  background-color: #f0ad4e !important;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
