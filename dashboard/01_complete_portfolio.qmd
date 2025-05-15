@@ -483,6 +483,7 @@ function createDateFilter() {
       <table class="table table-sm mt-0 mb-0">
         ${createDateFilter()}
         ${portfolioPerformanceCard()}
+        ${assetClassAllocationTable(3)}
       </table>
     </div>
   `;
@@ -848,11 +849,11 @@ function securityPerformanceTable() {
 securityPerformanceTable()
 ```
 
-### Growth Projections
+### Projections & Fees {style="height: 50%; overflow-y: auto;"}
 
-:::: {.columns style="width: 100%;"}
+:::: {.columns}
 
-#### Projection Summary {width=35%}
+#### Projection Summary {width=40%}
 
 ```{ojs}
 //| echo: false
@@ -945,9 +946,10 @@ function calculateProjectionData() {
 };
 ```
 
+##### Summary Card
 
 ```{ojs}
-// Display projection summary card
+// Display combined projection summary card with simplified fee structure controls
 viewof portfolioProjectionSummary = {
   const projData = calculateProjectionData();
   if (projData.error) {
@@ -956,56 +958,220 @@ viewof portfolioProjectionSummary = {
   
   const {finalValue, finalUpper, finalLower, finalBoundPct, totalReturn, annualizedReturn} = projData;
   
-  // Create summary card
-  return html`
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="table-title">Portfolio Growth Projection</h5>
-        <div class="row">
-          <div class="col-md-6">
-            <table class="table table-sm mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 50%">Investment Amount:</th>
-                  <td>${formatCurrency(investment_amount)}</td>
-                </tr>
-                <tr>
-                  <th style="width: 50%">Time Horizon:</th>
-                  <td>${time_horizon} years</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="col-md-6">
-            <table class="table table-sm mb-0">
-              <tbody>
-                <tr>
-                  <th style="width: 50%">Projected Final Value:</th>
-                  <td>${formatCurrency(finalValue)}</td>
-                </tr>
-                <tr>
-                  <th style="width: 50%">Uncertainty (±${finalBoundPct.toFixed(2)}%):</th>
-                  <td>${formatCurrency(finalLower)} - ${formatCurrency(finalUpper)}</td>
-                </tr>
-                <tr>
-                  <th style="width: 50%">Holding Period Return:</th>
-                  <td>${totalReturn.toFixed(2)}%</td>
-                </tr>
-                <tr>
-                  <th style="width: 50%">IRR (Annualized):</th>
-                  <td>${annualizedReturn.toFixed(2)}%</td>
-                </tr>
-              </tbody>
-            </table>
+  // Create a container for our component
+  const container = html`<div></div>`;
+  
+  // Create fee structure type radio buttons
+  const feeTypeRadio = html`<form style="margin-bottom: 10px;">
+    <div class="form-label">
+      <input type="radio" name="feeType" id="annual-only" value="Annual Only" checked>
+      <label for="annual-only" style="margin-right: 15px;">Annual Only</label>
+      
+      <input type="radio" name="feeType" id="front-load" value="Front-Load">
+      <label for="front-load" style="margin-right: 15px;">Front-Load</label>
+      
+      <input type="radio" name="feeType" id="back-load" value="Back-Load">
+      <label for="back-load">Back-Load</label>
+    </div>
+  </form>`;
+  
+  // Define fixed fee values based on fee type
+  const frontLoadValue = 0.03;  // 3.0% front load fee
+  const backLoadValue = 0.02;   // 2.0% back load fee
+  const mgmtFeeValues = {
+    "Annual Only": 0.009,      // 0.90% for annual-only
+    "Front-Load": 0.002,       // 0.20% for front-load
+    "Back-Load": 0.003         // 0.30% for back-load
+  };
+  const txnCostValue = 0.002;  // 0.20% transaction cost
+  
+  // Function to render the content based on selected fee type
+  function updateContent() {
+    // Get the selected fee type
+    const selectedFeeType = [...feeTypeRadio.querySelectorAll('input[name="feeType"]')]
+      .find(radio => radio.checked)?.value || "Annual Only";
+      
+    // Get the appropriate management fee for the selected fee structure
+    const mgmtFeeValue = mgmtFeeValues[selectedFeeType];
+    
+    // Calculate fee scenarios
+    const portfolioExpectedReturn = er_optimal || 0.08;
+    const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
+    
+    // Calculate different fee structure scenarios
+    const frontLoadData = calculateFeeScenario("Front-Load", portfolioExpectedReturn, yearsArray, 
+                                          frontLoadValue, 0, mgmtFeeValues["Front-Load"], txnCostValue);
+    const annualOnlyData = calculateFeeScenario("Annual Only", portfolioExpectedReturn, yearsArray, 
+                                          0, 0, mgmtFeeValues["Annual Only"], txnCostValue);
+    const backLoadData = calculateFeeScenario("Back-Load", portfolioExpectedReturn, yearsArray, 
+                                        0, backLoadValue, mgmtFeeValues["Back-Load"], txnCostValue);
+    
+    // Select the appropriate fee data based on current selection
+    let selectedFeeData;
+    if (selectedFeeType === "Front-Load") {
+      selectedFeeData = frontLoadData;
+    } else if (selectedFeeType === "Back-Load") {
+      selectedFeeData = backLoadData;
+    } else {
+      selectedFeeData = annualOnlyData;
+    }
+    
+    // Calculate total cash fees for the selected structure
+    const totalCashFees = selectedFeeData.reduce((sum, row) => sum + row.cashFee, 0);
+    
+    // Calculate adjusted holding period return accounting for fees
+    const adjustedFinalValue = finalValue - totalCashFees;
+    const adjustedTotalReturn = ((adjustedFinalValue - investment_amount) / investment_amount) * 100;
+    
+    // Generate the summary card HTML
+    const summaryCard = html`
+    <div>
+      <table class="table table-sm mb-0">
+          <h5 class="table-title">Portfolio Projection Summary (${time_horizon} yrs)</h5>
+
+          <!-- Projection summary data -->
+          <div class="row w-100 mx-0" style="width: 100%;">
+            <div class="col-md-6 px-0">
+              <table class="table table-sm mb-0" style="width: 100%;">
+                <tbody>
+                  <tr>
+                    <th style="width: 50%">Investment Amount:</th>
+                    <td>${formatCurrency(investment_amount)}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Time Horizon:</th>
+                    <td>${time_horizon} years</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Projected Final Value:</th>
+                    <td>${formatCurrency(finalValue)}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Uncertainty Range (±${finalBoundPct.toFixed(2)}%):</th>
+                    <td>${formatCurrency(finalLower)} - ${formatCurrency(finalUpper)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <hr>
+            
+            <!-- Simplified fee structure controls -->
+            <div class="row">
+              <div class="col-md-12">
+                <h5 class="table-title">Fee Structure</h5>
+                ${feeTypeRadio}
+              </div>
+            </div>
+
+              <table class="table table-sm mb-0" style="width: 100%;">
+                <tbody>
+                  <tr>
+                    <th style="width: 50%">Fee Structure:</th>
+                    <td>${selectedFeeType}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Projected Cash Fees:</th>
+                    <td>${formatCurrency(totalCashFees)}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Adjusted Final Value:</th>
+                    <td>${formatCurrency(adjustedFinalValue)}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">Holding Period Return:</th>
+                    <td>${adjustedTotalReturn.toFixed(2)}%</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 50%">IRR (Annualized):</th>
+                    <td>${annualizedReturn.toFixed(2)}%</td>
+                  </tr>
+                </tbody>
+                ${assetClassAllocationTable(3)}
+              </table>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+    
+    // Replace the container's contents with the new summary card
+    container.innerHTML = '';
+    container.appendChild(summaryCard);
+  }
+  
+  // Add event listeners to the radio buttons
+  feeTypeRadio.querySelectorAll('input[name="feeType"]').forEach(radio => {
+    radio.addEventListener('change', updateContent);
+  });
+  
+  // Initial render
+  updateContent();
+  
+  // Return the container
+  return container;
 }
 ```
 
-#### Projection Chart {width=65%}
+```{ojs}
+//| echo: false
+//| output: false
+
+// Helper function to calculate fee scenario with passed parameters
+function calculateFeeScenario(feeType, portfolioReturn, yearsArray, 
+                          frontLoadFeeValue, backLoadFeeValue, managementFeeValue, transactionCostValue) {
+  const result = [];
+  const totalYears = Math.ceil(time_horizon);
+  
+  for (let year = 0; year <= totalYears; year++) {
+    let valueBefore, valueAfter, cashFee, oppCost;
+    
+    if (year === 0) {
+      valueBefore = investment_amount;
+      
+      // Apply initial fees
+      if (feeType === "Front-Load") {
+        cashFee = valueBefore * frontLoadFeeValue;
+        valueAfter = valueBefore - cashFee;
+      } else {
+        cashFee = valueBefore * transactionCostValue;
+        valueAfter = valueBefore - cashFee;
+      }
+      
+      oppCost = cashFee; // At year 0, opportunity cost equals the cash fee
+    } else {
+      // Get previous year's ending value as this year's starting value
+      valueBefore = result[year-1].valueAfterFees * (1 + portfolioReturn);
+      
+      // Apply annual fees
+      cashFee = valueBefore * managementFeeValue;
+      
+      // Apply back-end load in the final year
+      if (year === totalYears && feeType === "Back-Load") {
+        cashFee += (valueBefore - cashFee) * backLoadFeeValue;
+      }
+      
+      valueAfter = valueBefore - cashFee;
+      
+      // Calculate opportunity cost (what the fees would have grown to)
+      const prevOppCost = result[year-1].oppCostFees;
+      oppCost = prevOppCost * (1 + portfolioReturn) + cashFee;
+    }
+    
+    result.push({
+      year,
+      valueBefore,
+      cashFee,
+      oppCostFees: oppCost,
+      valueAfterFees: valueAfter
+    });
+  }
+  
+  return result;
+}
+```
+
+#### Projection Chart {width=60%}
 
 ```{ojs}
 //| echo: false
@@ -1144,297 +1310,130 @@ viewof portfolioProjectionChart = {
 
 :::
 
-### Fee Structure
+#### Fee Comparison Table
 
 ```{ojs}
 //| echo: false
+//| output: false
 
-// Create fee structure controls
-viewof managementFee = createPercentInput({
-  min: 0,
-  max: 0.025,
-  value: 0.01,
-  step: 0.0005,
-  label: "Annual Management Fee:"
-})
-
-viewof transactionCost = createPercentInput({
-  min: 0,
-  max: 0.01,
-  value: 0.002,
-  step: 0.0001,
-  label: "Transaction Cost (One-time):"
-})
-
-viewof otherFees = createPercentInput({
-  min: 0,
-  max: 0.01,
-  value: 0.0005,
-  step: 0.0001,
-  label: "Other Annual Fees:"
-})
-
-// Calculate the impact of fees
-viewof feeImpactAnalysis = {
-  // Get current portfolio data
-  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
-    return html`<div class="alert alert-warning">No portfolio data available for fee analysis</div>`;
-  }
+// Helper function to create fee comparison table with passed parameters
+function createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, backLoadData,
+                              frontLoadFeeValue, managementFeeValue, backLoadFeeValue) {
+  // Only show first and last years if time horizon > 5 years
+  const displayYears = time_horizon > 5 
+    ? [0, 1, 2, Math.floor(time_horizon / 2), time_horizon - 1, time_horizon]
+    : yearsArray;
   
-  // Calculate expected portfolio return
-  let portfolioExpectedReturn = 0;
+  // Use Set to eliminate duplicates
+  const uniqueYears = [...new Set(displayYears)].sort((a, b) => a - b);
   
-  // Use er_optimal as our expected return baseline
-  portfolioExpectedReturn = er_optimal || 0.08;
-  
-  // Calculate compound growth with and without fees
-  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
-  
-  // Calculate value with no fees
-  const noFeesData = yearsArray.map(year => {
-    const value = investment_amount * Math.pow(1 + portfolioExpectedReturn, year);
-    return { year, value };
-  });
-  
-  // Calculate value with fees
-  const totalAnnualFee = managementFee + otherFees;
-  const withFeesData = yearsArray.map(year => {
-    // Apply one-time transaction cost at the beginning
-    let initialAmount = year === 0 ? 
-      investment_amount : 
-      investment_amount * (1 - transactionCost);
-    
-    // Apply compounding with reduced return due to annual fees
-    const value = initialAmount * Math.pow(1 + (portfolioExpectedReturn - totalAnnualFee), year);
-    return { year, value };
-  });
-  
-  // Calculate total fees paid
-  const finalValueNoFees = noFeesData[noFeesData.length - 1].value;
-  const finalValueWithFees = withFeesData[withFeesData.length - 1].value;
-  const totalFeesCost = finalValueNoFees - finalValueWithFees;
-  const feeImpactPercent = (totalFeesCost / finalValueNoFees) * 100;
-  
-  // Create combined dataset for chart
-  const combinedData = [];
-  for (let i = 0; i < yearsArray.length; i++) {
-    combinedData.push({
-      year: yearsArray[i],
-      noFees: noFeesData[i].value,
-      withFees: withFeesData[i].value,
-      feeCost: noFeesData[i].value - withFeesData[i].value
-    });
-  }
-  
-  // Create the fee impact chart
-  const plot = Plot.plot({
-    marginLeft: 70,
-    marginRight: 40,
-    marginTop: 30,
-    marginBottom: 40,
-    style: { 
-      fontSize: "14px", 
-      background: "transparent"
-    },
-    x: {
-      label: "Year",
-      grid: true,
-      domain: [0, Math.ceil(time_horizon)]
-    },
-    y: {
-      label: "Portfolio Value ($)",
-      grid: true,
-      transform: d => d / 1000,
-      tickFormat: d => `$${d}K`,
-    },
-    marks: [
-      // No fees line
-      Plot.lineY(combinedData, {
-        x: "year",
-        y: "noFees",
-        stroke: "#28a745",
-        strokeWidth: 3,
-        curve: "monotone"
-      }),
-      // With fees line
-      Plot.lineY(combinedData, {
-        x: "year",
-        y: "withFees",
-        stroke: "#dc3545",
-        strokeWidth: 3,
-        curve: "monotone"
-      }),
-      // Fees area
-      Plot.areaY(combinedData, {
-        x: "year",
-        y1: "withFees",
-        y2: "noFees",
-        fill: "#dc3545",
-        fillOpacity: 0.2,
-        curve: "monotone"
-      }),
-      // Legend
-      Plot.text([{year: Math.ceil(time_horizon) * 0.2, value: finalValueNoFees * 0.9}], {
-        x: "year",
-        y: "value",
-        text: "Without Fees",
-        fill: "#28a745",
-        fontWeight: "bold"
-      }),
-      Plot.text([{year: Math.ceil(time_horizon) * 0.2, value: finalValueNoFees * 0.85}], {
-        x: "year",
-        y: "value",
-        text: "With Fees",
-        fill: "#dc3545",
-        fontWeight: "bold"
-      }),
-      // Tips for interactive exploration
-      Plot.tip(combinedData, Plot.pointerX({
-        x: "year",
-        title: d => `Year ${d.year}\nNo Fees: ${formatCurrency(d.noFees)}\nWith Fees: ${formatCurrency(d.withFees)}\nFee Cost: ${formatCurrency(d.feeCost)}`
-      }))
-    ]
-  });
-  
-  // Create summary and impact analysis
-  const summary = html`
-    <div class="card mb-3">
-      <div class="card-body">
-        <h6 class="card-title">Fee Impact Summary</h6>
-        <table class="table table-sm">
-          <tbody>
-            <tr>
-              <th>Projected Value (No Fees):</th>
-              <td>${formatCurrency(finalValueNoFees)}</td>
-            </tr>
-            <tr>
-              <th>Projected Value (With Fees):</th>
-              <td>${formatCurrency(finalValueWithFees)}</td>
-            </tr>
-            <tr>
-              <th>Total Fee Cost:</th>
-              <td>${formatCurrency(totalFeesCost)}</td>
-            </tr>
-            <tr>
-              <th>Fee Impact (% of Returns):</th>
-              <td>${feeImpactPercent.toFixed(2)}%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>${plot}</div>
-  `;
-  
-  return summary;
-}
-```
-
-#### Year-by-Year Projection Table
-
-```{ojs}
-//| echo: false
-
-// Generate detailed year-by-year projection table with fee impact
-function createProjectionTable() {
-  // Get current portfolio data
-  if (!enrichedSecurityData || enrichedSecurityData.length === 0) {
-    return html`<div class="alert alert-warning">No portfolio data available for projection table</div>`;
-  }
-  
-  // Calculate expected portfolio return
-  let portfolioExpectedReturn = er_optimal || 0.08;
-  const totalAnnualFee = managementFee + otherFees;
-  const netReturn = portfolioExpectedReturn - totalAnnualFee;
-  
-  // Calculate year-by-year projection
-  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
-  const tableData = yearsArray.map(year => {
-    // Initial value calculation
-    let startValue = year === 0 ? 
-      investment_amount : 
-      tableData[year-1].endValue;
-    
-    // Apply transaction cost at the beginning if it's year 0
-    if (year === 0) {
-      startValue = startValue * (1 - transactionCost);
-    }
-    
-    // Calculate returns and fees
-    const investmentReturn = year === 0 ? 0 : startValue * portfolioExpectedReturn;
-    const annualFees = year === 0 ? investment_amount * transactionCost : startValue * totalAnnualFee;
-    const endValue = startValue + investmentReturn - annualFees;
-    
-    return {
-      year,
-      startValue,
-      investmentReturn,
-      annualFees,
-      endValue,
-      cumulativeReturn: endValue / investment_amount - 1
-    };
-  });
-  
-  // Create HTML table
-  const table = html`
+  return html`
     <div class="table-responsive">
-      <h5 class="table-title">Year-by-Year Portfolio Projection</h5>
+      <h5 class="table-title">Portfolio Projection + Fee Structure Comparison (${time_horizon} yrs)</h5>
       <table class="table table-sm table-striped">
         <thead>
           <tr>
-            <th>Year</th>
-            <th>Starting Value</th>
-            <th>Investment Return</th>
-            <th>Annual Fees</th>
-            <th>Ending Value</th>
-            <th>Cumulative Return</th>
+            <th rowspan="2">Period</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(209, 161, 2);">Front-Load (${(frontLoadFeeValue*100).toFixed(1)}% + ${(managementFeeValue*100).toFixed(2)}% annual)</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(0, 131, 0);">Annual Only (${(managementFeeValue*100).toFixed(2)}% annual)</th>
+            <th colspan="4" style="text-align: center; background-color:rgb(151, 23, 0);">Back-Load (${(backLoadFeeValue*100).toFixed(1)}% + ${(managementFeeValue*100).toFixed(2)}% annual)</th>
+          </tr>
+          <tr>
+            <th>Principal before fees</th>
+            <th>Cash Fees</th>
+            <th>Fees w/ opport. cost</th>
+            <th>Principal after fees</th>
+            <th>Principal before fees</th>
+            <th>Cash Fees</th>
+            <th>Fees w/ opport. cost</th>
+            <th>Principal after fees</th>
+            <th>Principal before fees</th>
+            <th>Cash Fees</th>
+            <th>Fees w/ opport. cost</th>
+            <th>Principal after fees</th>
           </tr>
         </thead>
         <tbody>
-          ${tableData.map(row => html`
-            <tr>
-              <td>${row.year}</td>
-              <td>${formatCurrency(row.startValue)}</td>
-              <td>${row.year === 0 ? '—' : formatCurrency(row.investmentReturn)}</td>
-              <td>${formatCurrency(row.annualFees)}</td>
-              <td>${formatCurrency(row.endValue)}</td>
-              <td>${formatPercent(row.cumulativeReturn)}</td>
-            </tr>
-          `)}
+          ${uniqueYears.map(year => {
+            const frontRow = frontLoadData[year];
+            const annualRow = annualOnlyData[year];
+            const backRow = backLoadData[year];
+            
+            return html`
+              <tr ${year === time_horizon ? 'style="font-weight: bold;"' : ''}>
+                <td>${year}</td>
+                <td>${formatCurrency(frontRow.valueBefore)}</td>
+                <td>${formatCurrency(frontRow.cashFee)}</td>
+                <td>${formatCurrency(frontRow.oppCostFees)}</td>
+                <td>${formatCurrency(frontRow.valueAfterFees)}</td>
+                <td>${formatCurrency(annualRow.valueBefore)}</td>
+                <td>${formatCurrency(annualRow.cashFee)}</td>
+                <td>${formatCurrency(annualRow.oppCostFees)}</td>
+                <td>${formatCurrency(annualRow.valueAfterFees)}</td>
+                <td>${formatCurrency(backRow.valueBefore)}</td>
+                <td>${formatCurrency(backRow.cashFee)}</td>
+                <td>${formatCurrency(backRow.oppCostFees)}</td>
+                <td>${formatCurrency(backRow.valueAfterFees)}</td>
+              </tr>
+            `;
+          })}
+          <tr style="background-color: #f8f9fa; font-weight: bold;">
+            <td>Total</td>
+            <td></td>
+            <td>${formatCurrency(frontLoadData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
+            <td>${formatCurrency(frontLoadData[frontLoadData.length-1].oppCostFees)}</td>
+            <td>${formatPercent((frontLoadData[frontLoadData.length-1].valueAfterFees / investment_amount - 1))}</td>
+            <td></td>
+            <td>${formatCurrency(annualOnlyData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
+            <td>${formatCurrency(annualOnlyData[annualOnlyData.length-1].oppCostFees)}</td>
+            <td>${formatPercent((annualOnlyData[annualOnlyData.length-1].valueAfterFees / investment_amount - 1))}</td>
+            <td></td>
+            <td>${formatCurrency(backLoadData.reduce((sum, row) => sum + row.cashFee, 0))}</td>
+            <td>${formatCurrency(backLoadData[backLoadData.length-1].oppCostFees)}</td>
+            <td>${formatPercent((backLoadData[backLoadData.length-1].valueAfterFees / investment_amount - 1))}</td>
+          </tr>
         </tbody>
       </table>
     </div>
   `;
-  
-  return table;
 }
-
-// Render the projection table
-createProjectionTable()
 ```
-
-<!-- 
-#### Forecast
 
 ```{ojs}
-html`
-  <div class="card" style="height: 700px;">
-    <div class="card-body d-flex flex-column" style="padding: 0.75rem; height: 100%;">
-      <h5 class="table-title">Expected Return</h5>
-      <div style="flex: 1; position: relative; min-height: 0;">
-        <iframe 
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 700px;"
-          id="capitalAlocation-embed" 
-          title="capitalAlocation Embed"
-          src="https://raw.githack.com/renan-peres/mfin-portfolio-management/refs/heads/main/dashboard/anychart_js.html"
-          frameborder="0" allow="clipboard-write" allowfullscreen>
-        </iframe>
-      </div>
-    </div>
-  </div>
-`;
+//| echo: false
+
+// Define the createFeeComparisonDisplay function that will properly call createFeeComparisonTable
+function createFeeComparisonDisplay() {
+  // Define fee values
+  const frontLoadFeeValue = 0.03;  // 3.0% front load fee
+  const backLoadFeeValue = 0.02;   // 2.0% back load fee
+  const mgmtFeeValues = {
+    "Annual Only": 0.009,      // 0.90% for annual-only
+    "Front-Load": 0.002,       // 0.20% for front-load
+    "Back-Load": 0.003         // 0.30% for back-load
+  };
+  const txnCostValue = 0.002;  // 0.20% transaction cost
+  
+  // Calculate fee scenarios
+  const portfolioExpectedReturn = er_optimal || 0.08;
+  const yearsArray = Array.from({ length: Math.ceil(time_horizon) + 1 }, (_, i) => i);
+  
+  // Calculate different fee structure scenarios
+  const frontLoadData = calculateFeeScenario("Front-Load", portfolioExpectedReturn, yearsArray, 
+                                       frontLoadFeeValue, 0, mgmtFeeValues["Front-Load"], txnCostValue);
+  const annualOnlyData = calculateFeeScenario("Annual Only", portfolioExpectedReturn, yearsArray, 
+                                       0, 0, mgmtFeeValues["Annual Only"], txnCostValue);
+  const backLoadData = calculateFeeScenario("Back-Load", portfolioExpectedReturn, yearsArray, 
+                                     0, backLoadFeeValue, mgmtFeeValues["Back-Load"], txnCostValue);
+  
+  // Call createFeeComparisonTable with all required parameters
+  return createFeeComparisonTable(yearsArray, frontLoadData, annualOnlyData, backLoadData,
+                             frontLoadFeeValue, mgmtFeeValues["Annual Only"], backLoadFeeValue);
+}
+
+// Display the fee comparison table
+createFeeComparisonDisplay();
 ```
- -->
 
 ### Benchmark Comparison
 
