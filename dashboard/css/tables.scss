@@ -63,7 +63,7 @@ $selected-row-shadow: 0 1px 1px rgba($dark-black, 0.1) !default;
 
 // Highlight currently selected portfolio row
 tr.selected-row {
-  background-color: $selected-row-light-background !important;
+  background-color: #ffffcc !important;
   font-weight: bold;
 }
 

@@ -396,6 +396,134 @@ viewof selectedEndDate = {
 //| echo: false
 //| output: false
 
+// Modify simplifiedAllocationTable to update radio buttons when rows are clicked
+function simplifiedAllocationTable(howMany = 3) {
+  // Get the full table
+  const fullTable = assetClassAllocationTable(howMany);
+  
+  // Create a new container for our filtered table
+  const container = html`<div class="table-responsive" style="margin-top: 15px;">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Portfolio</th>
+          <th>Weights</th>
+          <th>Initial Value</th>
+          <th>Current Value</th>
+          <th>HPR</th>
+          <th>IRR</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>`;
+  
+  // Find rows in the original table
+  const originalRows = fullTable.querySelectorAll('tr[data-idx]');
+  const newTableBody = container.querySelector('tbody');
+  
+  // Get portfolio metrics for financial data
+  const metrics = buildPortfolioMetrics();
+  
+  // Copy only the Portfolio and Weights columns and add financial metrics
+  originalRows.forEach(originalRow => {
+    const cells = originalRow.querySelectorAll('td');
+    if (cells.length >= 2) {
+      // Get portfolio type from the cell text content
+      const portfolioTypeText = cells[0].textContent.trim();
+      
+      // Calculate financial metrics based on weights
+      let initialValue = investment_amount;
+      let currentValue = initialValue;
+      let hpr = 0;
+      let irr = 0;
+      
+      // If this row has portfolio data with weights, calculate financial metrics
+      if (originalRow.portfolioData) {
+        const rowData = originalRow.portfolioData;
+        const weight = rowData.riskyWeight || 0.5;
+        
+        // Calculate metrics if we have valid metrics data
+        if (!metrics.error && metrics.yearsDiff > 0) {
+          // Scale based on the weight - assuming this matches the portfolio configuration
+          initialValue = investment_amount;
+          currentValue = initialValue * (1 + (metrics.totalRet * weight));
+          hpr = (currentValue / initialValue) - 1;
+          
+          // Calculate annualized return (IRR)
+          if (hpr >= -1 && isFinite(hpr)) {
+            irr = Math.pow(1 + hpr, 1 / metrics.yearsDiff) - 1;
+            if (!isFinite(irr)) irr = 0;
+          }
+        }
+      }
+      
+      const newRow = html`<tr data-idx="${originalRow.getAttribute('data-idx')}" data-row-pos="${originalRow.getAttribute('data-row-pos')}">
+        <td>${cells[0].innerHTML}</td>
+        <td>${cells[1].innerHTML}</td>
+        <td>${formatCurrency(initialValue)}</td>
+        <td>${formatCurrency(currentValue)}</td>
+        <td>${formatPercent(hpr)}</td>
+        <td>${formatPercent(irr)}</td>
+      </tr>`;
+      
+      // Copy the portfolioData for click handler
+      newRow.portfolioData = originalRow.portfolioData;
+      
+      // Add the click handler
+      newRow.addEventListener('click', function() {
+        if (this.portfolioData) {
+          // Update fixed_optimal_weight_input
+          viewof fixed_optimal_weight_input.value = this.portfolioData.riskyWeight;
+          viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
+          
+          // Update equity_weight slider
+          const equitySlider = viewof equity_weight;
+          if (equitySlider) {
+            const sliderInput = equitySlider.querySelector('input');
+            if (sliderInput) {
+              sliderInput.value = this.portfolioData.equityWeight;
+              sliderInput.dispatchEvent(new Event("input"));
+            }
+            
+            equitySlider.value = this.portfolioData.equityWeight;
+            equitySlider.dispatchEvent(new Event("input"));
+          }
+          
+          // Highlight the selected row
+          container.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+          this.classList.add('selected-row');
+          
+          // Get portfolio type from the cell text content
+          const cellText = this.querySelector('td').textContent.trim();
+          let portfolioType = "Optimal Portfolio"; // Default
+          
+          if (cellText.includes("Minimum Variance")) {
+            portfolioType = "Minimum Variance";
+          } else if (cellText.includes("Maximum Variance")) {
+            portfolioType = "Maximum Variance";
+          }
+          
+          // Update the radio button state
+          const portfolioTypeRadios = document.querySelectorAll('input[name="portfolioType"]');
+          portfolioTypeRadios.forEach(radio => {
+            radio.checked = (radio.value === portfolioType);
+          });
+        }
+      });
+      
+      newTableBody.appendChild(newRow);
+    }
+  });
+  
+  return container;
+}
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
 function portfolioPerformanceCard() {
   const m = buildPortfolioMetrics();
   if (m.error) return m.error;
@@ -1082,7 +1210,7 @@ viewof tickerPerformanceChart = {
       },
       y: {
         grid: true,
-        label: "Return (Start = 1.0):",
+        label: "Return (Start = 1.0x):",
         labelOffset: 45,
         // Set domain to center the 1.0 mark
         domain: [
@@ -1460,95 +1588,6 @@ function calculateProjectionData() {
 ```
 
 ##### Summary Card
-
-```{ojs}
-//| echo: false
-//| output: false
-
-// Modify simplifiedAllocationTable to update radio buttons when rows are clicked
-function simplifiedAllocationTable(howMany = 3) {
-  // Get the full table
-  const fullTable = assetClassAllocationTable(howMany);
-  
-  // Create a new container for our filtered table
-  const container = html`<div class="table-responsive" style="margin-top: 15px;">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>Portfolio</th>
-          <th>Weights</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>`;
-  
-  // Find rows in the original table
-  const originalRows = fullTable.querySelectorAll('tr[data-idx]');
-  const newTableBody = container.querySelector('tbody');
-  
-  // Copy only the Portfolio and Weights columns (first and second cells)
-  originalRows.forEach(originalRow => {
-    const cells = originalRow.querySelectorAll('td');
-    if (cells.length >= 2) {
-      const newRow = html`<tr data-idx="${originalRow.getAttribute('data-idx')}" data-row-pos="${originalRow.getAttribute('data-row-pos')}">
-        <td>${cells[0].innerHTML}</td>
-        <td>${cells[1].innerHTML}</td>
-      </tr>`;
-      
-      // Copy the portfolioData for click handler
-      newRow.portfolioData = originalRow.portfolioData;
-      
-      // Add the click handler
-      newRow.addEventListener('click', function() {
-        if (this.portfolioData) {
-          // Update fixed_optimal_weight_input
-          viewof fixed_optimal_weight_input.value = this.portfolioData.riskyWeight;
-          viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
-          
-          // Update equity_weight slider
-          const equitySlider = viewof equity_weight;
-          if (equitySlider) {
-            const sliderInput = equitySlider.querySelector('input');
-            if (sliderInput) {
-              sliderInput.value = this.portfolioData.equityWeight;
-              sliderInput.dispatchEvent(new Event("input"));
-            }
-            
-            equitySlider.value = this.portfolioData.equityWeight;
-            equitySlider.dispatchEvent(new Event("input"));
-          }
-          
-          // Highlight the selected row
-          container.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
-          this.classList.add('selected-row');
-          
-          // Get portfolio type from the cell text content
-          const cellText = this.querySelector('td').textContent.trim();
-          let portfolioType = "Optimal Portfolio"; // Default
-          
-          if (cellText.includes("Minimum Variance")) {
-            portfolioType = "Minimum Variance";
-          } else if (cellText.includes("Maximum Variance")) {
-            portfolioType = "Maximum Variance";
-          }
-          
-          // Update the radio button state
-          const portfolioTypeRadios = document.querySelectorAll('input[name="portfolioType"]');
-          portfolioTypeRadios.forEach(radio => {
-            radio.checked = (radio.value === portfolioType);
-          });
-        }
-      });
-      
-      newTableBody.appendChild(newRow);
-    }
-  });
-  
-  return container;
-}
-```
-
 
 ```{ojs}
 viewof portfolioProjectionSummary = {

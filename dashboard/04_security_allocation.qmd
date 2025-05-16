@@ -149,11 +149,89 @@ securityAllocationTable()
 
 ::: {.panel-tabset style="height: calc(100vh - 450px); overflow-y: auto;"} -->
 
-## Efficient Frontier (Equities)
+## Risk/Return (Equities)
 
-:::: {.rows}
+:::: {.columns style="height: 50%;"}
 
-### Plotly Interactive Chart {height=70%}
+### Risk & Return Plot {width=50%}
+
+```{python}
+# Add this after the equity/bond correlation calculations
+import plotly.express as px
+import plotly.graph_objects as go
+
+# Calculate annualized returns and volatility for each equity security
+annual_ret = eq_ret.mean() * 252
+annual_vol = eq_ret.std() * np.sqrt(252)
+
+# Create a DataFrame for the scatter plot
+scatter_data = pd.DataFrame({
+    'Ticker': annual_ret.index,
+    'Annual Return': annual_ret.values * 100,  # Convert to percentage
+    'Annual Volatility': annual_vol.values * 100,  # Convert to percentage
+})
+
+# Add sector information
+scatter_data = scatter_data.merge(
+    equity_pf[['Sector']].reset_index(), 
+    left_on='Ticker', 
+    right_on='Ticker'
+)
+
+# Create the interactive scatter plot
+fig = px.scatter(
+    scatter_data,
+    x='Annual Volatility',
+    y='Annual Return',
+    color='Sector',
+    size=abs(scatter_data['Annual Return']) * 2,  # Size points by return magnitude
+    hover_name='Ticker',
+    labels={
+        'Annual Volatility': 'Risk (Annual Std Dev %)',
+        'Annual Return': 'Return (Annual %)'
+    },
+    title='Risk-Return Profile of Equity Securities'
+)
+
+# Add a marker for the weighted portfolio
+fig.add_trace(
+    go.Scatter(
+        x=[eq_vol * 100],  # Portfolio volatility
+        y=[eq_ret_a * 100],  # Expected portfolio return
+        mode='markers',
+        marker=dict(
+            color='rgba(0, 0, 0, 0.8)',
+            size=15,
+            symbol='star',
+            line=dict(width=2, color='DarkSlateGrey')
+        ),
+        name='Portfolio',
+        text=['Weighted Portfolio'],
+        hoverinfo='text'
+    )
+)
+
+# Add the efficient frontier or Capital Market Line if needed
+# (This could be added as another trace)
+
+# Improve the layout
+fig.update_layout(
+    template='plotly_white',
+    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+    margin=dict(l=20, r=20, t=60, b=40),
+    xaxis=dict(title_font=dict(size=14), tickfont=dict(size=12)),
+    yaxis=dict(title_font=dict(size=14), tickfont=dict(size=12)),
+    title=dict(font=dict(size=16))
+)
+
+# Add a horizontal line at y=0 for reference
+fig.add_hline(y=0, line_dash='dash', line_color='gray', opacity=0.7)
+
+# Return the figure without calling show()
+fig
+```
+
+### Efficient Frontier {width=50%}
 
 ```{ojs}
 html`
@@ -166,7 +244,9 @@ html`
 `;
 ```
 
-### Equities Weighted Retun {height=30%}
+:::
+
+### Equities Weighted Retun
 
 <h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Allocation</h5>
 
@@ -181,8 +261,6 @@ optimal_portfolio_ef = optimal_portfolio_ef[first_columns].sort_values(by="Weigh
 # Display the result
 display(optimal_portfolio_ef)
 ```
-
-:::
 
 ## Covariances (Equities)
 
