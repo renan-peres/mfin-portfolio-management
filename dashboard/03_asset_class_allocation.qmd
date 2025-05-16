@@ -239,15 +239,16 @@ viewof efficientFrontierPlot = {
       ], {
         x: "x",
         y: "y",
-        stroke: assetColors["Risk-Free"], 
-        strokeWidth: 2.5
+        stroke: assetColors["Equity"], 
+        strokeWidth: 2.5,
+        strokeDasharray: "4 4"
       }),
       
       // Efficient frontier
       Plot.line(frontier, {
         x: "Risk", 
         y: "Return",
-        stroke: assetColors["Equity"], 
+        stroke: "red", 
         strokeWidth: 3,
         strokeDasharray: "4 4",
         curve: "basis"
@@ -258,7 +259,7 @@ viewof efficientFrontierPlot = {
         x: d => d.std_dev,
         y: d => d.expected_return,
         r: 6,
-        fill: "steelblue",
+        fill: "#0000ff", 
         stroke: "white",
         strokeWidth: 1,
         tip: true,

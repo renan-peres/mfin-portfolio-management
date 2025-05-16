@@ -96,8 +96,9 @@ capitalAllocationPlot = Plot.plot({
     Plot.line(cmlPoints, {
       x: "Standard_Deviation", 
       y: "Expected_Return",
-      stroke: assetColors["Risk-Free"], 
-      strokeWidth: 2.5
+      stroke: assetColors["Equity"], 
+      strokeWidth: 2.5,
+      strokeDasharray: "4 4"
     }),
     // Add vertical dashed line from bottom to optimal portfolio point
     Plot.ruleX([std_dev_optimal], {
