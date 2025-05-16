@@ -154,7 +154,7 @@ securityAllocationTable()
 :::: {.columns style="height: 50%;"}
 
 ### Risk & Return Plot {width=50%}
-
+<!-- 
 ```{python}
 # Add this after the equity/bond correlation calculations
 import plotly.express as px
@@ -229,7 +229,8 @@ fig.add_hline(y=0, line_dash='dash', line_color='gray', opacity=0.7)
 
 # Return the figure without calling show()
 fig
-```
+``` 
+-->
 
 ### Efficient Frontier {width=50%}
 
