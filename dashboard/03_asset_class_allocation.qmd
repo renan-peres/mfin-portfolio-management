@@ -248,7 +248,7 @@ viewof efficientFrontierPlot = {
       Plot.line(frontier, {
         x: "Risk", 
         y: "Return",
-        stroke: "red", 
+        stroke: "#0000ff", 
         strokeWidth: 3,
         strokeDasharray: "4 4",
         curve: "basis"
@@ -259,8 +259,8 @@ viewof efficientFrontierPlot = {
         x: d => d.std_dev,
         y: d => d.expected_return,
         r: 6,
-        fill: "#0000ff", 
-        stroke: "white",
+        fill: assetColors["Equity"], 
+        stroke: "#0000ff",
         strokeWidth: 1,
         tip: true,
         title: d => `Bond: ${d.bond_weight}%, Equity: ${d.equity_weight}%\nReturn: ${formatPercent(d.expected_return)}\nRisk: ${formatPercent(d.std_dev)}\nSharpe: ${d.sharpe.toFixed(2)}`

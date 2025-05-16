@@ -167,6 +167,31 @@ eq_ret_a = weights @ equity_pf["Expected Return"]           # ‹assumption›
 
 cov_eq_bd = corr_eq_bd * eq_vol * bond_vol
 
+# Calculate annualized returns and volatility for each equity security
+annual_ret = eq_ret.mean() * 252  # Annualized mean return
+annual_vol = eq_ret.std() * np.sqrt(252)  # Annualized volatility
+
+# Create risk-return data for OJS
+risk_return_data = pd.DataFrame({
+    'Risk': annual_vol,
+    'Return': annual_ret,
+    'Ticker': annual_ret.index
+}).reset_index(drop=True)
+
+# Add portfolio point data
+portfolio_point = pd.DataFrame({
+    'Risk': [eq_vol],
+    'Return': [eq_ret_a],
+    'Ticker': ['Portfolio'],
+    'isPortfolio': [True]
+})
+
+# Combine the data
+plot_data_combined = pd.concat([
+    risk_return_data.assign(isPortfolio=False), 
+    portfolio_point
+])
+
 # --------------------------------------------------------------------------- #
 # Optimal bond / equity mix                                                  #
 # --------------------------------------------------------------------------- #
@@ -285,7 +310,7 @@ risky_portfolio_num = pd.concat([equity_tickers_df, bond_df, risk_free_tbl], ign
 # --------------------------------------------------------------------------- #
 # 2 · DISPLAY copies (string‑formatting only here)                            #
 # --------------------------------------------------------------------------- #
-equity_disp = equity_pf.copy()          # <- purely numeric starting point
+equity_disp = equity_pf.sort_values(by="Weight", ascending=False).copy()  # <- purely numeric starting point
 
 pct_cols = ['Weight', 'Expected Return', 'Standard Deviation',
             'Dividend Yield (%)', 'Dividend Rate (%)',
@@ -394,6 +419,7 @@ ojs_define(
 
     # combined equity + bond table for display
     equity_tickers         = risky_portfolio_df.to_dict("records"),
+    risk_return_data = plot_data_combined.to_dict('records')
 )
 
 ```
