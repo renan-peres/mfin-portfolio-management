@@ -246,56 +246,7 @@ viewof riskReturnPlot = Plot.plot({
 
 ```{ojs}
 //| echo: false
-//| output: false
-
-htl = require('htl')
-
-// Button style definition
-btnStyle = `
-  margin-bottom: 10px;
-  padding: 8px 16px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-`
-
-// Fullscreen handler
-makeFullscreen = (iframeSrc) => {
-  return htl.html`
-    <div>
-      <button style="${btnStyle}" onclick=${e => {
-        const iframe = e.target.parentElement.querySelector('iframe');
-        if (iframe) iframe.requestFullscreen();
-      }}>Fullscreen</button>
-      <div style="width: 100%; position: relative;">
-        <iframe 
-          src="${iframeSrc}"
-          style="width: 100%; height: 600px; border:0; border-radius: 4px; overflow:hidden;"
-        ></iframe>
-      </div>
-    </div>
-  `
-}
-
-// Get environment variable from Quarto front matter
-base_repo = "https://github.com/renan-peres/mfin-portfolio-management/blob/main/reports"
-
-// Set relative path and combine
-relative_path = ""
-source_repo = `${base_repo}/${relative_path}`
-
-// Convert to raw content URL
-raw_url = source_repo.replace(
-  /https:\/\/github.com\/(.+)\/blob\//,
-  "https://raw.githack.com/$1/"
-)
-```
-
-```{ojs}
-//| echo: false
-makeFullscreen(`${raw_url}/efficient_frontier-2025-04-26.html`)
+makeFullscreen(EFFICIENT_FRONTIER)
 ```
 
 :::
