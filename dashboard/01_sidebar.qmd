@@ -1,0 +1,295 @@
+# {.sidebar width="305px"}
+
+##### **Market Info:**
+
+```{ojs}
+// Use imported function to create risk-free rate input
+viewof rf_rate = createPercentInput({
+  min: 0.01, 
+  max: 0.1, 
+  value: default_rf_rate, 
+  step: 0.001, 
+  label: "Risk-Free Rate (T-Bill):"
+})
+
+md`**Risk-Free Rate: ${formatPercent(rf_rate)}**`
+```
+
+```{ojs}
+// Use imported function to create market condition input
+viewof raw_market_view = createNumericInput({
+  min: 0,
+  max: 100,
+  value: default_market_view,
+  step: 5,
+  label: "Market Condition:",
+  decimals: 0
+})
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Adjust market view score - use 1 when 0 is selected
+market_view = raw_market_view === 0 ? 1 : raw_market_view
+
+// Use categorizeValue function to format market condition
+market_condition = categorizeValue(
+  market_view, 
+  [25, 50, 75, 100], 
+  ["Bear", "Normal", "Bull", "Bubble"]
+);
+```
+
+```{ojs}
+// Display market condition
+md`**Market Condition: ${market_condition}**`
+
+md`
+- Bear Market: 1-25
+- Normal Market: 25-50  
+- Bull Market: 50-75
+- Bubble Market: 75-100
+`
+```
+
+##### **Client Info:**
+
+```{ojs}
+// Create risk tolerance input using our component
+viewof raw_risk_score = createNumericInput({
+  min: 0,
+  max: 100,
+  value: default_risk_score,
+  step: 5,
+  label: "Risk Tolerance:",
+  decimals: 0
+})
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Adjust risk score - use 99 when 100 is selected
+risk_score = raw_risk_score === 100 ? 99 : raw_risk_score
+
+// Use categorizeValue function for risk tolerance display
+risk_tolerance_score = categorizeValue(
+  risk_score,
+  [40, 70, 100],
+  ["Conservative", "Moderate", "Aggressive"]
+);
+
+// Calculate risk aversion index
+risk_aversion = (market_view * (1 - risk_score/100)).toFixed(2);
+```
+
+```{ojs}
+// Display Risk Tolerance
+md`**Risk Tolerance: ${risk_tolerance_score}**`
+md`
+- Conservative: 0-40
+- Moderate: 40-70  
+- Aggressive: 70-100
+`
+```
+
+```{ojs}
+// Display risk aversion index
+md`**Risk Aversion Index: ${risk_aversion}**
+`
+```
+
+```{ojs}
+// Create Investment Amount with currency formatting
+viewof investment_amount = createCurrencyInput({
+  min: 10000,
+  max: 1000000,
+  value: 100000,
+  step: 5000,
+  label: "Investment Amount:",
+  decimals: 0
+})
+```
+
+```{ojs}
+// Create Investment Time Horizon
+viewof time_horizon = createNumericInput({
+  min: 1,
+  max: 50,
+  value: 5,
+  step: 1,
+  label: "Time Horizon (Years):",
+  format: "integer",
+  decimals: 0
+})
+``` 
+
+##### **Risky Portfolio:**
+
+```{ojs}
+//| echo: false
+//| output: false
+// Use the imported findOptimalEquityWeight function
+optimal_equity_weight = findOptimalEquityWeight({
+  equity_return: calc_equity_return || 0.237,
+  equity_std: calc_equity_std || 0.161,
+  bond_return: bond_ret,
+  bond_std: bond_vol, 
+  correlation: corr_eq_bd,
+  rf_rate: rf_rate
+});
+```
+
+```{ojs}
+//| echo: false
+// Use the imported asset allocation slider
+viewof equity_weight = createAssetAllocationSlider({
+  value: optimal_equity_weight,
+  asset1Name: "Bonds",
+  asset2Name: "Equity",
+  asset1Color: "#1c7ed6",
+  asset2Color: "#FF7F50",
+  onOptimize: () => findOptimalEquityWeight({
+    equity_return: calc_equity_return || 0.237,
+    equity_std: calc_equity_std || 0.161,
+    bond_return: bond_ret,
+    bond_std: bond_vol, 
+    correlation: corr_eq_bd,
+    rf_rate: rf_rate
+  })
+})
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Create a reactive version of fixed_optimal_weight
+viewof fixed_optimal_weight_input = {
+  const container = html`<div style="display: none;"></div>`;
+  
+  // Initialize with null (use calculated value initially)
+  container.value = null;
+  
+  return container;
+}
+
+// Use calculateRiskyPortfolioMetrics instead of manual calculations
+portfolio_metrics = calculateRiskyPortfolioMetrics(
+  equity_weight,
+  calc_equity_return || 0.237,
+  calc_equity_std || 0.161,
+  bond_ret,
+  bond_vol,
+  corr_eq_bd
+);
+
+// Extract values from the result
+er_risky = portfolio_metrics.er_risky;
+std_dev_risky = portfolio_metrics.std_dev_risky;
+bond_weight = portfolio_metrics.bond_weight;
+
+// Get data based on current inputs
+data = calculateData(
+  rf_rate,
+  er_risky, 
+  std_dev_risky,
+  market_view,
+  risk_score
+);
+
+// Extract data properties for use in visualizations
+allocation_data = data.allocation_data;
+chart_data = data.chart_data;
+optimal_weight = data.optimal_weight;
+risk_aversion_weight = data.risk_aversion_weight;
+er_optimal = data.er_optimal;
+std_dev_optimal = data.std_dev_optimal;
+utility_optimal = data.utility_optimal;
+sharpe_ratio = data.sharpe_ratio;
+max_utility_idx = data.max_utility_idx;
+
+// Calculate fixed data for the default values
+fixed_data = calculateData(
+  rf_rate,
+  default_er_risky,
+  default_std_dev_risky,
+  market_view,
+  risk_score
+);
+
+// Extract fixed data properties
+fixed_chart_data = fixed_data.chart_data;
+fixed_allocation_data = fixed_data.allocation_data;
+fixed_max_utility_idx = fixed_data.max_utility_idx;
+calculated_optimal_weight = fixed_data.optimal_weight;
+fixed_er_optimal = fixed_data.er_optimal;
+fixed_std_dev_optimal = fixed_data.std_dev_optimal;
+fixed_utility_optimal = fixed_data.utility_optimal;
+
+// Use either the user-selected weight from table click or the calculated optimal weight
+fixed_optimal_weight = fixed_optimal_weight_input !== null ? 
+  fixed_optimal_weight_input : calculated_optimal_weight;
+
+// Reset manual selection when key inputs change
+resetManualSelectionWatcher = {
+  // Create a composite key from the inputs we want to watch
+  const inputKey = `${rf_rate}-${market_view}-${risk_score}`;
+  
+  // Store this value for comparison
+  if (this.lastInputKey !== undefined && 
+      this.lastInputKey !== inputKey && 
+      fixed_optimal_weight_input !== null) {
+    
+    // Reset the fixed_optimal_weight_input to null
+    // This will cause fixed_optimal_weight to use calculated_optimal_weight
+    viewof fixed_optimal_weight_input.value = null;
+    viewof fixed_optimal_weight_input.dispatchEvent(new Event("input"));
+    
+    // Remove highlighting from selected row (if we can access the DOM)
+    if (typeof document !== 'undefined') {
+      setTimeout(() => {
+        const selectedRows = document.querySelectorAll('.table-responsive .selected-row');
+        selectedRows.forEach(row => row.classList.remove('selected-row'));
+      }, 0);
+    }
+  }
+  
+  // Update last value for next comparison
+  this.lastInputKey = inputKey;
+  
+  return null; // This cell doesn't need to return a value
+}
+
+// Initialize base data reference
+initialData = initial_data;
+```
+
+```{ojs}
+// Display risky portfolio stats using formatting functions
+md`
+**Sharpe Ratio: ${formatNumber((er_risky - rf_rate) / std_dev_risky, 2)}**
+- Expected Return: ${formatPercent(er_risky)}
+- Standard Deviation: ${formatPercent(std_dev_risky)}
+`
+```
+
+##### **Complete Portfolio:**
+
+```{ojs}
+// Show calculated portfolio statistics with consistent formatting
+md`
+**Sharpe Ratio: ${formatNumber(sharpe_ratio, 2)}**
+- Expected Return: ${formatPercent(er_optimal)}
+- Standard Deviation: ${formatPercent(std_dev_optimal)}
+
+**Weights:**
+- Risk-Free Asset: ${formatPercent(1 - fixed_optimal_weight)}
+- Risky Portfolio: ${formatPercent(fixed_optimal_weight)}
+  - Equity: ${formatPercent(fixed_optimal_weight * equity_weight)} (${formatPercent(equity_weight, 0)} of Risky)
+  - Bonds: ${formatPercent(fixed_optimal_weight * bond_weight)} (${formatPercent(bond_weight, 0)} of Risky)
+`
+```
