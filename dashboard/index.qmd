@@ -28,12 +28,15 @@ include-in-header:
     <meta property="og:type" content="website">
     <meta property="og:title" content="Portfolio Construction: Apr 26, 2025">
     <meta property="og:description" content="Portfolio management dashboard with allocation analysis">
-    <meta property="og:image" content="img/logo.png">
+    <meta property="og:image" content="https://raw.githubusercontent.com/renan-peres/mfin-portfolio-management/main/dashboard/img/logo.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="https://renan-peres.github.io/mfin-portfolio-management/dashboard/">
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Portfolio Construction: Apr 26, 2025">
     <meta name="twitter:description" content="Portfolio management dashboard with allocation analysis">
-    <meta name="twitter:image" content="img/logo.png">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/renan-peres/mfin-portfolio-management/main/dashboard/img/logo.png">
 execute:
   warning: false
   echo: false
