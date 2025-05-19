@@ -5,22 +5,62 @@
 //| output: false
 
 REPORT_DATE = "2025-04-26"
+EFFICIENT_FRONTIER = `./plotly/efficient_frontier-2025-04-26.html`
 
-// Get environment variable from Quarto front matter
-BASE_REPO = "https://github.com/renan-peres/mfin-portfolio-management/blob/main/reports"
+// // Get environment variable from Quarto front matter
+// BASE_REPO = "https://github.com/renan-peres/mfin-portfolio-management/blob/main/"
 
-// Set relative path and combine
-RELATIVE_PATH = ""
-SOURCE_REPO = `${BASE_REPO}/${RELATIVE_PATH}`
+// // Set relative path and combine
+// RELATIVE_PATH = "dashboard/plotly"
+// SOURCE_REPO = `${BASE_REPO}/${RELATIVE_PATH}`
 
-// Convert to raw content URL
-RAW_URL = SOURCE_REPO.replace(
-  /https:\/\/github.com\/(.+)\/blob\//,
-  "https://raw.githack.com/$1/"
-)
-
-EFFICIENT_FRONTIER = `${RAW_URL}/efficient_frontier-${REPORT_DATE}.html`
+// // Convert to raw content URL
+// RAW_URL = SOURCE_REPO.replace(
+//   /https:\/\/github.com\/(.+)\/blob\//,
+//   "https://raw.githack.com/$1/"
+// )
+// EFFICIENT_FRONTIER = `${RAW_URL}/efficient_frontier-${REPORT_DATE}.html`
 ```
+
+
+```{ojs}
+//| echo: false
+//| output: false
+
+htl = require('htl')
+
+// Button style definition
+btnStyle = `
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+`
+
+// Fullscreen handler
+makeFullscreen = (iframeSrc) => {
+  return htl.html`
+    <div>
+      <button style="${btnStyle}" onclick=${e => {
+        const iframe = e.target.parentElement.querySelector('iframe');
+        if (iframe) iframe.requestFullscreen();
+      }}>Fullscreen</button>
+      <div style="width: 100%; position: relative;">
+        <iframe 
+          class="frontier-iframe"
+          src="${iframeSrc}"
+          style="width: 100%; border:0; border-radius: 4px; overflow:hidden;"
+        ></iframe>
+      </div>
+    </div>
+  `
+}
+```
+
+
 
 ```{python}
 #| output: false
@@ -58,43 +98,6 @@ PORTFOLIO_FILE = f"{REPORTS_PATH}/portfolio-{REPORT_DATE}.xlsx"
 END_DATE   = (datetime.today() - BDay(1)).date()
 START_DATE = END_DATE - timedelta(days=5 * 365)
 ```
-
-```{ojs}
-//| echo: false
-//| output: false
-
-htl = require('htl')
-
-// Button style definition
-btnStyle = `
-  margin-bottom: 10px;
-  padding: 8px 16px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-`
-
-// Fullscreen handler
-makeFullscreen = (iframeSrc) => {
-  return htl.html`
-    <div>
-      <button style="${btnStyle}" onclick=${e => {
-        const iframe = e.target.parentElement.querySelector('iframe');
-        if (iframe) iframe.requestFullscreen();
-      }}>Fullscreen</button>
-      <div style="width: 100%; position: relative;">
-        <iframe 
-          src="${iframeSrc}"
-          style="width: 100%; height: 600px; border:0; border-radius: 4px; overflow:hidden;"
-        ></iframe>
-      </div>
-    </div>
-  `
-}
-```
-
 
 ```{python}
 #| output: false

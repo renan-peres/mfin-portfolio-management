@@ -4,7 +4,7 @@ logo: img/logo.png
 format:
   dashboard:
     orientation: columns
-    image: img/logo.jpg
+    image: img/logo.png
     open-graph: true
     theme:
       - css/styles.scss
@@ -25,18 +25,18 @@ include-in-header:
     <link rel="shortcut icon" href="img/logo.png" />
     <link rel="icon" type="image/x-icon" href="img/logo.png">
     <title>Portfolio Construction: April 26, 2025</title>
-    <meta name="description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
+    <meta name="description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
     <meta property="og:url" content="https://portfolio-management.renanperes.com">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Portfolio Construction: April 26, 2025">
-    <meta property="og:description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
-    <meta property="og:image" content="img/logo.jpg">
+    <meta property="og:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    <meta property="og:image" content="img/logo.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta property="twitter:domain" content="portfolio-management.renanperes.com">
     <meta property="twitter:url" content="https://portfolio-management.renanperes.com">
     <meta name="twitter:title" content="Portfolio Construction: April 26, 2025">
-    <meta name="twitter:description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
-    <meta name="twitter:image" content="img/logo.jpg">
+    <meta name="twitter:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    <meta name="twitter:image" content="img/logo.png">
 execute:
   warning: false
   echo: false
@@ -88,7 +88,7 @@ execute:
 
 :::
 
-# Excel Models
+# Excel Models 
 
 ```{ojs}
 ExcelModel = html`

@@ -1012,19 +1012,37 @@ def plot_efficient_frontier_interactive(
     y_min = max(0, min(all_y) - 0.01)
     y_max = max(all_y) + 0.01
 
+    # Updated layout for responsive full-screen display
     fig.update_layout(
         title="Efficient Frontier with Capital Market Line",
         title_x=0.5,
         xaxis_title="Standard Deviation (Risk)",
         yaxis_title="Return",
-        width=1200, height=800,
+        autosize=True,  
         template="plotly_white",
-        legend=dict(font=dict(size=12), y=0.98, yanchor="top",
-                    x=0.01, xanchor="left")
+        legend=dict(
+            font=dict(size=12), 
+            y=0.98, 
+            yanchor="top",
+            x=0.99,                            
+            xanchor="right"
+        ),
+        margin=dict(l=50, r=120, t=80, b=50), 
+        plot_bgcolor='white', 
+        paper_bgcolor='white'
     )
 
     fig.update_xaxes(tickformat=".0%", dtick=0.05, range=[x_min, x_max])
     fig.update_yaxes(tickformat=".0%", dtick=0.05, range=[y_min, y_max])
+    
+    # Add config for better interaction in full screen
+    fig.update_layout(
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=14,
+            font_family="sans-serif"
+        )
+    )
     
     return fig
 
