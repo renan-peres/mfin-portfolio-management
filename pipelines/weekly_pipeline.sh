@@ -325,14 +325,14 @@ main() {
     log "Step 8/9: Fetching Quotes Datasets into a Single Dataset..."
     run_notebook "data/fetch_datasets.ipynb" || exit 1
 
-    log "Step 9/9: Load .csv Files to DuckDB (data.db)..."
-    if [ -f "data/duckdb_fetch_database.sh" ]; then
-        chmod +x "data/duckdb_fetch_database.sh"
-        ./data/duckdb_fetch_database.sh || exit 1
-    else
-        log "❌ DuckDB script not found: data/duckdb_fetch_database.sh"
-        exit 1
-    fi
+    # log "Step 9/9: Load .csv Files to DuckDB (data.db)..."
+    # if [ -f "data/duckdb_fetch_database.sh" ]; then
+    #     chmod +x "data/duckdb_fetch_database.sh"
+    #     ./data/duckdb_fetch_database.sh || exit 1
+    # else
+    #     log "❌ DuckDB script not found: data/duckdb_fetch_database.sh"
+    #     exit 1
+    # fi
     
     log "Step 10/10: Generate Quarto Dashboard..."
     quarto render "dashboard/index.qmd" --verbose || exit 1
