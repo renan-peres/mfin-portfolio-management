@@ -1,0 +1,766 @@
+<!-- # Security Allocation -->
+
+```{ojs}
+//| echo: false
+//| output: false
+
+function securityAllocationTable() {
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0)
+    return html`<div>No ticker data available</div>`;
+
+  // Get ticker prices from processed quotes data
+  const tickerPrices = processQuotesData(daily_quotes, equity_tickers) ?? {};
+
+  /* ─── HTML table ──────────────────────────────────────── */
+  return html`
+    <div style="overflow-y: auto;">
+      <table class="table-responsive">
+        <thead>
+          <tr>
+            <th>Asset Class</th>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Sector</th>
+            <th>Asset Class&nbsp;Weight</th>
+            <th>Risky Pf&nbsp;Weight</th>
+            <th>Complete Pf&nbsp;Weight</th>
+            <th>Last Quote</th>
+            <th>Shares</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${enrichedSecurityData
+            .slice(0, 10)
+            .map(d => {
+              // Get the last price for this ticker
+              let lastPrice = tickerPrices[d.Ticker]?.lastPrice;
+
+              // Calculate amount and shares
+              const amount = investment_amount * d.completeWeight;
+              const shares = lastPrice ? amount / lastPrice : 0;
+
+              return html`
+                <tr>
+                  <td>${d.Type}</td>
+                  <td><strong>${d.Ticker}</strong></td>
+                  <td>${d.Name}</td>
+                  <td>${d.Sector}</td>
+                  <td>${formatPercent(d.classWeight)}</td>
+                  <td>${formatPercent(d.riskyPfWeight)}</td>
+                  <td>${formatPercent(d.completeWeight)}</td>
+                  <td>${lastPrice !== undefined ? 
+                      (d.Type === "Risk‑Free" ? formatPercent(lastPrice/100) : formatCurrency(lastPrice, "$", 2)) 
+                      : "N/A"}</td>
+                  <td>${d.Type === "Risk‑Free" ? "0" : (shares > 0 ? formatNumber(shares, 2) : "N/A")}</td>
+                  <td>${formatCurrency(amount)}</td>
+                </tr>
+              `;
+            })}
+        </tbody>
+      </table>
+    </div>`;
+}
+```
+
+::: {.panel-tabset style="height: calc(100vh - 80px); min-height: 600px; width: 100%;"}
+
+## Security Distribution
+
+```{ojs}
+viewof equityTickersBarChart = {
+  if (!enrichedSecurityData || enrichedSecurityData.length === 0) 
+    return html`<div>No ticker data available</div>`;
+  
+  // Use the first 10 items from the already sorted enriched data
+  const barData = enrichedSecurityData
+    .slice(0, 10)
+    .map(d => ({
+      asset: d.Ticker,
+      weight: d.completeWeight * 100,  // %
+      type: d.Type === "Risk‑Free" ? "Risk-Free" : d.Type // Handle dash style differences
+    }));
+  
+  // Group securities by asset type to create color gradient scales
+  const groupedByType = d3.group(barData, d => d.type);
+  
+  // Create a color function that generates gradients for asset classes with multiple securities
+  const getSecurityColor = (d) => {
+    const baseColor = assetColors[d.type];
+    const securities = groupedByType.get(d.type);
+    
+    // If there's only one security in this asset class, use the base color
+    if (securities.length <= 1) return baseColor;
+    
+    // Otherwise create a gradient based on position in the group
+    const index = securities.findIndex(s => s.asset === d.asset);
+    const position = index / (securities.length - 1); // 0 to 1
+    
+    // Create a gradient from the base color to a lighter version
+    return d3.interpolate(
+      baseColor, 
+      d3.color(baseColor).brighter(0.8)
+    )(position);
+  };
+
+  // Bar chart
+  return Plot.plot({
+    marginTop: 20,
+    marginLeft: 60,
+    x: {
+      label: "",
+      domain: barData.map(d => d.asset),
+      padding: 0.3
+    },
+    y: {
+      label: "Weight (%)",
+      domain: [0, Math.max(...barData.map(d => d.weight)) * 1.1],
+      grid: true,
+      tickFormat: d => d + "%"
+    },
+    marks: [
+      Plot.barY(barData, {
+        x: "asset",
+        y: "weight",
+        fill: getSecurityColor, // Use our custom gradient function
+        tip: true,
+        title: d => `${d.asset} (${d.type}): ${d.weight.toFixed(1)}%`
+      }),
+      Plot.text(barData, {
+        x: "asset",
+        y: "weight",
+        text: d => `${d.weight.toFixed(1)}%`,
+        dy: -10,
+        fontWeight: "bold",
+        fontSize: 16
+      })
+    ]
+  });
+}
+```
+
+### Allocation Table
+
+```{ojs}
+securityAllocationTable()
+```
+
+## Risk/Return (Equities)
+
+:::: {.columns style="height: 50%;"}
+
+### Risk & Return Plot {width=50%}
+
+```{ojs}
+// | echo: false
+// | output: false
+
+// Set up color scale matching the 'Spectral' palette
+riskReturnColorScale = d3.scaleSequential()
+  .domain([d3.min(risk_return_data, d => d.Return), d3.max(risk_return_data, d => d.Return)])
+  .interpolator(d3.interpolateSpectral);
+```
+
+```{ojs}
+// Create risk-return scatter plot
+viewof riskReturnPlot = {
+  // Create the plot with interactive elements
+  const plot = Plot.plot({
+    marginTop: 30,
+    marginRight: 70,
+    marginBottom: 80,
+    marginLeft: 60,
+    grid: true,
+    style: {
+      background: "transparent",
+      fontSize: "12px",
+      fontFamily: "system-ui, sans-serif"
+    },
+    x: {
+      label: "Risk (Annualized Standard Deviation)",
+      tickFormat: d => d3.format(".1%")(d),
+      domain: [
+        d3.min(risk_return_data, d => d.Risk) * 0.95, 
+        d3.max(risk_return_data, d => d.Risk) * 1.05
+      ]
+    },
+    y: {
+      label: "Expected Return (Annualized)",
+      tickFormat: d => d3.format(".1%")(d),
+      domain: [
+        Math.min(0, d3.min(risk_return_data, d => d.Return) * 1.1),
+        d3.max(risk_return_data, d => d.Return) * 1.1
+      ]
+    },
+    marks: [
+      // Horizontal line at y=0
+      Plot.ruleY([0], {stroke: "gray", strokeDasharray: "4,4", strokeOpacity: 0.7}),
+      
+      // Regular ticker points
+      Plot.dot(
+        risk_return_data.filter(d => !d.isPortfolio), 
+        {
+          x: "Risk",
+          y: "Return",
+          fill: d => riskReturnColorScale(d.Return),
+          stroke: "black",
+          strokeWidth: 1.5,
+          r: 8,
+          title: d => `${d.Ticker} \nReturn: ${(d.Return * 100).toFixed(2)}% \nRisk (STDev): ${(d.Risk * 100).toFixed(2)}%`,
+          tip: true
+        }
+      ),
+      
+      // Portfolio point with star marker
+      Plot.dot(
+        risk_return_data.filter(d => d.isPortfolio),
+        {
+          x: "Risk",
+          y: "Return",
+          fill: "black",
+          stroke: "white",
+          strokeWidth: 2,
+          r: 12,
+          symbol: "star",
+          title: d => `Weighted Portfolio \nReturn: ${(d.Return * 100).toFixed(2)}% \nRisk (STDev): ${(d.Risk * 100).toFixed(2)}%`,
+          tip: true
+        }
+      ),
+      
+      // Ticker labels
+      Plot.text(
+        risk_return_data,
+        {
+          x: "Risk",
+          y: "Return",
+          text: "Ticker",
+          dy: d => d.isPortfolio ? -16 : -14,
+          fontSize: d => d.isPortfolio ? 14 : 11,
+          fontWeight: "bold",
+          fill: d => d.isPortfolio ? "#222" : "#444",
+          stroke: "white",
+          strokeWidth: 2,
+          paintOrder: "stroke",
+          textAnchor: "middle"
+        }
+      ),
+      
+      // Interactive elements
+      
+      // Add vertical tracking line (x-axis)
+      Plot.ruleX(risk_return_data, Plot.pointerX({
+        x: "Risk",
+        stroke: "#666", 
+        strokeWidth: 1, 
+        strokeDasharray: "4 4"
+      })),
+      
+      // Add horizontal tracking line (y-axis)
+      Plot.ruleY(risk_return_data, Plot.pointer({
+        y: "Return",
+        stroke: "gray", 
+        strokeWidth: 1,
+        strokeDasharray: "3,3"
+      })),
+    ]
+  });
+  
+  // Return container with header and plot
+  return html`
+    <div>
+      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Risk & Return of Individual Equity Securities</h5>
+      ${plot}
+    </div>
+  `;
+}
+```
+
+### Efficient Frontier {width=50%}
+
+```{ojs}
+//| echo: false
+makeFullscreen(EFFICIENT_FRONTIER)
+```
+
+:::
+
+### Equities Optimal Return
+
+<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Allocation</h5>
+
+```{python}
+optimal_portfolio_ef = equity_disp.copy() 
+
+# Order Columns
+ef_desired_order = ['Ticker', 'Weight', 'Expected Return', 'Standard Deviation', 'Sharpe Ratio']
+all_columns = optimal_portfolio_ef.columns.tolist()
+first_columns = [col for col in ef_desired_order if col in all_columns]
+optimal_portfolio_ef = optimal_portfolio_ef[first_columns].transpose()
+
+# Display the result
+display(optimal_portfolio_ef)
+```
+
+## Covariances (Equities)
+
+```{python}
+from great_tables import GT, loc, style
+
+# For correlation matrix - reset_index() converts index to a column
+eq_correl_with_index = eq_correl.reset_index()
+# Get the name of the index column (first column after reset_index)
+index_col_name = eq_correl_with_index.columns[0]
+
+# Format and display correlation matrix with highlighting
+(GT(eq_correl_with_index, rowname_col=index_col_name)
+ .tab_header(title="Correlation Matrix")
+ .fmt_number(
+    columns=list(eq_correl.columns),
+    decimals=2
+ )
+ .data_color(
+    columns=list(eq_correl.columns),
+    palette=["#E74C3C", "#FFFFFF", "#3498DB"],
+    domain=[-1, 1]
+ )
+ .tab_style(
+    style=style.fill(color="#3498DB"),
+    locations=[loc.body(columns=col, rows=[col]) for col in eq_correl.columns]
+ )
+ .tab_options(
+    container_width=None,
+    table_width=None
+ )
+)
+```
+
+:::: {.columns}
+
+### Standard Deviations {width="30%"}
+
+```{python}
+# Create a standard deviations dataframe from the annualized volatility
+std_dev_df = pd.DataFrame({'Standard Deviation': annual_vol}, index=annual_vol.index)
+std_dev_df_with_index = std_dev_df.reset_index()
+index_col_name = std_dev_df_with_index.columns[0]
+
+(GT(std_dev_df_with_index, rowname_col=index_col_name)
+ .tab_header(title="Standard Deviations (Annualized)")
+ .fmt_percent(
+    columns=['Standard Deviation'],
+    decimals=2
+ )
+ .tab_options(
+    container_width=None,
+    table_width=None
+ )
+)
+```
+
+### Covariance Matrix (Annualized) {width="70%"}
+
+```{python}
+# For covariance matrix
+eq_cov_with_index = eq_cov.reset_index()
+index_col_name = eq_cov_with_index.columns[0]
+
+# Calculate the domain for color scaling based on covariance values
+max_abs_cov = np.max(np.abs(eq_cov.values))
+cov_domain = [-max_abs_cov, max_abs_cov]
+
+(GT(eq_cov_with_index, rowname_col=index_col_name)
+ .tab_header(title="Covariance Matrix (Annualized)")
+ .fmt_number(
+    columns=list(eq_cov.columns),
+    decimals=6
+ )
+ .data_color(
+    columns=list(eq_cov.columns),
+    palette=["#E74C3C", "#FFFFFF", "#3498DB"],
+    domain=cov_domain
+ )
+ .tab_style(
+    style=style.fill(color="#3498DB"),
+    locations=[loc.body(columns=col, rows=[col]) for col in eq_cov.columns]
+ )
+ .tab_options(
+    container_width=None,
+    table_width=None
+ )
+)
+```
+
+:::
+
+:::: {.columns}
+
+### Security Weights {width="30%"}
+
+```{python}
+# Create a weights dataframe from the weights Series/dictionary
+weights_df = pd.DataFrame({'Weight': weights.values}, index=weights.index)
+weights_df_with_index = weights_df.reset_index()
+index_col_name = weights_df_with_index.columns[0]
+
+(GT(weights_df_with_index, rowname_col=index_col_name)
+ .tab_header(title="Security Weights")
+ .fmt_percent(
+    columns=['Weight'],
+    decimals=2
+ )
+ .tab_options(
+    container_width=None,
+    table_width=None
+ )
+)
+```
+
+### Weighted Covariance Matrix {width="70%"}
+
+```{python}
+# For weighted covariance matrix
+eq_cov_weighted_with_index = eq_cov_weighted.reset_index()
+index_col_name = eq_cov_weighted_with_index.columns[0]
+
+# Calculate the domain for weighted covariance color scaling
+max_abs_wcov = np.max(np.abs(eq_cov_weighted.values))
+wcov_domain = [-max_abs_wcov, max_abs_wcov]
+
+(GT(eq_cov_weighted_with_index, rowname_col=index_col_name)
+ .tab_header(title="Covariance Matrix (Weighted)")
+ .fmt_number(
+    columns=list(eq_cov_weighted.columns),
+    decimals=6
+ )
+ .data_color(
+    columns=list(eq_cov_weighted.columns),
+    palette=["#E74C3C", "#FFFFFF", "#3498DB"],
+    domain=wcov_domain
+ )
+ .tab_style(
+    style=style.fill(color="#3498DB"),
+    locations=[loc.body(columns=col, rows=[col]) for col in eq_cov_weighted.columns]
+ )
+ .tab_options(
+    container_width=None,
+    table_width=None
+ )
+)
+```
+
+:::
+
+## Bond Price Sensitivity
+
+### Line Chart: Bond Price vs. YTM 
+
+```{ojs}
+//| echo: false
+
+viewof bondSensitivityChart = {
+  // Generate YTM changes from -1.25% to 1.25% in 0.25% increments
+  const ytmChanges = d3.range(-125, 150, 25).map(d => d / 10000);
+  
+  // Prepare bond data array
+  const bondData = [];
+  const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+  
+  // Process bond_fundamentals data
+  if (bond_fundamentals) {
+    // Handle the object-of-arrays structure of bond_fundamentals
+    const numBonds = bond_fundamentals.Name ? bond_fundamentals.Name.length : 0;
+    
+    if (numBonds > 0) {
+      // For each bond index
+      for (let i = 0; i < numBonds; i++) {
+        // Extract Ticker (or create one if missing)
+        const ticker = Array.isArray(bond_fundamentals.Ticker) && i < bond_fundamentals.Ticker.length 
+          ? bond_fundamentals.Ticker[i]
+          : `Bond ${i+1}`;
+          
+        // Extract Name
+        const name = Array.isArray(bond_fundamentals.Name) && i < bond_fundamentals.Name.length
+          ? bond_fundamentals.Name[i]
+          : "";
+          
+        // Parse duration and convexity values
+        const duration = Array.isArray(bond_fundamentals["Duration (D*)"]) && i < bond_fundamentals["Duration (D*)"].length
+          ? parseFloat(bond_fundamentals["Duration (D*)"][i]) || 0
+          : 0;
+          
+        const convexity = Array.isArray(bond_fundamentals.Convexity) && i < bond_fundamentals.Convexity.length
+          ? parseFloat(bond_fundamentals.Convexity[i]) || 0
+          : 0;
+        
+        // Skip bonds with missing duration or convexity
+        if (isNaN(duration) || isNaN(convexity) || duration === 0 || convexity === 0) continue;
+        
+        // Add to our data array
+        bondData.push({
+          ticker: ticker,
+          name: name,
+          duration: duration,
+          convexity: convexity,
+          color: colorScale(i)
+        });
+      }
+    }
+  }
+  
+  // If no valid bond data is available, return a message
+  if (bondData.length === 0) {
+    return html`<div>
+      <h5 class="table-title">Bond Price Sensitivity to Changes in YTM</h5>
+      <div class="alert alert-warning">
+        No bond data with valid duration and convexity values available for sensitivity analysis.
+        <pre style="font-size:10px; max-height: 100px; overflow: auto;">
+          ${JSON.stringify(bond_fundamentals, null, 2)}
+        </pre>
+      </div>
+    </div>`;
+  }
+  
+  // Rest of the function remains the same...
+  const chartData = [];
+  bondData.forEach(bond => {
+    ytmChanges.forEach(ytmChange => {
+      // Calculate price change using both duration and convexity
+      const priceChange = -bond.duration * ytmChange + 0.5 * bond.convexity * ytmChange * ytmChange;
+      
+      chartData.push({
+        ticker: bond.ticker,
+        name: bond.name,
+        ytmChange: ytmChange * 100, // Convert to percentage for display
+        priceChange: priceChange * 100, // Convert to percentage for display
+        duration: bond.duration, // Add duration and convexity for tooltips
+        convexity: bond.convexity,
+        color: bond.color
+      });
+    });
+  });
+  
+  // Create the plot element
+  const plot = Plot.plot({
+    marginTop: 40,
+    marginRight: 60,
+    marginBottom: 80,
+    marginLeft: 60,
+    x: {
+      label: "Change in YTM (%)",
+      tickFormat: d => d.toFixed(2) + "%",
+      domain: [-1.25, 1.25]
+    },
+    y: {
+      label: "Price Change (%)",
+      tickFormat: d => d.toFixed(2) + "%",
+      // Calculate domain dynamically from data with 10% padding
+      domain: [
+        d3.min(chartData, d => d.priceChange) * 1.1, 
+        d3.max(chartData, d => d.priceChange) * 1.1
+      ]
+    },
+    grid: true,
+    marks: [
+      // Zero lines
+      Plot.ruleY([0], {stroke: "#ccc", strokeWidth: 1}),
+      Plot.ruleX([0], {stroke: "#ccc", strokeWidth: 1}),
+      
+      // Bond price change lines (without tooltip)
+      Plot.line(chartData, {
+        x: "ytmChange",
+        y: "priceChange",
+        stroke: d => d.color,
+        strokeWidth: 2.5,
+        curve: "linear"
+      }),
+      
+      // Add separate tooltip mark
+      Plot.tip(chartData, Plot.pointer({
+        strokeWidth: 2,
+        fontSize: 14,
+        curve: "linear",
+        x: "ytmChange",
+        y: "priceChange",
+        title: d => [
+          `${d.ticker}`,
+          `${d.name}`, 
+          `Change in YTM: ${d.ytmChange.toFixed(2)}%`,
+          `Price Change: ${d.priceChange.toFixed(2)}%`,
+          `Duration (D*): ${d.duration.toFixed(2)}`,
+          `Convexity: ${d.convexity.toFixed(2)}`
+        ].join("\n")
+      })),
+      
+      // Bond ticker labels at the right end of each line
+      Plot.text(d3.groups(chartData, d => d.ticker).map(([ticker, values]) => {
+        const lastPoint = values.reduce((max, v) => v.ytmChange > max.ytmChange ? v : max, values[0]);
+        return {
+          ticker,
+          name: lastPoint.name,
+          ytmChange: lastPoint.ytmChange,
+          priceChange: lastPoint.priceChange,
+          color: lastPoint.color
+        };
+      }), {
+        x: "ytmChange",
+        y: "priceChange",
+        text: "ticker",
+        dx: 5,
+        fill: d => d.color,
+        fontWeight: "bold",
+        fontSize: 12
+      }),
+      
+      // Chart title
+      Plot.text([{x: 0, y: 0, text: "Change in YTM vs. Change in Price"}], {
+        frameAnchor: "top",
+        dy: -25,
+        fontSize: 16,
+        fontWeight: "bold"
+      }),
+      // Add hover line like in the ticker chart
+      Plot.ruleX(chartData, Plot.pointerX({
+        x: "ytmChange",
+        stroke: "#666", 
+        strokeWidth: 1, 
+        strokeDasharray: "4 4"
+      }))
+    ],
+    style: {
+      fontFamily: "system-ui, sans-serif",
+      background: "transparent"
+    }
+  });
+  
+  // Return both the header and the plot in a container div
+  return html`
+    <div>
+      <h5 class="table-title">Bond Price Sensitivity to Changes in YTM (Yield to Maturity)</h5>
+      ${plot}
+    </div>
+  `;
+}
+```
+
+### Table: Bond Fundamentals Table
+
+```{ojs}
+//| echo: false
+function bondFundamentalsTable() {
+  if (!bond_fundamentals || !bond_fundamentals.Ticker || bond_fundamentals.Ticker.length === 0)
+    return html`<div>No bond data available</div>`;
+  
+  // Create arrays of data from columns
+  const numBonds = bond_fundamentals.Ticker.length;
+  const tableData = [];
+  
+  for (let i = 0; i < numBonds; i++) {
+    // Only add rows with valid data
+    if (bond_fundamentals.Ticker[i]) {
+      tableData.push({
+        ticker: bond_fundamentals.Ticker[i],
+        name: bond_fundamentals.Name ? bond_fundamentals.Name[i] : "N/A",
+        ytm: bond_fundamentals.Yield_To_Maturity ? bond_fundamentals.Yield_To_Maturity[i] : "N/A",
+        duration: bond_fundamentals["Duration (D*)"] ? bond_fundamentals["Duration (D*)"][i] : "N/A",
+        convexity: bond_fundamentals.Convexity ? bond_fundamentals.Convexity[i] : "N/A",
+        price: bond_fundamentals.Bond_Price ? bond_fundamentals.Bond_Price[i] : "N/A",
+        coupon: bond_fundamentals.Weighted_Avg_Coupon ? bond_fundamentals.Weighted_Avg_Coupon[i] : "N/A",
+        maturity: bond_fundamentals.Weighted_Avg_Maturity ? bond_fundamentals.Weighted_Avg_Maturity[i] : "N/A",
+        sensitivity: bond_fundamentals["Price Sensitivity to YTM (-1%)"] ? 
+                     bond_fundamentals["Price Sensitivity to YTM (-1%)"][i] : "N/A",
+        stdDev: bond_fundamentals.Standard_Deviation ? bond_fundamentals.Standard_Deviation[i] : "N/A"
+      });
+    }
+  }
+  
+  // Sort the table data by price sensitivity in descending order
+  tableData.sort((a, b) => {
+    // Convert to numbers for comparison
+    const sensA = parseFloat(a.sensitivity) || 0;
+    const sensB = parseFloat(b.sensitivity) || 0;
+    
+    // Sort in descending order (b - a)
+    return sensB - sensA;
+  });
+
+  return html`
+    <div style="overflow-x: auto;">
+    <h5 class="table-title">Price Change to a <u>Decrease</u> in YTM (-1%)</h5>
+      <table class="table-responsive">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Current Price (PV)</th>
+            <th>New Price</th>
+            <th>Current YTM</th>
+            <th>New YTM</th>
+            <th>Coupon Rate (%)</th>
+            <th>Maturity (yrs)</th>
+            <th>Duration (D*)</th>
+            <th>Convexity</th>
+            <th>Price Change (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableData.map(bond => {
+            // Parse numerical values
+            const currentYtm = typeof bond.ytm === 'string' ? parseFloat(bond.ytm) : bond.ytm;
+            const currentPrice = typeof bond.price === 'string' ? parseFloat(bond.price) : bond.price;
+            const duration = typeof bond.duration === 'string' ? parseFloat(bond.duration) : bond.duration;
+            const convexity = typeof bond.convexity === 'string' ? parseFloat(bond.convexity) : bond.convexity;
+            
+            // Calculate new YTM (current - 1%)
+            const newYtm = !isNaN(currentYtm) ? Math.max(0, currentYtm - 0.01) : null;
+            
+            // Calculate new price using duration and convexity formula
+            // ΔP/P = -D* × Δy + 1/2 × C × (Δy)²
+            const ytmChange = -0.01; // Decrease of 1%
+            const priceChangePercent = !isNaN(duration) && !isNaN(convexity) ? 
+              (-duration * ytmChange + 0.5 * convexity * Math.pow(ytmChange, 2)) : null;
+            
+            const newPrice = !isNaN(currentPrice) && priceChangePercent !== null ?
+              currentPrice * (1 + priceChangePercent) : null;
+            
+            // Format values appropriately
+            const ytmDisplay = typeof bond.ytm === 'string' ? bond.ytm : 
+                              (bond.ytm ? formatPercent(parseFloat(bond.ytm)) : "N/A");
+            
+            const newYtmDisplay = newYtm !== null ? formatPercent(newYtm) : "N/A";
+            
+            const couponDisplay = typeof bond.coupon === 'string' ? bond.coupon : 
+                                 (bond.coupon ? formatPercent(parseFloat(bond.coupon)) : "N/A");
+            
+            const priceDisplay = typeof bond.price === 'string' ? bond.price : 
+                               (bond.price ? formatCurrency(parseFloat(bond.price)) : "N/A");
+            
+            const newPriceDisplay = newPrice !== null ? formatCurrency(newPrice) : "N/A";
+            
+            const sensitivityDisplay = typeof bond.sensitivity === 'string' ? bond.sensitivity : 
+                                     (bond.sensitivity ? formatPercent(parseFloat(bond.sensitivity)) : "N/A");
+                                
+            return html`
+              <tr>
+                <td><strong>${bond.ticker}</strong></td>
+                <td>${bond.name}</td>
+                <td>${priceDisplay}</td>
+                <td>${newPriceDisplay}</td>
+                <td>${ytmDisplay}</td>
+                <td>${newYtmDisplay}</td>
+                <td>${couponDisplay}</td>
+                <td>${bond.maturity}</td>
+                <td>${bond.duration}</td>
+                <td>${bond.convexity}</td>
+                <td>${sensitivityDisplay}</td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Display the table
+bondFundamentalsTable()
+```

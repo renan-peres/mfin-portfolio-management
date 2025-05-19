@@ -1,0 +1,683 @@
+<!-- ============== SETUP ============== -->
+
+```{ojs}
+//| echo: false
+//| output: false
+
+REPORT_DATE = "2025-04-26"
+
+// Get environment variable from Quarto front matter
+BASE_REPO = "https://github.com/renan-peres/mfin-portfolio-management/blob/main/reports"
+
+// Set relative path and combine
+RELATIVE_PATH = ""
+SOURCE_REPO = `${BASE_REPO}/${RELATIVE_PATH}`
+
+// Convert to raw content URL
+RAW_URL = SOURCE_REPO.replace(
+  /https:\/\/github.com\/(.+)\/blob\//,
+  "https://raw.githack.com/$1/"
+)
+
+EFFICIENT_FRONTIER = `${RAW_URL}/efficient_frontier-${REPORT_DATE}.html`
+```
+
+```{python}
+#| output: false
+#| echo: false
+
+# --------------------------------------------------------------------------- #
+# Libraries                                                              #
+# --------------------------------------------------------------------------- #
+import os
+import sys
+import numpy as np
+import pandas as pd
+from pandas.tseries.offsets import BDay
+from scipy.optimize import minimize_scalar
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Configure plotting styles
+plt.style.use('seaborn-v0_8-whitegrid')
+sns.set_palette("muted")
+
+# Import portfolio functions
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../', 'py')))
+from optimal_portfolio import *
+
+# --------------------------------------------------------------------------- #
+# Configuration                                                              #
+# --------------------------------------------------------------------------- #
+DATA_PATH = "../data/datasets"
+REPORTS_PATH = "../reports"
+REPORT_DATE = "2025-04-26"
+PORTFOLIO_FILE = f"{REPORTS_PATH}/portfolio-{REPORT_DATE}.xlsx"
+
+END_DATE   = (datetime.today() - BDay(1)).date()
+START_DATE = END_DATE - timedelta(days=5 * 365)
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+htl = require('htl')
+
+// Button style definition
+btnStyle = `
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+`
+
+// Fullscreen handler
+makeFullscreen = (iframeSrc) => {
+  return htl.html`
+    <div>
+      <button style="${btnStyle}" onclick=${e => {
+        const iframe = e.target.parentElement.querySelector('iframe');
+        if (iframe) iframe.requestFullscreen();
+      }}>Fullscreen</button>
+      <div style="width: 100%; position: relative;">
+        <iframe 
+          src="${iframeSrc}"
+          style="width: 100%; height: 600px; border:0; border-radius: 4px; overflow:hidden;"
+        ></iframe>
+      </div>
+    </div>
+  `
+}
+```
+
+
+```{python}
+#| output: false
+#| echo: false
+
+# ---------------------------------------------------------------------------
+# Load sheets
+# ---------------------------------------------------------------------------
+
+# Risk-Free Rate                                                              #
+risk_free_df = pd.read_excel(PORTFOLIO_FILE, sheet_name="risk_free", index_col=0)
+RISK_FREE = risk_free_df[risk_free_df['Ticker'] == '^IRX']['Close'].iloc[-1] / 100
+# RISK_FREE  = 0.0433                              # 3‑month T‑Bill
+
+sheets       = pd.read_excel(PORTFOLIO_FILE, sheet_name=None)
+equity_pf    = sheets["equity"].set_index("Ticker")
+bond_pf      = sheets["bond"].set_index("Ticker")
+risk_free_pf = sheets["risk_free"].set_index("Ticker")
+benchmark_pf = sheets["benchmark"].set_index("Equity")
+
+# --------------------------------------------------------------------------- #
+# Helper functions                                                           #
+# --------------------------------------------------------------------------- #
+def melt_price(df: pd.DataFrame,
+               equity: list[str],
+               bond: list[str],
+               risk_free: list[str]) -> pd.DataFrame:
+    """Return a long‑format price table with a ‘Type’ column."""
+    out = (df.reset_index()
+             .melt('Date', var_name='Ticker', value_name='Close'))
+    out['Type'] = np.where(out['Ticker'].isin(equity), 'Equity',
+                  np.where(out['Ticker'].isin(bond),   'Bond',
+                  np.where(out['Ticker'].isin(risk_free),   'Risk-Free',   'Other')))
+    return out
+
+
+def sharpe(bond_w: float,
+           bond_ret: float, equity_ret: float,
+           bond_sd: float, equity_sd: float,
+           corr: float, rf: float = RISK_FREE) -> float:
+    """Portfolio Sharpe ratio for a given bond weight."""
+    eq_w = 1 - bond_w
+    port_ret = bond_w * bond_ret + eq_w * equity_ret
+    port_var = (bond_w**2 * bond_sd**2 +
+                eq_w**2   * equity_sd**2 +
+                2 * bond_w * eq_w * corr * bond_sd * equity_sd)
+    return (port_ret - rf) / np.sqrt(port_var)
+
+def prep_price(df: pd.DataFrame, date_col: str = "Date") -> pd.DataFrame:
+    """Return price table indexed by datetime and with numeric columns."""
+    if date_col in df.columns:                       # move date into the index
+        df = df.assign(**{date_col: pd.to_datetime(df[date_col])})\
+               .set_index(date_col)
+    elif not isinstance(df.index, pd.DatetimeIndex): # fallback
+        df.index = pd.to_datetime(df.index, errors="coerce")
+
+    # force everything except the index to numeric
+    return df.apply(pd.to_numeric, errors="coerce").sort_index()
+
+# --------------------------------------------------------------------------- #
+# Daily returns, correlation, volatility                                     #
+# --------------------------------------------------------------------------- #
+
+## STOCK DATA
+
+daily_px     = prep_price(sheets["daily_quotes"])
+monthly_px   = prep_price(sheets["monthly_quotes"])
+
+equity_tk      = equity_pf.index.to_list()
+bond_tk        = [bond_pf["Price Sensitivity to YTM (-1%)"].idxmax()]  # highest Px‑chg‑sens.
+risk_free_tk   = risk_free_pf.index.to_list()
+
+daily_px.index   = pd.to_datetime(daily_px.index)
+monthly_px.index = pd.to_datetime(monthly_px.index)
+
+daily_px = daily_px.loc[daily_px.index.notna()].dropna(how='any')
+monthly_px = monthly_px.loc[monthly_px.index.notna()].dropna(how='any')
+
+## RETURNS 
+eq_ret = daily_px[equity_tk].pct_change(fill_method=None)
+bd_ret = daily_px[bond_tk[0]].pct_change(fill_method=None)
+
+# align & drop NaNs
+common  = eq_ret.dropna().index.intersection(bd_ret.dropna().index)
+eq_ret, bd_ret = eq_ret.loc[common], bd_ret.loc[common]
+
+weights   = equity_pf["Weight"]                          
+eq_port_d = eq_ret.dot(weights)
+
+# monthly simple returns (matches Excel)
+eq_port_m = eq_port_d.resample("ME").sum()
+bd_ret_m  = bd_ret.resample("ME").sum()
+
+## CORRELATION & COVARIANCES  
+eq_correl = eq_ret.corr() # correlation matrix for equity securities
+eq_cov   = eq_ret.cov() * 252 # annualised vols and covariance
+eq_cov_weighted = np.outer(weights, weights) * eq_cov # Calculate weighted covariance matrix
+eq_vol   = np.sqrt(weights @ eq_cov @ weights)
+portfolio_variance = eq_cov_weighted.sum().sum()  # Should equal weights @ eq_cov @ 
+portfolio_vol = np.sqrt(portfolio_variance)    # Should equal eq_vol
+
+corr_eq_bd = eq_port_m.corr(bd_ret_m) # Correlation between Equities and Bonds
+
+bond_vol = bond_pf.loc[bond_tk[0], "Standard_Deviation"]    # ‹assumption›
+bond_ret = bond_pf.loc[bond_tk[0], "Price Sensitivity to YTM (-1%)"]  # ‹assumption›
+eq_ret_a = weights @ equity_pf["Expected Return"]           # ‹assumption›
+
+cov_eq_bd = corr_eq_bd * eq_vol * bond_vol
+
+# Calculate annualized returns and volatility for each equity security
+annual_ret = eq_ret.mean() * 252  # Annualized mean return
+annual_vol = eq_ret.std() * np.sqrt(252)  # Annualized volatility
+
+# Create risk-return data for OJS
+risk_return_data = pd.DataFrame({
+    'Risk': annual_vol,
+    'Return': annual_ret,
+    'Ticker': annual_ret.index
+}).reset_index(drop=True)
+
+# Add portfolio point data
+portfolio_point = pd.DataFrame({
+    'Risk': [eq_vol],
+    'Return': [eq_ret_a],
+    'Ticker': ['Portfolio'],
+    'isPortfolio': [True]
+})
+
+# Combine the data
+plot_data_combined = pd.concat([
+    risk_return_data.assign(isPortfolio=False), 
+    portfolio_point
+])
+
+# --------------------------------------------------------------------------- #
+# Optimal bond / equity mix                                                  #
+# --------------------------------------------------------------------------- #
+opt = minimize_scalar(lambda w: -sharpe(w, bond_ret, eq_ret_a,
+                                        bond_vol, eq_vol, corr_eq_bd),
+                      bounds=(0, 1), method="bounded")
+
+w_bond, w_eq = opt.x, 1 - opt.x
+opt_ret  = w_bond * bond_ret + w_eq * eq_ret_a
+opt_var  = (w_bond**2 * bond_vol**2 +
+            w_eq**2   * eq_vol**2 +
+            2 * w_bond * w_eq * cov_eq_bd)
+opt_vol  = np.sqrt(opt_var)
+opt_sr   = (opt_ret - RISK_FREE) / opt_vol
+
+# --------------------------------------------------------------------------- #
+# Results                                                                     #
+# --------------------------------------------------------------------------- #
+print(f"Optimal bond weight   : {w_bond:.2%}")
+print(f"Optimal equity weight : {w_eq:.2%}")
+print(f"Expected return       : {opt_ret:.2%}")
+print(f"Volatility            : {opt_vol:.2%}")
+print(f"Sharpe ratio          : {opt_sr:.4f}")
+
+# long‑format quotes:
+daily_long   = melt_price(daily_px,   equity_tk, bond_tk, risk_free_tk)
+monthly_long = melt_price(monthly_px, equity_tk, bond_tk, risk_free_tk)
+```
+
+```{python}
+#| output: false
+#| echo: false
+
+import numpy as np
+import pandas as pd
+
+# --------------------------------------------------------------------------- #
+# 0 ·  NUMERIC copies immediately after reading the workbook                  #
+# --------------------------------------------------------------------------- #
+equity_num = equity_pf.copy()
+bond_num   = bond_pf.copy()
+
+# ---- turn '40.00%' → 0.40 (float) in *equity_num* --------------------------
+def to_pct_float(series) -> pd.Series:
+    """
+    Convert '40.00%', '40,00 %', '0.40', 0.40 → 0.40 (float).
+    Bad or empty cells → NaN.
+    """
+    return (
+        series.astype(str)
+              .str.replace('%', '', regex=False)   # drop %
+              .str.replace(',', '.', regex=False)  # 40,00 → 40.00
+              .str.strip()
+              .replace('', np.nan)
+              .pipe(pd.to_numeric, errors='coerce')   # coerce bad strings to NaN
+              .div(100, fill_value=0)                # turn 40.00 → 0.40
+    )
+
+# clean Weight column once
+if 'Weight' in equity_num.columns:
+    equity_num['Weight'] = to_pct_float(equity_num['Weight']) * 100
+
+# --------------------------------------------------------------------------- #
+# 1 ·  BUILD PORTFOLIO TABLES (numeric)                                       #
+# --------------------------------------------------------------------------- #
+
+eq_tbl = (equity_pf[["Name", "Sector", "Weight"]]
+          .assign(Weight=lambda x: x["Weight"] * w_eq,
+                  Type="Equity")
+          .reset_index())
+
+bd_tbl = (bond_pf.loc[bond_tk, ["Name"]]
+          .assign(Sector="Bond ETF", Weight=w_bond, Type="Bond")
+          .reset_index())
+
+risky_pf = pd.concat([eq_tbl, bd_tbl], ignore_index=True)[
+           ["Type", "Ticker", "Name", "Sector", "Weight"]]
+
+risk_free_tbl = (risk_free_df.drop(columns=["Close"], errors="ignore")
+          .assign(Sector="Treasury Bond", Weight=0, Type="Risk‑Free", Name="13-Week Treasury Bill", Equity_Pf_Weight=0, Risky_Pf_Weight=0)
+          .reset_index(drop=True))
+
+# ---------- EQUITY  (numeric) ----------------------------------------------
+equity_tickers_df = (
+    equity_num.reset_index()[['Ticker', 'Name', 'Sector', 'Weight']]
+      .rename(columns={'Weight': 'Equity_Pf_Weight'})          # 0‑1 weights inside the equity sleeve
+      .assign(
+          Risky_Pf_Weight=lambda df: df['Equity_Pf_Weight'] * w_eq,
+          Type='Equity'
+      )
+      .sort_values('Risky_Pf_Weight', ascending=False)
+      # optional: alias so legacy code that still looks for “Weight” won’t fail
+      .assign(Weight=lambda df: df['Risky_Pf_Weight'])
+      [['Type', 'Ticker', 'Name', 'Sector',
+        'Equity_Pf_Weight', 'Risky_Pf_Weight', 'Weight']]
+)
+
+# ---------- BOND  (numeric) -------------------------------------------------
+bond_df = (
+    bond_num.loc[bond_tk]                     # keep only the bonds you selected
+        .reset_index()[['Ticker', 'Name']]
+        .assign(
+            Sector='Bond ETF',
+            Type='Bond',
+            Equity_Pf_Weight=0.0,
+            Risky_Pf_Weight=w_bond,
+            Weight=w_bond                      # legacy alias
+        )
+        [['Type', 'Ticker', 'Name', 'Sector',
+          'Equity_Pf_Weight', 'Risky_Pf_Weight', 'Weight']]
+)
+
+# ---------- COMBINED  (numeric) --------------------------------------------
+risky_portfolio_num = pd.concat([equity_tickers_df, bond_df, risk_free_tbl], ignore_index=True)
+
+# --------------------------------------------------------------------------- #
+# 2 · DISPLAY copies (string‑formatting only here)                            #
+# --------------------------------------------------------------------------- #
+equity_disp = equity_pf.sort_values(by="Weight", ascending=False).copy()  # <- purely numeric starting point
+
+pct_cols = ['Weight', 'Expected Return', 'Standard Deviation',
+            'Dividend Yield (%)', 'Dividend Rate (%)',
+            '5Y Avg Dividend Yield (%)', 'Profit Margin (%)',
+            'Operating Margin (%)', 'Gross Margin (%)',
+            'EBITDA Margin (%)', 'Revenue Growth (%)',
+            'Earnings Growth (%)', 'Earnings Quarterly Growth (%)',
+            'Payout Ratio (%)']
+
+num_cols = ['Sharpe Ratio', 'Market Cap', 'Enterprise Value', 'Revenue (TTM)',
+            'Total Cash', 'Total Debt', 'P/E (trailing)', 'P/E (forward)',
+            'P/S', 'P/B', 'EV/EBITDA', 'Float Shares', 'Shares Outstanding',
+            'EPS (trailing)', 'EPS (forward)', 'Free Cash Flow',
+            'Operating Cash Flow']
+
+# ---- percentage columns ----------------------------------------------------
+for col in pct_cols:
+    if col in equity_disp.columns:
+        equity_disp[col] = pd.to_numeric(equity_disp[col], errors='coerce')  # ⬅️ ensure float
+        equity_disp[col] = equity_disp[col].map('{:.2%}'.format)
+
+# ---- big‑number columns ----------------------------------------------------
+for col in num_cols:
+    if col in equity_disp.columns:
+        equity_disp[col] = pd.to_numeric(equity_disp[col], errors='coerce')  # ⬅️ ensure float
+        equity_disp[col] = equity_disp[col].fillna(0).map('{:,.2f}'.format)
+
+# ---- portfolio tables ------------------------------------------------------
+equity_tickers_disp = equity_tickers_df.copy()
+equity_tickers_disp['Weight'] = equity_tickers_disp['Weight'].map('{:.2%}'.format)
+
+bond_disp = bond_df.copy()
+bond_disp['Weight'] = bond_disp['Weight'].map('{:.2%}'.format)
+
+risky_portfolio_df = pd.concat([equity_tickers_disp, bond_disp, risk_free_tbl], ignore_index=True)
+bond_fundamentals = bond_pf.reset_index()  
+```
+
+```{python}
+#| output: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ❶  Default parameters (all numeric)                                         │
+# ─────────────────────────────────────────────────────────────────────────────
+default_params = {
+    "rf_rate":          RISK_FREE,
+    "er_risky":         opt_ret,
+    "std_dev_risky":    opt_vol,
+    "market_view":      30,
+    "risk_score":       66,
+    "equity_weight":    w_eq,
+    "bond_weight":      w_bond,
+    "assets": {
+        "Bond":   {"return": bond_ret, "std": bond_vol, "corr_equity": corr_eq_bd},
+        "Equity": {"return": eq_ret_a, "std": eq_vol,  "corr_bond":  corr_eq_bd},
+        "T-Bill": {"return": RISK_FREE, "std": 0.0},
+    },
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ❷  Helper outputs that feed the OJS widgets                                 │
+# ─────────────────────────────────────────────────────────────────────────────
+capital_allocation_data = calculate_data_for_ojs(
+    default_params["rf_rate"],
+    default_params["er_risky"],
+    default_params["std_dev_risky"],
+    default_params["market_view"],
+    default_params["risk_score"],
+)
+
+asset_allocation_data = calculate_allocations(
+    default_params["assets"]["Bond"]["return"],
+    default_params["assets"]["Equity"]["return"],
+    default_params["assets"]["T-Bill"]["return"],
+    default_params["assets"]["Bond"]["std"],
+    default_params["assets"]["Equity"]["std"],
+    default_params["assets"]["Bond"]["corr_equity"],
+    capital_allocation_data["risk_aversion_index"],
+)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ❸  Push Python Variables to OJS                                             │
+# ─────────────────────────────────────────────────────────────────────────────
+ojs_define(
+    # defaults for interactive controls
+    report_date            = REPORT_DATE,
+    default_rf_rate        = default_params["rf_rate"],
+    default_er_risky       = default_params["er_risky"],
+    default_std_dev_risky  = default_params["std_dev_risky"],
+    default_market_view    = default_params["market_view"],
+    default_risk_score     = default_params["risk_score"],
+    default_equity_weight  = default_params["equity_weight"],
+    default_bond_weight    = default_params["bond_weight"],
+
+    # data blocks
+    initial_data           = capital_allocation_data,
+    daily_quotes           = daily_long,
+    monthly_quotes         = monthly_long,
+    initial_allocations    = asset_allocation_data,
+
+    # risky portfolio data
+    bond_ret               = bond_ret,
+    bond_vol               = bond_vol,
+    bond_fundamentals      = bond_fundamentals,
+    calc_equity_return     = eq_ret_a,
+    calc_equity_std        = eq_vol,
+    corr_eq_bd             = corr_eq_bd,
+
+    # combined equity + bond table for display
+    equity_tickers         = risky_portfolio_df.to_dict("records"),
+    risk_return_data = plot_data_combined.to_dict('records')
+)
+
+```
+
+```{ojs}
+//| output: false
+utils = await import("./js/utils.js")
+constants = await import("./js/constants.js")
+assetColors = constants.assetColors
+
+// Use dynamic import for utility functions
+formatCurrency = utils.formatCurrency
+formatNumber = utils.formatNumber
+formatPercent = utils.formatPercent
+createRangeInput = utils.createRangeInput
+createPercentInput = utils.createPercentInput
+createNumericInput = utils.createNumericInput
+createCurrencyInput = utils.createCurrencyInput
+createDateInput = utils.createDateInput
+createAssetAllocationSlider = utils.createAssetAllocationSlider
+createHoldingsTable = utils.createHoldingsTable
+calculatePortfolioStats = utils.calculatePortfolioStats
+calculateUtility = utils.calculateUtility
+findOptimalEquityWeight = utils.findOptimalEquityWeight
+calculateRiskBasedAllocation = utils.calculateRiskBasedAllocation
+calculateRiskyPortfolioMetrics = utils.calculateRiskyPortfolioMetrics
+categorizeValue = utils.categorizeValue
+calculateData = utils.generatePortfolioData
+processQuotesData = utils.processQuotesData
+calculateAssetClassWeights = utils.calculateAssetClassWeights
+calculateTickerWeights = utils.calculateTickerWeights
+generateSamplePortfolioData = utils.generateSamplePortfolioData
+calculatePortfolioReturns = utils.calculatePortfolioReturns
+processWeights = utils.processWeights
+convertToRowData = utils.convertToRowData
+calculateTickerPerformance = utils.calculateTickerPerformance
+calculatePortfolioTotals = utils.calculatePortfolioTotals
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Validate data and extract date range
+dateRange = {
+  if (!daily_quotes?.Date?.length) {
+    console.warn("No valid date data in daily_quotes");
+    return { startDate: new Date(), endDate: new Date() };
+  }
+  
+  const dates = daily_quotes.Date.map(d => new Date(d));
+  return { 
+    startDate: new Date(Math.min(...dates)), 
+    endDate: new Date(Math.max(...dates)) 
+  };
+};
+
+// Process portfolio data
+portfolioData = {
+  // Use real data if available, otherwise generate sample data
+  if (!daily_quotes?.Date?.length) {
+    return generateSamplePortfolioData(equity_tickers, investment_amount);
+  }
+  return calculatePortfolioReturns(daily_quotes, equity_tickers, investment_amount);
+};
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Calculate dynamic asset allocations based on current inputs
+dynamicAllocations = (() => { 
+  // Use current parameter values
+  const bondReturn = bond_ret; // Fixed value from default_assets
+  const equityReturn = calc_equity_return || 0.237;
+  const bondStd = bond_vol; // Fixed value from default_assets
+  const equityStd = calc_equity_std || 0.161;
+  const correlation = corr_eq_bd; // Fixed value from default_assets
+  
+  // Get current risk free rate from user input
+  const riskFreeRate = rf_rate;
+  
+  // Clone the initial allocations structure but update with current values
+  const allocations = JSON.parse(JSON.stringify(initial_allocations));
+  
+  // Recalculate allocations using current values
+  allocations.allocations = [];
+  for (let bondWeight = 0; bondWeight <= 100; bondWeight += 10) {
+    const equityWeight = 100 - bondWeight;
+    const w = [bondWeight/100, equityWeight/100];
+    
+    // Calculate expected return
+    const er = w[0] * bondReturn + w[1] * equityReturn;
+    
+    // Calculate standard deviation (simplified portfolio variance formula)
+    const variance = 
+      Math.pow(w[0], 2) * Math.pow(bondStd, 2) + 
+      Math.pow(w[1], 2) * Math.pow(equityStd, 2) + 
+      2 * w[0] * w[1] * bondStd * equityStd * correlation;
+    const stdDev = Math.sqrt(variance);
+    
+    // Calculate Sharpe ratio
+    const sharpe = (er - riskFreeRate) / stdDev;
+    
+    allocations.allocations.push({
+      bond_weight: bondWeight,
+      equity_weight: equityWeight,
+      expected_return: er,
+      std_dev: stdDev,
+      sharpe: sharpe
+    });
+  }
+  
+  // Recalculate minimum variance portfolio
+  const minVar = allocations.allocations.reduce((prev, current) => 
+    (current.std_dev < prev.std_dev) ? current : prev, allocations.allocations[0]);
+  
+  allocations.min_variance = {
+    Return: minVar.expected_return,
+    Risk: minVar.std_dev,
+    Weights: [minVar.bond_weight/100, minVar.equity_weight/100],
+    Sharpe: minVar.sharpe
+  };
+  
+  // Recalculate max Sharpe portfolio
+  const maxSharpe = allocations.allocations.reduce((prev, current) => 
+    (current.sharpe > prev.sharpe) ? current : prev, allocations.allocations[0]);
+  
+  allocations.max_sharpe = {
+    Return: maxSharpe.expected_return,
+    Risk: maxSharpe.std_dev,
+    Weights: [maxSharpe.bond_weight/100, maxSharpe.equity_weight/100],
+    Sharpe: maxSharpe.sharpe
+  };
+  
+  // Recalculate complete portfolio
+  const optimalY = risk_aversion_weight; // Use current risk-based weight
+  const rfWeight = 1 - optimalY;
+  const bondWeight = optimalY * maxSharpe.bond_weight/100;
+  const equityWeight = optimalY * maxSharpe.equity_weight/100;
+  const erComplete = optimalY * maxSharpe.expected_return + rfWeight * riskFreeRate;
+  const stdDevComplete = optimalY * maxSharpe.std_dev;
+  
+  allocations.complete_portfolio = {
+    y: optimalY,
+    rf_weight: rfWeight,
+    bond_weight: bondWeight,
+    equity_weight: equityWeight,
+    er_complete: erComplete,
+    std_dev_complete: stdDevComplete,
+    sharpe: maxSharpe.sharpe
+  };
+  
+  // Generate efficient frontier points (simplified)
+  allocations.efficient_frontier = allocations.allocations.map(a => ({
+    Return: a.expected_return,
+    Risk: a.std_dev,
+    Weights: [a.bond_weight/100, a.equity_weight/100]
+  }));
+  
+  return allocations;
+})()
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Extract the data enrichment process to a separate cell
+enrichedSecurityData = {
+  const data = equity_tickers ?? [];
+  if (data.length === 0) return [];
+
+  /* ─── Totals by asset class ───────────────────────────── */
+  let equityTotal = 0, bondTotal = 0, rfTotal = 0;
+  data.forEach(d => {
+    if (d.Type === "Equity")  equityTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Bond") bondTotal += d.Risky_Pf_Weight;
+    else if (d.Type === "Risk‑Free") rfTotal += d.Risky_Pf_Weight;
+  });
+
+  // Pre-calculate all weights for each security
+  return data.slice().map(d => {
+    // Select the appropriate asset class total
+    let classTotal;
+    if (d.Type === "Equity") classTotal = equityTotal;
+    else if (d.Type === "Bond") classTotal = bondTotal;
+    else if (d.Type === "Risk‑Free") classTotal = rfTotal;
+    else classTotal = 0;
+    
+    // Calculate class weight (with special case for Risk-Free)
+    let classWeight;
+    if (d.Type === "Risk‑Free") {
+      classWeight = 1.0; // Risk-Free assets have 100% weight in their class
+    } else {
+      classWeight = classTotal ? d.Risky_Pf_Weight / classTotal : 0;
+    }
+    
+    // Handle Risk-Free asset class differently
+    if (d.Type === "Risk‑Free") {
+      return {
+        ...d,
+        classWeight, // Now correctly set to 1.0 (100%)
+        riskyPfWeight: 0, // Risk-free assets are not part of the risky portfolio
+        completeWeight: 1 - fixed_optimal_weight // The weight is the remainder after risky allocation
+      };
+    } else {
+      // For Equity and Bond, use the regular calculation
+      const riskyPfWeight = classWeight * (d.Type === "Equity" ? equity_weight : bond_weight);
+      const completeWeight = riskyPfWeight * fixed_optimal_weight;
+      
+      return {
+        ...d,
+        classWeight,
+        riskyPfWeight,
+        completeWeight
+      };
+    }
+  }).sort((a, b) => b.completeWeight - a.completeWeight); // Sort by complete weight
+};
+```

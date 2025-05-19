@@ -1,0 +1,527 @@
+<!-- # Capital Allocation  -->
+
+```{ojs}
+//| echo: false
+//| output: false
+
+function optimalMetricsTable() {
+  /* Guard against missing inputs */
+  if (
+    sharpe_ratio == null ||
+    fixed_optimal_weight == null ||
+    er_optimal == null ||
+    std_dev_optimal == null ||
+    fixed_utility_optimal == null
+  ) {
+    return html`<div class="alert alert-warning">Summary metrics unavailable</div>`;
+  }
+
+  /* Render */
+  return html`
+    <table class="table-responsive">
+      <tbody>
+        <tr><td>Sharpe Ratio</td>                 <td>${sharpe_ratio.toFixed(2)}</td></tr>
+        <tr><td>Optimal Weight (Risky Pf.)</td>   <td>${formatPercent(fixed_optimal_weight)}</td></tr>
+        <tr><td>Optimal Weight (Risk-free Asset)</td>   <td>${formatPercent(1- fixed_optimal_weight)}</td></tr>
+        <tr><td>Expected Return @ Optimal</td>    <td>${formatPercent(er_optimal)}</td></tr>
+        <tr><td>Std. Deviation @ Optimal</td>     <td>${formatPercent(std_dev_optimal)}</td></tr>
+        <tr><td>Utility @ Optimal</td>            <td>${formatPercent(fixed_utility_optimal)}</td></tr>
+      </tbody>
+    </table>`;
+}
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+
+function allocationDataTable() {
+  /* Guard against missing inputs */
+  if (
+    fixed_allocation_data == null || 
+    fixed_max_utility_idx == null ||
+    rf_rate == null ||
+    risk_aversion == null
+  ) {
+    return html`<div class="alert alert-warning">Allocation data unavailable</div>`;
+  }
+
+  /* Render table */
+  return html`
+    <div>
+      <table class="table-responsive mt-0 mb-0">
+        <thead>
+          <tr>
+            <th>Weight of Risky Pf</th>
+            <th>E(rc) on CAL</th>
+            <th>Std Dev (Complete Pf)</th>
+            <th>Utility</th>
+            <th>E(rc) on Indiff. Curve</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fixed_allocation_data.map((d, i) => {
+            // Calculate indifference value: rf_rate + (1/2 * risk_aversion * variance)
+            const indiff = fixed_utility_optimal + (1/2 * risk_aversion * Math.pow(d.Standard_Deviation, 2));
+            
+            return html`
+              <tr ${i === fixed_max_utility_idx ? 'style="background-color: #ffff9980;"' : ''}>
+                <td>${d.Weight_Pct}</td>
+                <td>${formatPercent(d.Expected_Return)}</td>
+                <td>${formatPercent(d.Standard_Deviation)}</td>
+                <td>${formatPercent(d.Utility)}${i === fixed_max_utility_idx ? ' ★' : ''}</td>
+                <td>${formatPercent(indiff)}</td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+    </div>`;
+}
+```
+
+::: {.panel-tabset}
+
+## Capital Allocation Line 
+
+```{ojs}
+//| echo: false
+//| output: false
+
+// Generate dynamic Capital Market Line based on current risky portfolio
+generateCMLPoints = () => {
+  // Create points from risk-free rate to slightly beyond risky portfolio
+  const numPoints = 100;
+  const maxStdDev = std_dev_risky * 1.2; // Extend slightly beyond risky portfolio
+  
+  // Generate equally spaced points along the line
+  return Array.from({length: numPoints}, (_, i) => {
+    // Standard deviation spans from 0 to maxStdDev
+    const sd = (i / (numPoints - 1)) * maxStdDev;
+    
+    // Calculate corresponding expected return using the CML equation
+    // CML: E(R) = Rf + (E(Rm) - Rf) / σm * σ
+    const er = rf_rate + (er_risky - rf_rate) / std_dev_risky * sd;
+    
+    return {
+      Standard_Deviation: sd,
+      Expected_Return: er
+    };
+  });
+};
+
+// Generate indifference curve points using the same formula as in allocationDataTable
+generateIndifferencePoints = () => {
+  // Create points from 0 to slightly beyond risky portfolio
+  const numPoints = 100;
+  const maxStdDev = std_dev_risky * 1.2; // Extend slightly beyond risky portfolio
+  
+  // Generate equally spaced points along the curve
+  return Array.from({length: numPoints}, (_, i) => {
+    // Standard deviation spans from 0 to maxStdDev
+    const sd = (i / (numPoints - 1)) * maxStdDev;
+    
+    // Calculate corresponding expected return using the same indifference curve equation as in the table
+    // Indifference curve: E(R) = fixed_utility_optimal + (1/2 * risk_aversion * sd^2)
+    const er = fixed_utility_optimal + (1/2 * risk_aversion * Math.pow(sd, 2));
+    
+    return {
+      Standard_Deviation: sd,
+      Expected_Return: er
+    };
+  });
+};
+
+// Calculate dynamic optimal portfolio position using fixed weight and current risky portfolio
+calculateDynamicOptimalPoint = () => {
+  // Use fixed risk-aversion weight with current risky portfolio characteristics
+  const dynamic_std_dev_optimal = fixed_optimal_weight * std_dev_risky;
+  const dynamic_er_optimal = (fixed_optimal_weight * er_risky) + ((1 - fixed_optimal_weight) * rf_rate);
+  
+  return {
+    std_dev: dynamic_std_dev_optimal,
+    er: dynamic_er_optimal
+  };
+};
+
+// Get dynamic CML points and optimal portfolio position
+cmlPoints = generateCMLPoints();
+indifferencePoints = generateIndifferencePoints();
+dynamicOptimalPoint = calculateDynamicOptimalPoint();
+```
+
+```{ojs}
+//| echo: false
+
+// Create and display the plot with its header
+viewof capitalAllocationDisplay = {
+  // Create the plot (using the same configuration you already have)
+  const plot = Plot.plot({
+    marginLeft: 60,
+    marginTop: 20,
+    marginBottom: 80,
+    marginRight: 170, // Increased for legend space
+    x: {
+      label: "Risk (Standard Deviation)",
+      tickFormat: d => d3.format(".1%")(d),
+      grid: true
+    },
+    y: {
+      label: "Expected Return", 
+      tickFormat: d => d3.format(".1%")(d),
+      grid: true
+    },
+    marks: [
+      // Use dynamically generated CML line based on current risky portfolio
+      Plot.line(cmlPoints, {
+        x: "Standard_Deviation", 
+        y: "Expected_Return",
+        stroke: assetColors["CML"], 
+        strokeWidth: 2.5,
+      }),
+      // Add indifference curve
+      Plot.line(indifferencePoints, {
+        x: "Standard_Deviation", 
+        y: "Expected_Return",
+        stroke: "#009688", 
+        strokeWidth: 2,
+      }),
+      // Add vertical dashed line from bottom to optimal portfolio point
+      Plot.ruleX([std_dev_optimal], {
+        stroke: "red", 
+        strokeDasharray: "4 4",
+        strokeWidth: 2,
+        y1: 0,
+        y2: er_optimal
+      }),
+      // Add horizontal dashed line from left to optimal portfolio point
+      Plot.ruleY([er_optimal], {
+        stroke: "red", 
+        strokeDasharray: "4 4",
+        strokeWidth: 2,
+        x1: 0,
+        x2: std_dev_optimal
+      }),
+      Plot.dot([{
+        x: 0, 
+        y: rf_rate
+      }], {
+        x: "x",
+        y: "y",
+        fill: assetColors["Risk-Free"], 
+        r: 6,
+        tip: true,
+        title: d => `Risk-Free Asset\nReturn: ${formatPercent(d.y)}`
+      }),
+      // Dynamic risky portfolio (changes with equity/bond slider)
+      Plot.dot([{
+        x: std_dev_risky, 
+        y: er_risky
+      }], {
+        x: "x",
+        y: "y",
+        stroke: assetColors["Equity"], 
+        fill: assetColors["Equity"], 
+        r: 6,
+        tip: true,
+        title: d => `Risky Portfolio\nReturn: ${formatPercent(d.y)}\nRisk: ${formatPercent(d.x)}`
+      }),
+      // Dynamic optimal portfolio (uses fixed weight but current risky portfolio characteristics)
+      Plot.dot([{
+        x: std_dev_optimal, 
+        y: er_optimal
+      }], {
+        x: "x",
+        y: "y",
+        fill: "red",
+        r: 8,
+        tip: true,
+        title: d => `Optimal Portfolio\nRisky Pf Weight: ${formatPercent(fixed_optimal_weight)}\nRisk-Free Weight: ${formatPercent(1- fixed_optimal_weight)}\nReturn: ${formatPercent(d.y)}\nRisk: ${formatPercent(d.x)}`
+      }),
+      
+      // Add text labels for each point
+      Plot.text([
+        {
+          x: 0, 
+          y: rf_rate,
+          text: "Risk-Free Asset"
+        }
+      ], {
+        x: "x",
+        y: "y",
+        text: "text",
+        dx: 15,
+        dy: -10,
+        fontWeight: "bold",
+        fontSize: 12,
+        fill: assetColors["Risk-Free"],
+        stroke: "white",
+        strokeWidth: 2,
+        paintOrder: "stroke",
+        textAnchor: "start"
+      }),
+      
+      Plot.text([
+        {
+          x: std_dev_risky, 
+          y: er_risky,
+          text: "Risky Portfolio"
+        }
+      ], {
+        x: "x",
+        y: "y",
+        text: "text",
+        dx: 10,
+        dy: -12,
+        fontWeight: "bold",
+        fontSize: 12,
+        fill: assetColors["Equity"],
+        stroke: "white",
+        strokeWidth: 2,
+        paintOrder: "stroke",
+        textAnchor: "start"
+      }),
+      
+      Plot.text([
+        {
+          x: std_dev_optimal, 
+          y: er_optimal,
+          text: "Optimal Portfolio"
+        }
+      ], {
+        x: "x",
+        y: "y",
+        text: "text",
+        dx: 10,
+        dy: -12,
+        fontWeight: "bold",
+        fontSize: 12,
+        fill: "red",
+        stroke: "white",
+        strokeWidth: 2,
+        paintOrder: "stroke",
+        textAnchor: "start"
+      }),
+      
+      // Add interactive pointer tracking line
+      Plot.ruleX(cmlPoints, Plot.pointerX({
+        x: "Standard_Deviation",
+        stroke: "#666", 
+        strokeWidth: 1, 
+        strokeDasharray: "4 4"
+      })),
+      
+      // Add tooltip markers that appear at cursor position
+      Plot.dot(cmlPoints, Plot.pointerX({
+        x: "Standard_Deviation", 
+        y: "Expected_Return",
+        fill: assetColors["CML"],
+        stroke: "white",
+        strokeWidth: 2,
+        r: 5
+      })),
+      
+      // Add tooltip marker for indifference curve
+      Plot.dot(indifferencePoints, Plot.pointerX({
+        x: "Standard_Deviation", 
+        y: "Expected_Return",
+        fill: "#009688",
+        stroke: "white",
+        strokeWidth: 2,
+        r: 5
+      })),
+      
+      // Add tooltip for CML values
+      Plot.tip(cmlPoints, Plot.pointerX({
+        x: "Standard_Deviation",
+        y: "Expected_Return",
+        title: d => {
+          // Calculate portfolio weights at this risk level
+          const weight = d.Standard_Deviation / std_dev_risky;
+          return [
+            `Risk (SD of Complete Pf): ${formatPercent(d.Standard_Deviation)}`,
+            `Return (CAL): ${formatPercent(d.Expected_Return)}`,
+            `Return (Indiff. Curve): ${formatPercent(fixed_utility_optimal + (1/2 * risk_aversion * Math.pow(d.Standard_Deviation, 2)))}`,
+            `Risky Portfolio Weight: ${formatPercent(weight)}`,
+            `Risk-Free Asset Weight: ${formatPercent(1 - weight)}`
+          ].join("\n");
+        }
+      }))
+    ]
+  });
+  
+  
+  // Create legend items
+  const createLegendItem = (color, label, lineStyle = null, dotStyle = null) => {
+    const item = html`<div class="legend-item" style="display: flex; align-items: center; margin-bottom: 8px;">`;
+    
+    // Add color box/line based on type
+    if (lineStyle) {
+      // For lines, create a small line segment
+      const line = html`<div style="width: 20px; height: 2px; background: ${color}; 
+                      ${lineStyle === 'dashed' ? 'border-top: 2px dashed ' + color + '; height: 0;' : ''}
+                      margin-right: 8px;"></div>`;
+      item.appendChild(line);
+    } else if (dotStyle) {
+      // For dots, create a small circle
+      const dot = html`<div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; 
+                     margin-right: 8px;"></div>`;
+      item.appendChild(dot);
+    }
+    
+    // Add label
+    const labelElement = html`<div>${label}</div>`;
+    item.appendChild(labelElement);
+    
+    return item;
+  };
+  
+  // Create legend container
+  const legendContainer = html`<div class="chart-legend" style="position: absolute; top: 20px; right: 10px; 
+                            background: rgba(255,255,255,0.9); border: 1px solid #ddd; border-radius: 4px; 
+                            padding: 8px; font-size: 12px; z-index: 5;">
+    <div style="font-weight: bold; margin-bottom: 8px;">Legend</div>
+    ${createLegendItem(assetColors["CML"], "Capital Market Line", "solid")}
+    ${createLegendItem("#009688", "Indifference Curve", "solid")}
+    ${createLegendItem("red", "Optimal Portfolio", null, "dot")}
+    ${createLegendItem(assetColors["Equity"], "Risky Portfolio", null, "dot")}
+    ${createLegendItem(assetColors["Risk-Free"], "Risk-Free Asset", null, "dot")}
+    ${createLegendItem("red", "Optimal Allocation", "dashed")}
+  </div>`;
+  
+  // Create container with plot and legend
+  const container = html`<div style="position: relative;">
+    <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Capital Allocation Line with Indifference Curve</h5>
+    <div style="position: relative;">
+      ${plot}
+      ${legendContainer}
+    </div>
+  </div>`;
+  
+  return container;
+}
+```
+
+### Overview
+
+```{ojs}
+html`
+  <div>
+    <h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Capital Allocation (Optimal Portfolio)</h5>
+    <table class="table table-sm mt-0 mb-0">
+    ${optimalMetricsTable()}
+    </table>
+  </div>`;
+```
+
+## Utility vs. Risky Pf Weight
+
+```{ojs}
+//| echo: false
+
+// Create and display the chart with header
+viewof utilityWeightChart = {
+  const plot = Plot.plot({
+    marginLeft: 60,
+    marginRight: 40,
+    marginTop: 20,
+    marginBottom: 80,
+    x: {
+      label: "Weight of Risky Portfolio", 
+      domain: [0, 1],
+      grid: true,
+      tickFormat: d => d3.format(".1%")(d)
+    },
+    y: {
+      label: "Utility", 
+      grid: true,
+      tickFormat: d => d3.format(".1%")(d)
+    },
+    marks: [
+      Plot.line(fixed_chart_data, {
+        x: "Weight", 
+        y: "Utility",
+        stroke: assetColors["CML"], 
+        strokeWidth: 2.5,
+      }),
+      Plot.ruleX(
+        [fixed_optimal_weight], 
+        {
+          stroke: assetColors["Equity"], 
+          strokeDasharray: "4 4",
+          strokeWidth: 2
+        }
+      ),
+      Plot.dot([{
+        x: fixed_optimal_weight, 
+        y: fixed_utility_optimal
+      }], {
+        x: "x",
+        y: "y",
+        fill: assetColors["Equity"],
+        r: 8,
+        tip: true,
+        title: d => `Optimal Weight: ${formatPercent(d.x)}\nUtility: ${formatPercent(d.y)}`
+      }),
+      // Add text label to the optimal point
+      Plot.text([{
+        x: fixed_optimal_weight, 
+        y: fixed_utility_optimal,
+        text: "Optimal Risky Pf Weight"
+      }], {
+        x: "x",
+        y: "y",
+        text: "text",
+        dx: -75,
+        dy: -15,
+        fontWeight: "bold",
+        fontSize: 14,
+        fill: assetColors["Equity"],
+        textAnchor: "start"
+      }),
+      
+      // Add interactive pointer tracking line
+      Plot.ruleX(fixed_chart_data, Plot.pointerX({
+        x: "Weight",
+        stroke: "#666", 
+        strokeWidth: 1, 
+        strokeDasharray: "4 4"
+      })),
+      
+      // Add tooltip marker at cursor position
+      Plot.dot(fixed_chart_data, Plot.pointerX({
+        x: "Weight", 
+        y: "Utility",
+        fill: assetColors["CML"],
+        stroke: "white",
+        strokeWidth: 2,
+        r: 5
+      })),
+      
+      // Add tooltip for values at cursor position
+      Plot.tip(fixed_chart_data, Plot.pointerX({
+        x: "Weight",
+        y: "Utility",
+        title: d => [
+          `Risky Portfolio Weight: ${formatPercent(d.Weight)}`,
+          `Utility: ${formatPercent(d.Utility)}`,
+          `Distance from Optimal: ${formatPercent(Math.abs(d.Weight - fixed_optimal_weight))}`
+        ].join("\n")
+      }))
+    ]
+  });
+  
+  // Return the container with both header and plot
+  return html`
+    <div>
+      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Utility vs. Risky Portfolio Weight</h5>
+      ${plot}
+    </div>
+  `;
+}
+```
+
+```{ojs}
+// Call the function to render the allocation data table
+allocationDataTable()
+```

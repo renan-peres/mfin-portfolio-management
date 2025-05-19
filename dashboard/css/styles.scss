@@ -1,0 +1,451 @@
+/*-- scss:defaults --*/
+
+// ==========================================================================
+//  VARIABLES
+// ==========================================================================
+
+// Theme colors 
+$navbar-bg: #01090c !default;
+$navbar-fg: #ffffff !default;
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
+
+// Tabset color palette
+$tab-bg: #fafbfc !default;
+$tab-link-bg: #dfe5ec !default;
+$tab-link-text: #334155 !default;
+$tab-hover-accent: #5c7cfa !default;
+$tab-active-accent: #2954ff !default;
+
+// ==========================================================================
+//  BASE ELEMENT STYLES
+// ==========================================================================
+
+p {
+  margin-bottom: 0.2rem !important; 
+}
+
+// List styles
+ul, ol {
+  padding-left: 1.2rem !important; 
+  margin-left: 0 !important; 
+}
+
+// Animation effects
+path {
+  transition: opacity 0.2s, d 0.2s;
+}
+
+// ==========================================================================
+//  COVER PAGE STYLES
+// ==========================================================================
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  
+  .portfolio-item {
+    text-align: center;
+    
+    img {
+      width: 100%;
+      max-width: 350px;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    
+    h4 {
+      margin: 0.5rem 0;
+      color: $primary-dark;
+    }
+    
+    p {
+      color: $text-primary;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Portfolio showcase image styling
+.portfolio-showcase img {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.portfolio-showcase img:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+// ==========================================================================
+//  LAYOUT COMPONENTS
+// ==========================================================================
+
+// Grid items
+.cell.bslib-grid-item.html-fill-item {
+  padding: 0 !important;
+}
+
+// Value boxes
+.value-box-value {
+  font-size: 3rem !important;
+}
+
+// Chart container
+.chart-container {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+// Tooltips
+.tooltip,
+.plot-tooltip {
+  position: absolute;
+  z-index: 1000;
+  visibility: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: $standard-border-radius;
+  box-shadow: $medium-shadow;
+  font-size: 14px !important;
+  pointer-events: none;
+}
+
+// DataTables
+.dt-container {
+  max-width: 100%;
+}
+
+.dt-layout-table {
+  overflow: auto;
+  max-width: 100%;
+}
+
+// Make sure columns respect their height
+.columns {
+  display: flex;
+  
+  > div {
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+  }
+}
+
+// ==========================================================================
+//  TABSETS
+// ==========================================================================
+
+.panel-tabset {
+  display: flex;
+  flex-direction: column;
+  
+  // Tab navigation
+  .nav-tabs {
+    background-color: $tab-bg;
+    border-bottom: 1px solid lighten($tab-link-bg, 6%);
+
+    .nav-item .nav-link {
+      background-color: $tab-link-bg;
+      color: $tab-link-text;
+      margin-right: .25rem;
+      border: 1px solid lighten($tab-link-bg, 10%);
+      border-bottom: none;
+      transition: background-color .15s ease, color .15s ease;
+
+      // Hover/focus states
+      &:hover:not(.active),
+      &:focus-visible:not(.active) {
+        background-color: lighten($tab-hover-accent, 38%);
+        border-color: lighten($tab-hover-accent, 32%);
+        transform: translateY(-2px);
+        color: darken($tab-hover-accent, 20%);
+      }
+
+      // Active tab
+      &.active {
+        background-color: #fff;
+        color: $tab-active-accent;
+        transform: translateY(1px);
+        font-weight: 600;
+        border-bottom: 1px solid #fff;
+        box-shadow: 0 -2px 0 0 $tab-active-accent inset;
+      }
+    }
+    
+    // Nested sub-tabs
+    .panel-tabset .nav-tabs {
+      background-color: lighten($tab-bg, 2%);
+
+      .nav-link {
+        background-color: lighten($tab-link-bg, 2%);
+        font-size: 0.9rem;
+
+        &.active {
+          background-color: #fff;
+          color: $tab-active-accent;
+          box-shadow: 0 -2px 0 0 $tab-active-accent inset;
+        }
+      }
+    }
+  }
+  
+  // Tab content with iframes
+  .card-body.html-fill-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    
+    div:has(iframe) {
+      flex: 1;
+      min-height: 800px;
+    }
+    
+    iframe {
+      flex: 1;
+      min-height: 800px;
+    }
+  }
+}
+
+// ==========================================================================
+//  IFRAME CARDS 
+// ==========================================================================
+
+.card.cell.html-fill-item.html-fill-container.bslib-card[data-full-screen="false"] {
+  margin-bottom: 20px;
+
+  // Common iframe container styling
+  .ojs-in-a-box-waiting-for-module-import.observablehq {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    > div {
+      flex: 1;
+      position: relative;
+      height: 100%;
+
+      > div {
+        position: absolute;
+        inset: 0;
+        
+        iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+      }
+    }
+  }
+
+  // Full height for cards with a single iframe
+  &:has(.card-body.html-fill-item.html-fill-container iframe):not(:has(.card-body.html-fill-item.html-fill-container iframe ~ iframe)) {
+    height: calc(100vh - 120px) !important;
+    
+    .card-body.html-fill-item.html-fill-container {
+      padding: 0 !important;
+    }
+  }
+}
+
+// ==========================================================================
+//  RESPONSIVE BEHAVIORS
+// ==========================================================================
+
+// Mobile table layout
+@media (max-width: 767px) {
+  .panel-tabset .card-body.html-fill-container table {
+    border: 0;
+    
+    thead {
+      display: none;
+    }
+    
+    tr {
+      margin-bottom: 1em;
+      display: block;
+      border-bottom: 2px solid $table-header-background-color;
+    }
+    
+    td {
+      display: block;
+      text-align: right;
+      font-size: 0.9em;
+      border-bottom: 1px dotted #ccc;
+      
+      &:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+// Small screen plot adjustments
+@media (max-width: 768px) {
+  text.title {
+    font-size: 18px;
+  }
+
+  .legend text {
+    font-size: 12px;
+  }
+}
+
+// ==========================================================================
+//  CARD LAYOUT ADJUSTMENTS
+// ==========================================================================
+
+// Remove padding from dashboard card bodies
+.quarto-dashboard .card .card-body {
+  padding-block: 0 !important;
+  margin: 0 !important;
+}
+
+// ==========================================================================
+// TRANSPARENT CARD BORDER ADJUSTMENTS
+// ==========================================================================
+
+// // More aggressive card styling to remove ALL visual borders/backgrounds
+// .quarto-dashboard .card {
+//   border: none !important;
+//   box-shadow: none !important;
+//   background: transparent !important;
+  
+//   // Remove border and background from card header
+//   .card-header {
+//     border: none !important;
+//     background: transparent !important;
+//     box-shadow: none !important;
+//   }
+  
+//   // Remove ALL styling from card body that could create visual borders
+//   .card-body {
+//     padding: 0 !important;
+//     margin: 0 !important;
+//     border: none !important;
+//     border-top: none !important;
+//     border-bottom: none !important;
+//     box-shadow: none !important;
+//     background: transparent !important;
+    
+//     // Target any additional divs that might be creating borders
+//     > div {
+//       border: none !important;
+//       box-shadow: none !important;
+//     }
+//   }
+  
+//   // Remove any potential footer styling
+//   .card-footer {
+//     border: none !important;
+//     background: transparent !important;
+//     box-shadow: none !important;
+//   }
+// }
+
+// // Fix for bslib cards specifically
+// .bslib-card.card[data-full-screen="false"] {
+//   border: none !important;
+//   box-shadow: none !important;
+//   background: transparent !important;
+// }
+
+// // Fix for any dividers within the tabs
+// .nav-tabs {
+//   border-bottom: none !important;
+// }
+
+// ==========================================================================
+//  CUSTOM RADIO BUTTONS
+// ==========================================================================
+
+// Make radio container more compact
+.radio-container {
+  display: flex;
+  align-items: center;
+  margin-top: 6px; 
+  margin-bottom: 2px;  // Remove bottom margin
+}
+
+.radio-options {
+  flex: 1;
+}
+
+.portfolio-label {
+  margin-bottom: 0;
+  margin-right: 6px;
+  width: 120px;
+  display: flex;
+  align-items: center;
+  height: 34px;
+}
+
+.custom-radio-group {
+  display: flex;
+  gap: 5px;
+}
+
+.custom-radio {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin-right: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  height: 34px;
+}
+
+.custom-radio.selected {
+  background-color: #e6f2ff;
+  font-weight: bold;
+}
+
+.custom-radio input[type="radio"] {
+  margin-right: 3px;
+}
+
+.form-label.fw-bold {
+  font-weight: bold;
+}
+
+// Portfolio projection summary container
+.portfolio-projection-container {
+  margin-bottom: 6px;
+}
+
+// Reduce radio button group margins
+.form-group.mb-3 {
+  margin-bottom: 0 !important;  // Override Bootstrap's mb-3 class
+}
+
+// Make the entire radio section more compact
+.portfolio-projection-container .row {
+  margin-bottom: 0;  // Remove margin between rows
+}

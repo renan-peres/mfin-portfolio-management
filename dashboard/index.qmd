@@ -1,0 +1,127 @@
+---
+title: "Portfolio Construction: April 26, 2025"
+logo: img/logo.png
+format:
+  dashboard:
+    orientation: columns
+    image: img/logo.jpg
+    open-graph: true
+    theme:
+      - css/styles.scss
+      - css/sidebar.scss
+      - css/charts.scss
+      - css/tables.scss
+    html-math-method: katex
+    code-fold: true
+    self-contained: true
+    embed-resources: true
+    nav-buttons:
+      - icon: github
+        href: https://github.com/renan-peres/mfin-portfolio-management
+      - icon: file-earmark-excel
+        href: https://raw.githubusercontent.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio-2025-04-26.xlsx
+include-in-header:
+  text: |
+    <link rel="shortcut icon" href="img/logo.png" />
+    <link rel="icon" type="image/x-icon" href="img/logo.png">
+    <title>Portfolio Construction: April 26, 2025</title>
+    <meta name="description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
+    <meta property="og:url" content="https://portfolio-management.renanperes.com">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Portfolio Construction: April 26, 2025">
+    <meta property="og:description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
+    <meta property="og:image" content="img/logo.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:domain" content="portfolio-management.renanperes.com">
+    <meta property="twitter:url" content="https://portfolio-management.renanperes.com">
+    <meta name="twitter:title" content="Portfolio Construction: April 26, 2025">
+    <meta name="twitter:description" content="Portfolio construction designed for optimal asset allocation based on a client’s risk tolerance along with the overall market sentiment.">
+    <meta name="twitter:image" content="img/logo.jpg">
+execute:
+  warning: false
+  echo: false
+---
+
+<!-- ============== SETUP ============== -->
+
+{{< include 00_setup.qmd >}}
+
+<!-- ============== SIDEBAR ============== -->
+
+{{< include 01_sidebar.qmd >}}
+
+<!-- ============== COVER PAGE ============== -->
+
+# Home 
+
+{{< include 02_cover.qmd >}}
+
+<!-- ============== PORTFOLIO ============== -->
+
+# Portfolio
+
+{{< include 03_complete_portfolio.qmd >}}
+
+:::
+
+# Capital Allocation
+
+{{< include 04_capital_allocation.qmd >}}
+
+:::
+
+# Asset Class Allocation
+
+{{< include 05_asset_class_allocation.qmd >}}
+
+:::
+
+# Security Allocation
+
+{{< include 06_security_allocation.qmd >}} 
+
+:::
+
+# Data
+
+{{< include 07_data.qmd >}} 
+
+:::
+
+# Excel Models
+
+```{ojs}
+ExcelModel = html`
+  <div>
+    <div style="width: 100%; height: "100%"; position: absolute;">
+    <iframe height="100%" width="100%" 
+        id="benchmarkModel-embed" 
+        title="benchmarkModel Embed"
+        src="https://1drv.ms/x/c/bde1a904e346bc6a/IQRTEwB280IjSazAjML3PbuuAd4_2bk5zHNh5guP6706TTo?em=2&AllowTyping=True&AllowFormulaEntry=True&ActiveCell='Cover'!A1&wdHideGridlines=True&wdInConfigurator=True&wdShowFormulaBar=True&wdInConfigurator=True"
+        frameborder="0" allow="clipboard-write" allowfullscreen 
+        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"></iframe>
+    </div>
+  </div>
+`;
+```
+
+# IPS
+
+```{ojs}
+oneDrivePath = "https://1drv.ms/b/c/bde1a904e346bc6a/EY-k0gdHz5BJms-NY7B5AK8B62B7MKz13IHndFdhL_SZEg";
+embedUrl = `${oneDrivePath}?embed=true`;
+
+html`
+  <div style="display: flex; flex-direction: column; height: 100%;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 97%;">
+      <iframe 
+        width="100%" 
+        height="100%" 
+        src="${embedUrl}"
+        frameborder="0"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </div>
+`;
+```

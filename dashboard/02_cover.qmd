@@ -1,0 +1,122 @@
+<!-- # Home  -->
+
+### Summary {width="70%"}
+
+<div>
+  <h1 style="margin-top: 0.2em; margin-bottom: 0.2em;">Portfolio Construction & Optimization</h1>
+  <p>Report Date: April 26, 2025</p>
+  <p>Author: <a href="https://renanperes.com/" target="_blank" style="text-decoration: none;"> Renan Peres</a></p>
+  <p><a href="https://github.com/renan-peres/mfin-portfolio-management" target="_blank" style="text-decoration: none;"><i class="bi bi-github"></i> View Source Code</a></p>
+</div>
+
+<hr>
+
+<p  style="margin-top: 0em;">
+  Portfolio construction designed for optimal capital allocation while aligning to a client’s risk tolerance, the current market conditions, and each security’s risk–return profile. This dashboard demonstrates an end-to-end methodology used for building and managing investment portfolios that supports in the decision making process.
+</p>
+
+<hr>
+
+::: {.callout-tip}
+**Interactive sidebar inputs (on the left side of the screen)** — adjust the values and every chart, table, and analysis will be updated automatically.
+:::
+
+::: {.callout-note collapse="true"}
+This project is for **educational use only**.  
+
+It supports the accompanying Investment Policy Statement (IPS) and reflects the author’s opinions and analysis. No portion may be reproduced or distributed for commercial purposes without prior written consent.
+:::
+
+#### Portfolio Images
+
+<div class="portfolio-showcase">
+  <table width="100%">
+    <tr>
+      <td align="center"><a href="#portfolio"><img src="img/portfolio/holdings.png" style="width: 320px; height: auto;"></a></td>
+      <td align="center"><a href="#portfolio"><img src="img/portfolio/historical_performance.png" style="width: 320px; height: auto;"></a></td>
+      <td align="center"><a href="#portfolio"><img src="img/portfolio/expected_return.png" style="width: 320px; height: auto;"></a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Portfolio Holdings</strong></a></td>
+      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Performance Analysis</strong></a></td>
+      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Future Projections</strong></a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Overview of current investment holdings</a></td>
+      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical returns and risk metrics</a></td>
+      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Estimated growth scenarios and fee structure comparison</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#portfolio"><img src="img/portfolio/benchmark_comparison.png" style="width: 320px; height: auto;"></a></td>
+      <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/utility_weight.png" style="width: 320px; height: auto;"></a></td>
+      <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/capital_allocation_line.png" style="width: 320px; height: auto;"></a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Benchmark Comparison</strong></a></td>
+      <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Utility Weight Analysis</strong></a></td>
+      <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Capital Allocation Line</strong></a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical Portfolio performance against benchmark</a></td>
+      <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Risk aversion and utility-based portfolio weights</a></td>
+      <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Optimal allocation between risky and risk-free assets</a></td>
+    </tr>
+  </table>
+</div>
+
+### Table {width="30%"}
+
+<div class="table-responsive">
+  <h3 class="table-title">Contents</h3>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr style="background-color: #f1f5f9;">
+        <th style="padding: 0.75em; color: #ffffff; text-align: left; border-bottom: 2px solid #e2e8f0;">Section</th>
+        <th style="padding: 0.75em; color: #ffffff; text-align: left; border-bottom: 2px solid #e2e8f0;">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td style="padding:0.75em;"><a href="#portfolio" style="font-weight:bold; text-decoration:none;">Portfolio</a></td>
+      <td style="padding:0.75em;">Holdings, performance, projections, and benchmarks</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:0.75em;"><a href="#capital-allocation" style="font-weight:bold; text-decoration:none;">Capital Allocation</a></td>
+      <td style="padding:0.75em;">Allocation between risk-free and risky assets</td>
+    </tr>
+    <tr>
+      <td style="padding:0.75em;"><a href="#asset-class-allocation" style="font-weight:bold; text-decoration:none;">Asset Class Allocation</a></td>
+      <td style="padding:0.75em;">Weights across major asset classes</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:0.75em;"><a href="#security-allocation" style="font-weight:bold; text-decoration:none;">Security Allocation</a></td>
+      <td style="padding:0.75em;">Detailed security selection with risk/return metrics</td>
+    </tr>
+    <tr>
+      <td style="padding:0.75em;"><a href="#data" style="font-weight:bold; text-decoration:none;">Data</a></td>
+      <td style="padding:0.75em;">Raw data for all portfolio assets</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:0.75em;"><a href="#excel-models" style="font-weight:bold; text-decoration:none;">Excel Models</a></td>
+      <td style="padding:0.75em;">Underlying Excel portfolio models</td>
+    </tr>
+    <tr>
+      <td style="padding:0.75em;"><a href="#ips" style="font-weight:bold; text-decoration:none;">IPS</a></td>
+      <td style="padding:0.75em;">Investment Policy Statement</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+#### Security Selection Notebooks
+
+<h3>Security Selection Process</h3>
+
+- **Equity Selection**: [01_equity_portfolio_construction.ipynb](https://github.com/renan-peres/mfin-portfolio-management/blob/main/01_equity_portfolio_construction.ipynb)  
+  Equity selection using fundamental analysis and Sharpe ratio maximization.
+
+- **Bond Selection**: [02_bond_portfolio_contruction.ipynb](https://github.com/renan-peres/mfin-portfolio-management/blob/main/02_bond_portfolio_contruction.ipynb)  
+  Fixed-income ETF screening for convexity > 1 and higher price sensitivity to changes in yield-to-maturity (YTM).
+
+- **Benchmark Selection**: [03_benchmark_selection.ipynb](https://github.com/renan-peres/mfin-portfolio-management/blob/main/03_benchmark_selection.ipynb)  
+  Regression analysis to identify an ETF (that invests in the same sectors) with the best fit to serve as the benchmark for the portfolio's performance comparison.

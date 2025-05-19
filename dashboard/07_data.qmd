@@ -1,0 +1,103 @@
+<!-- # Data -->
+
+::: {.panel-tabset}
+
+## Security Quotes
+
+```{python}
+#| echo: False
+#| display: False
+
+from itables import options, show
+options.lengthMenu = [20, 50, 100]
+options.classes = "display nowrap compact"
+options.language = dict(info = "Showing _TOTAL_ entries")
+options.paging = True
+options.searching = False
+options.ordering = True
+options.info = True
+options.lengthChange = True
+options.autoWidth = True
+options.responsive = True
+options.scrollCollapse = True
+options.keys = True
+options.buttons = ['copy', 'excel', 'csv', 'pdf']
+options.style = "width:100%;margin:auto"
+options.columnDefs = [{"className": "dt-center", "targets": "_all"}]
+```
+
+::: {.panel-tabset}
+
+### Daily
+
+```{python}
+# Display historical price data
+show(daily_px.round(2).sort_values(by='Date', ascending=False).reset_index(), "Adjusted Closing Price (5Y Daily)", buttons = True)
+```
+
+### Monthly
+
+```{python}
+show(monthly_px.round(2).sort_values(by='Date', ascending=False).reset_index(), "Adjusted Closing Price (5Y Monthly)", buttons = True)
+```
+
+:::
+
+## Stock Fundamentals
+
+```{python}
+# Order Columns
+desired_order = ['Ticker', 'Name', 'Date']
+optimal_portfolio_fundamentals = equity_disp.drop(['Sharpe Ratio', 'Expected Return', 'Standard Deviation', 'Weight'], axis=1)
+all_columns = optimal_portfolio_fundamentals.columns.tolist()
+first_columns = [col for col in desired_order if col in all_columns]
+remaining_columns = [col for col in all_columns if col not in first_columns]
+new_order = first_columns + remaining_columns
+optimal_portfolio_fundamentals = optimal_portfolio_fundamentals[new_order]
+
+# Create transposed view
+transposed_equity_fundamentals = optimal_portfolio_fundamentals.sort_values(by="Ticker", ascending=True).transpose()
+
+# Display the result
+display(transposed_equity_fundamentals)
+```
+
+## Bond Fundamentals
+
+```{python}
+bond_valuation = bond_pf.copy() 
+bond_valuation = bond_valuation.drop(["Expected_Return"], axis=1)
+bond_valuation = bond_valuation.sort_values(by="Price Sensitivity to YTM (-1%)", ascending=False)
+
+# Transform Data Types
+pct_cols = ['Yield_To_Maturity', 'Weighted_Avg_Coupon', 'Price Sensitivity to YTM (-1%)', 'Standard_Deviation']
+num_cols = ['Sharpe_Ratio', 'Net Assets']
+
+# ---- percentage columns ----------------------------------------------------
+for col in pct_cols:
+    if col in bond_valuation.columns:  # Fixed: Changed equity_disp to bond_valuation
+        bond_valuation[col] = pd.to_numeric(bond_valuation[col], errors='coerce')  # ensure float
+        bond_valuation[col] = bond_valuation[col].fillna(0).map('{:.2%}'.format)
+
+# ---- big‑number columns ----------------------------------------------------
+for col in num_cols:
+    if col in bond_valuation.columns:  # Fixed: Changed equity_disp to bond_valuation
+        bond_valuation[col] = pd.to_numeric(bond_valuation[col], errors='coerce')  # ensure float
+        bond_valuation[col] = bond_valuation[col].fillna(0).map('{:,.2f}'.format)
+
+# Order Columns
+# Fixed: Ensure column name consistency
+desired_order = ['Ticker', 'Name',  'Perf. as of', 'Inception Date', 'Net Assets', 'Bond_Price', 'Price Sensitivity to YTM (-1%)', "Standard_Deviation", "Duration (D*)", "Convexity", "Weighted_Avg_Maturity", "Weighted_Avg_Coupon", "Yield_To_Maturity"]
+all_columns = bond_valuation.columns.tolist()
+first_columns = [col for col in desired_order if col in all_columns]
+remaining_columns = [col for col in all_columns if col not in first_columns]
+new_order = first_columns + remaining_columns
+
+bond_valuation = bond_valuation[new_order]
+
+# Create transposed view
+transposed_bond_valuation = bond_valuation.transpose()
+
+# Display the result
+display(transposed_bond_valuation)
+```
