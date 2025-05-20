@@ -1,34 +1,5 @@
 /*-- scss:defaults --*/
-
-// ==========================================================================
-//  VARIABLES
-// ==========================================================================
-
-// Asset class colors
-$risk-free-color: #4CAF50 !default; // Green
-$bond-color: #2196F3 !default;      // Blue
-$equity-color: #FF9800 !default;    // Orange
-
-// Brand colors
-$dark-black: #000000 !default;
-$primary-blue: #1c7ed6 !default;
-$primary-dark: #062744 !default;
-$primary-light: #74c0fc !default;
-$accent-blue: #4682B4 !default;
-$accent-orange: #FF7F50 !default;
-$background-light: #f5f8ff !default;
-$border-light: #e0e9ff !default;
-$text-primary: #334155 !default;
-$text-dark: #1a3b5f !default;
-$standard-border-radius: 6px !default;
-$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
-$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
-
-// Plot visualization settings
-$plot-margin-left: 60px !default;
-$plot-margin-right: 20px !default;
-$plot-margin-top: 20px !default;
-$plot-margin-bottom: 30px !default;
+@import '_variables.scss';
 
 // ==========================================================================
 //  PLOT.JS VISUALIZATIONS

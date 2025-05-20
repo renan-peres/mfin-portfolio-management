@@ -147,7 +147,7 @@ securityAllocationTable()
 
 ## Risk/Return (Equities)
 
-:::: {.columns style="height: 70%;"}
+:::: {.columns style="height: 50%;"}
 
 ### Risk & Return Plot {width=50%}
 

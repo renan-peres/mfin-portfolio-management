@@ -1,34 +1,5 @@
 /*-- scss:defaults --*/
-
-// ==========================================================================
-//  VARIABLES
-// ==========================================================================
-
-// Theme colors 
-$navbar-bg: #01090c !default;
-$navbar-fg: #ffffff !default;
-
-// Brand colors
-$dark-black: #000000 !default;
-$primary-blue: #1c7ed6 !default;
-$primary-dark: #062744 !default;
-$primary-light: #74c0fc !default;
-$accent-blue: #4682B4 !default;
-$accent-orange: #FF7F50 !default;
-$background-light: #f5f8ff !default;
-$border-light: #e0e9ff !default;
-$text-primary: #334155 !default;
-$text-dark: #1a3b5f !default;
-$standard-border-radius: 6px !default;
-$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
-$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
-
-// Tabset color palette
-$tab-bg: #fafbfc !default;
-$tab-link-bg: #dfe5ec !default;
-$tab-link-text: #334155 !default;
-$tab-hover-accent: #5c7cfa !default;
-$tab-active-accent: #2954ff !default;
+@import '_variables.scss';
 
 // ==========================================================================
 //  BASE ELEMENT STYLES
@@ -53,6 +24,48 @@ path {
 //  COVER PAGE STYLES
 // ==========================================================================
 
+// 1. Typography Improvements
+// -------------------------
+#home, .section-cover {
+  // Enhanced heading styles for h3 elements
+  h3 {
+    color: $primary-dark;
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-top: 1.8rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid $border-light;
+    position: relative;
+    
+    // Add a subtle accent line
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 60px;
+      height: 2px;
+      background-color: $primary-blue;
+    }
+    
+    // Smaller on mobile
+    @media (max-width: 767px) {
+      font-size: 1.4rem;
+    }
+  }
+  
+  // Section title in tables
+  .table-title {
+    font-size: 1.4rem;
+    color: $primary-dark;
+    border-bottom: none;
+    margin-bottom: 0.8rem;
+  }
+}
+
+// 2. Portfolio Grid Layout
+// -------------------------
 .portfolio-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -81,20 +94,107 @@ path {
       font-size: 0.9rem;
     }
   }
+  
+  // Responsive adjustments
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-// Portfolio showcase image styling
-.portfolio-showcase img {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+// 3. Portfolio Showcase Images
+// -------------------------
+.portfolio-showcase {
+  img {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+  
+  // Add spacing between showcase rows
+  table tr {
+    margin-bottom: 1.2rem;
+  }
 }
 
-.portfolio-showcase img:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+// 4. Transparent Card Styling (Home/Cover Only)
+// -------------------------
+
+// Target cards only within the cover/home page
+#home .card,
+#cover-page .card,
+.section-cover .card,
+.section-home .card,
+[data-page-id="cover"] .card,
+[data-page-id="home"] .card,
+#quarto-content > section:first-of-type .card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  
+  // Remove header styling
+  .card-header {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  // Remove card body styling
+  .card-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    
+    > div {
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+  
+  // Remove footer styling
+  .card-footer {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+// Scope bslib cards
+#home .bslib-card.card[data-full-screen="false"],
+#cover-page .bslib-card.card[data-full-screen="false"],
+.section-cover .bslib-card.card[data-full-screen="false"],
+.section-home .bslib-card.card[data-full-screen="false"],
+[data-page-id="cover"] .bslib-card.card[data-full-screen="false"],
+[data-page-id="home"] .bslib-card.card[data-full-screen="false"],
+#quarto-content > section:first-of-type .bslib-card.card[data-full-screen="false"] {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+// Remove tab divider lines
+#home .nav-tabs,
+#cover-page .nav-tabs,
+.section-cover .nav-tabs,
+.section-home .nav-tabs,
+[data-page-id="cover"] .nav-tabs,
+[data-page-id="home"] .nav-tabs,
+#quarto-content > section:first-of-type .nav-tabs {
+  border-bottom: none !important;
 }
 
 // ==========================================================================
@@ -434,60 +534,6 @@ path {
   z-index: 1 !important;
   position: relative !important;
 }
-
-// ==========================================================================
-// TRANSPARENT CARD BORDER ADJUSTMENTS
-// ==========================================================================
-
-// // More aggressive card styling to remove ALL visual borders/backgrounds
-// .quarto-dashboard .card {
-//   border: none !important;
-//   box-shadow: none !important;
-//   background: transparent !important;
-  
-//   // Remove border and background from card header
-//   .card-header {
-//     border: none !important;
-//     background: transparent !important;
-//     box-shadow: none !important;
-//   }
-  
-//   // Remove ALL styling from card body that could create visual borders
-//   .card-body {
-//     padding: 0 !important;
-//     margin: 0 !important;
-//     border: none !important;
-//     border-top: none !important;
-//     border-bottom: none !important;
-//     box-shadow: none !important;
-//     background: transparent !important;
-    
-//     // Target any additional divs that might be creating borders
-//     > div {
-//       border: none !important;
-//       box-shadow: none !important;
-//     }
-//   }
-  
-//   // Remove any potential footer styling
-//   .card-footer {
-//     border: none !important;
-//     background: transparent !important;
-//     box-shadow: none !important;
-//   }
-// }
-
-// // Fix for bslib cards specifically
-// .bslib-card.card[data-full-screen="false"] {
-//   border: none !important;
-//   box-shadow: none !important;
-//   background: transparent !important;
-// }
-
-// // Fix for any dividers within the tabs
-// .nav-tabs {
-//   border-bottom: none !important;
-// }
 
 // ==========================================================================
 //  CUSTOM RADIO BUTTONS

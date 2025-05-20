@@ -1,43 +1,5 @@
 /*-- scss:defaults --*/
-
-// ==========================================================================
-//  VARIABLES
-// ==========================================================================
-
-// Brand colors
-$dark-black: #000000 !default;
-$primary-blue: #1c7ed6 !default;
-$primary-dark: #062744 !default;
-$primary-light: #74c0fc !default;
-$accent-blue: #4682B4 !default;
-$accent-orange: #FF7F50 !default;
-$background-light: #f5f8ff !default;
-$border-light: #e0e9ff !default;
-$text-primary: #334155 !default;
-$text-dark: #1a3b5f !default;
-$standard-border-radius: 6px !default;
-$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
-$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
-
-
-// Table Style Variables
-$table-breakpoint: 480px !default;
-$table-background-color: #FFF !default;
-$table-text-color: #1c1c1c !default;
-$table-outer-border: 1px solid #167F92 !default;
-$table-cell-border: 1px solid #D9E4E6 !default;
-$table-border-radius: 10px !default;
-$table-highlight-color: #EAF3F3 !default;
-$table-header-background-color: #0b3040 !default;
-$table-header-text-color: #FFF !default;
-$table-header-border: 1px solid #FFF !default;
-
-// Table interaction variables
-$table-hover-color: rgba($primary-light, 0.15) !default;
-$selected-row-light-background: $background-light !default;
-$selected-row-highlight: #ffff9980 !default;
-$selected-row-border: $accent-orange !default;
-$selected-row-shadow: 0 1px 1px rgba($dark-black, 0.1) !default;
+@import '_variables.scss';
 
 // ==========================================================================
 //  TABLE STYLES
@@ -45,26 +7,19 @@ $selected-row-shadow: 0 1px 1px rgba($dark-black, 0.1) !default;
 
 // Consistent table header widths for projection summary
 .portfolio-projection-container table th {
-  width: 40%;  // Set consistent width for header columns
-  white-space: nowrap;  // Prevent text wrapping in headers
-  padding-right: 10px;  // Add some padding
+  width: 40%;
+  white-space: nowrap;
+  padding-right: 10px;
 }
 
 .portfolio-projection-container table td {
-  width: 60%;  // Set consistent width for data columns
-  text-align: right; // Right align values for better readability
+  width: 60%;
+  text-align: right;
 }
 
-// Make sure tables fill their containers
 .portfolio-projection-container table {
   width: 100%;
-  table-layout: fixed;  // Use fixed table layout for consistent sizing
-}
-
-// Highlight currently selected portfolio row
-tr.selected-row {
-  background-color: #ffffcc !important;
-  font-weight: bold;
+  table-layout: fixed;
 }
 
 // Base table styles
@@ -132,7 +87,6 @@ div[style*="overflow: auto"] table thead th,
     }
   }
   
-  // Add explicit styling for clicked rows
   tbody tr[style*="background-color"] {
     border-left: 3px solid $selected-row-border;
   }
@@ -145,31 +99,39 @@ h5.table-title {
   padding-left: 0rem;
   font-size: 1.2rem;
   color: $text-dark !important;
-  font-weight: 700;  // or simply use: font-weight: bold;
-}
-
-.selected-row {
-  background-color: $selected-row-border !important;
-  box-shadow: $selected-row-shadow;
+  font-weight: 700;
 }
 
 // ==========================================================================
-//  FORM CONTROL SPACING
+//  RESPONSIVE TABLES
 // ==========================================================================
 
-// Reduce radio button group margins
-.form-group.mb-3 {
-  margin-bottom: 0 !important;  // Override Bootstrap's mb-3 class
-}
-
-// Make radio container more compact
-.radio-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0;  // Remove bottom margin
-}
-
-// Make the entire radio section more compact
-.portfolio-projection-container .row {
-  margin-bottom: 0;  // Remove margin between rows
+// Mobile table layout
+@media (max-width: 767px) {
+  .panel-tabset .card-body.html-fill-container table {
+    border: 0;
+    
+    thead {
+      display: none;
+    }
+    
+    tr {
+      margin-bottom: 1em;
+      display: block;
+      border-bottom: 2px solid $table-header-background-color;
+    }
+    
+    td {
+      display: block;
+      text-align: right;
+      font-size: 0.9em;
+      border-bottom: 1px dotted #ccc;
+      
+      &:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+      }
+    }
+  }
 }

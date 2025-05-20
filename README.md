@@ -19,7 +19,7 @@ This repository contains a comprehensive portfolio construction and management s
 - Return projections with uncertainty bounds
 
 ## 1. Core Components
-- **Notebooks**: Sequential analysis and modeling workflows  
+### **Notebooks**: Sequential analysis and modeling workflows  
   - [01_equity_portfolio_construction.ipynb](01_equity_portfolio_construction.ipynb): Security screening and portfolio optimization  
   - [02_bond_portfolio_contruction.ipynb](02_bond_portfolio_contruction.ipynb): Fixed income allocation strategies  
   - [03_benchmark_selection.ipynb](03_benchmark_selection.ipynb): Regression-based benchmark identification  
@@ -28,7 +28,7 @@ This repository contains a comprehensive portfolio construction and management s
   - [06_arbitrage_pricing_theory.ipynb](06_arbitrage_pricing_theory.ipynb): Multi-factor risk modeling
   - [07_option_pricing_models.ipynb](07_option_pricing_models.ipynb): Derivatives valuation
 
-- **Python Utilities** (in [py/](py/) directory):  
+### **Python Utilities** ([`py/`](py/)):  
   - [benchmark_regression.py](py/benchmark_regression.py): Implements benchmark selection algorithms
   - [bond_selection.py](py/bond_selection.py): Fixed income security evaluation tools
   - [fetch_fundamentals.py](py/fetch_fundamentals.py): Financial statement data acquisition
@@ -37,38 +37,31 @@ This repository contains a comprehensive portfolio construction and management s
   - [quantstats_fix.py](py/quantstats_fix.py): Patches for QuantStats library compatibility
   - [utils.py](py/utils.py): Common utility functions used across notebooks
 
-- **Reports** (in [reports/](reports/) directory):  
+### **Reports** ([`reports/`](reports/)):  
   - [01_benchmark_comparison_quantstats.ipynb](reports/01_benchmark_comparison_quantstats.ipynb): Performance comparison reporting
-  - Portfolio analysis HTML reports (e.g., `portfolio_vs_benchmark-2025-05-16.html`)
-  - Portfolio tracking Excel files (e.g., `portfolio-2025-04-26.xlsx`)
-  - Advanced optimization notebooks (e.g., `skfolio.ipynb`)
+  - Portfolio tracking Excel files (e.g., [`portfolio-2025-04-26.xlsx`](reports/portfolio-2025-04-26.xlsx))
+  - Portfolio analysis HTML reports (e.g., [`portfolio_vs_benchmark-2025-04-26.html`](reports/portfolio_vs_benchmark-2025-04-26.html))
 
 ## 2. Data Infrastructure
-- **Data Storage and Management**:
-  - `data.db`: DuckDB database for efficient querying of portfolio data
-  - Ticker lists for different asset classes:
-    - `tickers.txt`: Primary equity tickers
-    - `tickers_benchmark.txt`: Benchmark indices
-    - `tickers_bond.txt`: Fixed income securities
-    - `tickers_sp_500.txt`: S&P 500 constituents
-    - `tickers_treasury.txt`: Treasury securities
-    - `tickers_index.txt`: Market indices
-
-- **Data Fetching** (in `data/loaders/`):  
-  - [`fetch_price_history.py`](data/loaders/fetch_price_history.py): Yahoo Finance data scraping  
+### **Data Processing** ([`data/loaders/`](data/loaders)):  
   - [`scrape_tickers.ipynb`](data/loaders/scrape_tickers.ipynb): Updates ticker lists from market sources
   - [`scrape_quotes.ipynb`](data/loaders/scrape_quotes.ipynb): Fetches current price data
   - [`scrape_fundamentals.ipynb`](data/loaders/scrape_fundamentals.ipynb): Extracts financial statement data
-
-- **Data Processing**:
   - [`fetch_datasets.ipynb`](data/fetch_datasets.ipynb): Merges separate data sources into unified datasets
-  - `datasets/`: Directory containing CSV files for different asset classes:
-    - `daily_benchmark_quotes.csv`: Time series for benchmark securities
-    - `daily_bond_quotes.csv`: Fixed income price history
-    - `daily_stock_quotes.csv`: Equity price data
-
-- **Database Operations**:  
   - [`duckdb_fetch_database.sh`](data/loaders/duckdb_fetch_database.sh): Imports all CSV files into DuckDB tables with automated table naming and schema detection
+  - [`data.db`](data/data.db): DuckDB database for efficient querying of portfolio data
+
+### **Data Storage and Management** ([`data/`](data/)):
+  - Datasets containing CSV files for different asset classes ([`data/datasets/`](data/datasets)):
+    - [`daily_stock_quotes.csv`](data/datasets/daily_stock_quotes.csv): Equity price data
+    - [`daily_bond_quotes.csv`](data/datasets/daily_bond_quotes.csv): Fixed income price data
+    - [`daily_benchmark_quotes.csv`](data/datasets/daily_benchmark_quotes.csv): Benchmark/ETF securities price data
+  - Ticker lists for different asset classes:
+    - [`tickers_sp_500.txt`](data/tickers_sp_500.txt): S&P 500 constituents
+    - [`tickers_bond.txt`](data/tickers_bond.txt): Fixed income securities
+    - [`tickers_treasury.txt`](data/tickers_treasury.txt): Treasury securities
+    - [`tickers_benchmark.txt`](data/tickers_benchmark.txt): Benchmark/ETFs 
+    - [`tickers_index.txt`](data/tickers_index.txt): Market indices
 
 ## 3. Workflow Automation
 - **Daily Pipeline** ([`daily_pipeline.sh`](pipelines/daily_pipeline.sh)):
@@ -95,14 +88,8 @@ This repository contains a comprehensive portfolio construction and management s
   - Portfolio file management with versioned backups
   - Designed for weekly portfolio rebalancing and comprehensive reporting
 
-## 4. Interactive Dashboard (Quarto)
-- **Main Components**:
-  - **Holdings**: Asset class allocation, security breakdowns, weight distributions, and interactive bar charts
-  - **Historical Performance**: Performance summaries, asset class returns, security-level return charts with interactive filtering
-  - **Expected Return**: Monte Carlo projection modeling with different fee structures, uncertainty bounds, and compounding visualizations
-  - **Benchmark Comparison**: Portfolio performance vs selected benchmarks with QuantStats metrics
-
-- **Dashboard Files** (in `dashboard/`):  
+## 4. [Dashboard](https://portfolio-management.renanperes.com/)
+### **Dashboard Files** ([`dashboard/`](dashboard/)):
   - [`00_setup.qmd`](dashboard/00_setup.qmd): Data loading, initialization, and global constants
   - [`01_sidebar.qmd`](dashboard/01_sidebar.qmd): Interactive control panel with sliders for risk tolerance and allocation
   - [`02_cover.qmd`](dashboard/02_cover.qmd): Landing page with project summary and navigation
@@ -113,15 +100,12 @@ This repository contains a comprehensive portfolio construction and management s
   - [`07_data.qmd`](dashboard/07_data.qmd): Raw data tables with filtering capabilities
   - [`index.qmd`](dashboard/index.qmd): Dashboard configuration and layout definition
 
-- **Technical Components**:
-  - **CSS Styling** (in `dashboard/css/`): Custom styles for charts, tables, sidebar, and responsive design
-  - **JavaScript Modules** (in `dashboard/js/`): Interactive chart rendering, data processing, and utility functions
-  - **Interactive Plots**: Dynamic visualizations with hover effects, click interactions, and real-time updates
-  - **Responsive Design**: Adapts to different screen sizes with collapsible sidebar for mobile viewing
+### **Technical Components**:
+  - **CSS Styling** ([`dashboard/css/`](dashboard/css)): Custom styles for charts, tables, sidebar, and responsive design
+  - **JavaScript Modules** ([`dashboard/js/`](dashboard/js)): Interactive chart rendering, data processing, and utility functions
+  - **Interactive Plots** ([`dashboard/plotly/`](dashboard/plotlyjs)): Dynamic visualizations with hover effects, click interactions, and real-time updates
 
-## 5. Features in Detail
-
-### Portfolio Optimization
+### **Features in Detail**
 - **Efficient Frontier Calculation**:
   - Quadratic optimization for optimal risk-return tradeoff
   - Interactive visualization allowing exploration of portfolio options
@@ -135,7 +119,7 @@ This repository contains a comprehensive portfolio construction and management s
   - Utility maximization based on client risk aversion parameter
   - Target volatility portfolios with risk budgeting
 
-### Performance Analysis
+### **Performance Analysis**
 - **Return Metrics**:
   - Historical holding period returns (HPR) with interactive date range selection
   - Annualized internal rate of return (IRR) calculations
@@ -149,7 +133,7 @@ This repository contains a comprehensive portfolio construction and management s
   - Security-level performance tracking with weight impact
   - Correlation heatmaps for diversification assessment
 
-### Projection Capabilities
+### **Projection Capabilities**
 - **Return Modeling**:
   - Expected return projections with compounding visualization
   - Monte Carlo simulations with probability distributions

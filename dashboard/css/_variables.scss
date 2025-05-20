@@ -1,0 +1,59 @@
+/*-- scss:defaults --*/
+
+// ==========================================================================
+//  GLOBAL VARIABLES
+// ==========================================================================
+
+// Theme colors 
+$navbar-bg: #01090c !default;
+$navbar-fg: #ffffff !default;
+
+// Brand colors
+$dark-black: #000000 !default;
+$primary-blue: #1c7ed6 !default;
+$primary-dark: #062744 !default;
+$primary-light: #74c0fc !default;
+$accent-blue: #4682B4 !default;
+$accent-orange: #FF7F50 !default;
+$background-light: #f5f8ff !default;
+$border-light: #e0e9ff !default;
+$text-primary: #334155 !default;
+$text-dark: #1a3b5f !default;
+$standard-border-radius: 6px !default;
+$small-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !default;
+$medium-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !default;
+
+// Asset class colors
+$risk-free-color: #4CAF50 !default; // Green
+$bond-color: #2196F3 !default;      // Blue
+$equity-color: #FF9800 !default;    // Orange
+
+// Tabset color palette
+$tab-bg: #fafbfc !default;
+$tab-link-bg: #dfe5ec !default;
+$tab-link-text: #334155 !default;
+$tab-hover-accent: #5c7cfa !default;
+$tab-active-accent: #2954ff !default;
+
+// Table Style Variables
+$table-breakpoint: 480px !default;
+$table-background-color: #FFF !default;
+$table-text-color: #1c1c1c !default;
+$table-outer-border: 1px solid #167F92 !default;
+$table-cell-border: 1px solid #D9E4E6 !default;
+$table-border-radius: 10px !default;
+$table-highlight-color: #EAF3F3 !default;
+$table-header-background-color: #0b3040 !default;
+$table-header-text-color: #FFF !default;
+$table-header-border: 1px solid #FFF !default;
+$table-hover-color: rgba($primary-light, 0.15) !default;
+$selected-row-light-background: $background-light !default;
+$selected-row-highlight: #ffff9980 !default;
+$selected-row-border: $accent-orange !default;
+$selected-row-shadow: 0 1px 1px rgba($dark-black, 0.1) !default;
+
+// Plot visualization settings
+$plot-margin-left: 60px !default;
+$plot-margin-right: 20px !default;
+$plot-margin-top: 20px !default;
+$plot-margin-bottom: 30px !default;

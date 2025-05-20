@@ -86,7 +86,6 @@ for col in num_cols:
         bond_valuation[col] = bond_valuation[col].fillna(0).map('{:,.2f}'.format)
 
 # Order Columns
-# Fixed: Ensure column name consistency
 desired_order = ['Ticker', 'Name',  'Perf. as of', 'Inception Date', 'Net Assets', 'Bond_Price', 'Price Sensitivity to YTM (-1%)', "Standard_Deviation", "Duration (D*)", "Convexity", "Weighted_Avg_Maturity", "Weighted_Avg_Coupon", "Yield_To_Maturity"]
 all_columns = bond_valuation.columns.tolist()
 first_columns = [col for col in desired_order if col in all_columns]
