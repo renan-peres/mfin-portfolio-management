@@ -15,8 +15,6 @@
 Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile. This dashboard showcases an end-to-end process used for building and managing portfolios that supports a client with their investment decisions.
 </p>
 
-
-
 ::: {.callout-note collapse="true" icon=false}
 This project is for **educational use only**.  
 
@@ -26,7 +24,7 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
 <hr>
 
 ::: {.callout-tip}
-**Responsive <a href="#" class="sidebar-hover-trigger">sidebar<span class="hover-image"><img src="img/sidebar.png" alt="sidebar"></span></a> inputs (located on the left side of the screen)** — adjust the values and every calculation, charts, and tables will be updated accordingly.
+**Responsive <a href="#" class="sidebar-hover-trigger">sidebar<span class="hover-image"><img src="img/sidebar.png" alt="sidebar"></span></a> inputs (located on the left side of the screen)** — adjust the values and all the calculation, charts, and tables will be updated accordingly.
 :::
 
 <hr>
@@ -119,31 +117,31 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
     <tbody>
     <tr>
       <td style="padding:0.75em;"><a href="#portfolio" style="font-weight:bold; text-decoration:none;">Portfolio</a></td>
-      <td style="padding:0.75em;">Holdings, performance, projections, and benchmarks</td>
+      <td style="padding:0.75em;">Holdings, historical performance, expected return w/ fee structure, and benchmark comparison</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#capital-allocation" style="font-weight:bold; text-decoration:none;">Capital Allocation</a></td>
-      <td style="padding:0.75em;">Allocation between risk-free and risky assets</td>
+      <td style="padding:0.75em;">Allocation between risk-free and risky assets based on the client's risk tolerance</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#asset-class-allocation" style="font-weight:bold; text-decoration:none;">Asset Class Allocation</a></td>
-      <td style="padding:0.75em;">Weights across major asset classes</td>
+      <td style="padding:0.75em;">Portfolios comparison based on different asset classes' weights</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#security-allocation" style="font-weight:bold; text-decoration:none;">Security Allocation</a></td>
-      <td style="padding:0.75em;">Detailed security selection with risk/return metrics</td>
+      <td style="padding:0.75em;">Security allocation with risk/return metrics</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#data" style="font-weight:bold; text-decoration:none;">Data</a></td>
-      <td style="padding:0.75em;">Raw data for all portfolio assets</td>
+      <td style="padding:0.75em;">Raw datasets used in the project</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#excel-models" style="font-weight:bold; text-decoration:none;">Excel Models</a></td>
-      <td style="padding:0.75em;">Underlying Excel portfolio models</td>
+      <td style="padding:0.75em;">Underlying portfolio models in Excel</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#ips" style="font-weight:bold; text-decoration:none;">IPS</a></td>
-      <td style="padding:0.75em;">Investment Policy Statement</td>
+      <td style="padding:0.75em;">Investment Policy Statement document</td>
     </tr>
   </tbody>
 </table>

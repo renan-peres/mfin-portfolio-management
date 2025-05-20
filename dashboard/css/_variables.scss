@@ -57,3 +57,15 @@ $plot-margin-left: 60px !default;
 $plot-margin-right: 20px !default;
 $plot-margin-top: 20px !default;
 $plot-margin-bottom: 30px !default;
+
+// Z-index layers
+$z-base: 1 !default;
+$z-dropdown: 100 !default;
+$z-sticky: 200 !default;
+$z-fixed: 300 !default; 
+$z-modal-backdrop: 400 !default;
+$z-modal: 500 !default;
+$z-popover: 600 !default;
+$z-tooltip: 700 !default;
+$z-overlay: 800 !default;
+$z-overlay-content: 900 !default;

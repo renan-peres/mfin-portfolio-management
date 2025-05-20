@@ -471,8 +471,14 @@ path {
   margin: 0 !important;
 }
 
-/* Improved sidebar hover styling */
-.callout-tip .sidebar-hover-trigger {
+/* Improved sidebar hover styling - SCOPED TO HOME/COVER PAGES ONLY */
+#home .callout-tip .sidebar-hover-trigger,
+#cover-page .callout-tip .sidebar-hover-trigger,
+.section-cover .callout-tip .sidebar-hover-trigger,
+.section-home .callout-tip .sidebar-hover-trigger,
+[data-page-id="cover"] .callout-tip .sidebar-hover-trigger,
+[data-page-id="home"] .callout-tip .sidebar-hover-trigger,
+#quarto-content > section:first-of-type .callout-tip .sidebar-hover-trigger {
   position: relative;
   color: #1c7ed6;
   text-decoration: underline;
@@ -480,7 +486,13 @@ path {
 }
 
 /* Container for the hover image */
-.callout-tip .sidebar-hover-trigger .hover-image {
+#home .callout-tip .sidebar-hover-trigger .hover-image,
+#cover-page .callout-tip .sidebar-hover-trigger .hover-image,
+.section-cover .callout-tip .sidebar-hover-trigger .hover-image,
+.section-home .callout-tip .sidebar-hover-trigger .hover-image,
+[data-page-id="cover"] .callout-tip .sidebar-hover-trigger .hover-image,
+[data-page-id="home"] .callout-tip .sidebar-hover-trigger .hover-image,
+#quarto-content > section:first-of-type .callout-tip .sidebar-hover-trigger .hover-image {
   display: none;  /* Hidden by default */
   position: fixed;
   left: 50%;
@@ -498,7 +510,13 @@ path {
 }
 
 /* The actual image styling */
-.callout-tip .sidebar-hover-trigger .hover-image img {
+#home .callout-tip .sidebar-hover-trigger .hover-image img,
+#cover-page .callout-tip .sidebar-hover-trigger .hover-image img,
+.section-cover .callout-tip .sidebar-hover-trigger .hover-image img,
+.section-home .callout-tip .sidebar-hover-trigger .hover-image img,
+[data-page-id="cover"] .callout-tip .sidebar-hover-trigger .hover-image img,
+[data-page-id="home"] .callout-tip .sidebar-hover-trigger .hover-image img,
+#quarto-content > section:first-of-type .callout-tip .sidebar-hover-trigger .hover-image img {
   max-width: 90vw;
   max-height: 80vh;
   width: auto;
@@ -508,7 +526,13 @@ path {
 }
 
 /* Dark overlay behind the image */
-.callout-tip .sidebar-hover-trigger:hover:after {
+#home .callout-tip .sidebar-hover-trigger:hover:after,
+#cover-page .callout-tip .sidebar-hover-trigger:hover:after,
+.section-cover .callout-tip .sidebar-hover-trigger:hover:after,
+.section-home .callout-tip .sidebar-hover-trigger:hover:after,
+[data-page-id="cover"] .callout-tip .sidebar-hover-trigger:hover:after,
+[data-page-id="home"] .callout-tip .sidebar-hover-trigger:hover:after,
+#quarto-content > section:first-of-type .callout-tip .sidebar-hover-trigger:hover:after {
   content: '';
   position: fixed;
   top: 0;
@@ -520,19 +544,28 @@ path {
   pointer-events: none;
 }
 
-/* THIS WAS MISSING - Add this rule to show the hover image when hovering */
-.callout-tip .sidebar-hover-trigger:hover .hover-image {
-  display: block !important;
+/* Show the image when hovering */
+#home .callout-tip .sidebar-hover-trigger:hover .hover-image,
+#cover-page .callout-tip .sidebar-hover-trigger:hover .hover-image,
+.section-cover .callout-tip .sidebar-hover-trigger:hover .hover-image,
+.section-home .callout-tip .sidebar-hover-trigger:hover .hover-image,
+[data-page-id="cover"] .callout-tip .sidebar-hover-trigger:hover .hover-image,
+[data-page-id="home"] .callout-tip .sidebar-hover-trigger:hover .hover-image,
+#quarto-content > section:first-of-type .callout-tip .sidebar-hover-trigger:hover .hover-image {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Ensure portfolio elements aren't affected by sidebar hover */
-.portfolio-table,
-.portfolio-row,
-.portfolio-cell,
-.portfolio-link,
-.portfolio-image {
-  z-index: 1 !important;
-  position: relative !important;
+/* Important: prevent any other elements from showing above the overlay - SCOPED TO HOME/COVER PAGES */
+#home:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+#cover-page:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+.section-cover:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+.section-home:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+[data-page-id="cover"]:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+[data-page-id="home"]:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger),
+#quarto-content > section:first-of-type:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger) {
+  z-index: auto !important;
 }
 
 // ==========================================================================
