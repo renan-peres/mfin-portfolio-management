@@ -4,7 +4,7 @@
 
 <div>
   <h1 style="margin-top: 0.2em; margin-bottom: 0.2em;">Portfolio Construction & Optimization</h1>
-  <p>Report Date: April 26, 2025</p>
+  <p>Date: April 26, 2025</p>
   <p>Author: <a href="https://renanperes.com/" target="_blank" style="text-decoration: none;"> Renan Peres</a></p>
   <p><a href="https://github.com/renan-peres/mfin-portfolio-management" target="_blank" style="text-decoration: none;"><i class="bi bi-github"></i> View Source Code</a></p>
 </div>
@@ -15,59 +15,98 @@
 Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile. This dashboard showcases an end-to-end process used for building and managing portfolios that supports a client with their investment decisions.
 </p>
 
-<hr>
 
-::: {.callout-tip}
-**Interactive sidebar inputs (on the left side of the screen)** — adjust the values and every chart, table, and analysis will be updated automatically.
-:::
 
-::: {.callout-note collapse="true"}
+::: {.callout-note collapse="true" icon=false}
 This project is for **educational use only**.  
 
 It supports the accompanying Investment Policy Statement (IPS) and reflects the author’s opinions and analysis. No portion may be reproduced or distributed for commercial purposes without prior written consent.
+:::
+
+<hr>
+
+::: {.callout-tip}
+**Interactive <a href="#" class="sidebar-hover-trigger">sidebar<span class="hover-image"><img src="img/sidebar.png" alt="sidebar"></span></a> inputs (on the left side of the screen)** — adjust the values and every chart, table, and analysis will be updated automatically.
 :::
 
 #### Portfolio Images
 
 <div class="portfolio-showcase">
   <table width="100%">
-    <tr>
-      <td align="center"><a href="#portfolio"><img src="img/portfolio/holdings.png" style="width: 320px; height: auto;"></a></td>
-      <td align="center"><a href="#portfolio"><img src="img/portfolio/historical_performance.png" style="width: 320px; height: auto;"></a></td>
-      <td align="center"><a href="#portfolio"><img src="img/portfolio/expected_return.png" style="width: 320px; height: auto;"></a></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Portfolio Holdings</strong></a></td>
-      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Performance Analysis</strong></a></td>
-      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Future Projections</strong></a></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Overview of current investment holdings</a></td>
-      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical returns and risk metrics</a></td>
-      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Estimated growth scenarios and fee structure comparison</a></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="#portfolio"><img src="img/portfolio/benchmark_comparison.png" style="width: 320px; height: auto;"></a></td>
-      <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/utility_weight.png" style="width: 320px; height: auto;"></a></td>
-      <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/capital_allocation_line.png" style="width: 320px; height: auto;"></a></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Benchmark Comparison</strong></a></td>
-      <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Utility Weight Analysis</strong></a></td>
-      <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Capital Allocation Line</strong></a></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical Portfolio performance against benchmark</a></td>
-      <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Risk aversion and utility-based portfolio weights</a></td>
-      <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Optimal allocation between risky and risk-free assets</a></td>
-    </tr>
+  <!-- Row 1: Portfolio -->
+  <tr>
+    <td align="center"><a href="#portfolio"><img src="img/portfolio/holdings.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#portfolio"><img src="img/portfolio/historical_performance.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#portfolio"><img src="img/portfolio/expected_return.png" style="width: 320px; height: auto;"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Portfolio Holdings</strong></a></td>
+    <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Performance Analysis</strong></a></td>
+    <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Future Projections</strong></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Overview of current investment holdings</a></td>
+    <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical returns and risk metrics</a></td>
+    <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Estimated growth scenarios and fee structure comparison</a></td>
+  </tr>
+  
+  <!-- Row 2: More Portfolio and Capital Allocation -->
+  <tr>
+    <td align="center"><a href="#portfolio"><img src="img/portfolio/benchmark_comparison.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/utility_weight.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#capital-allocation"><img src="img/capital_allocation/capital_allocation.png" style="width: 320px; height: auto;"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#portfolio" style="text-decoration: none;"><strong>Benchmark Comparison</strong></a></td>
+    <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Utility Weight Analysis</strong></a></td>
+    <td align="center"><a href="#capital-allocation" style="text-decoration: none;"><strong>Capital Allocation Line</strong></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#portfolio" style="text-decoration: none; color: inherit;">Historical portfolio performance against benchmark</a></td>
+    <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Risk aversion and utility-based portfolio weights</a></td>
+    <td align="center"><a href="#capital-allocation" style="text-decoration: none; color: inherit;">Optimal allocation between risky and risk-free assets</a></td>
+  </tr>
+  
+  <!-- Row 3: Asset Class Allocation -->
+  <tr>
+    <td align="center"><a href="#asset-class-allocation"><img src="img/asset_class/asset_class_distribution.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#asset-class-allocation"><img src="img/asset_class/asset_class_ef.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#security-allocation"><img src="img/security/security_distribution.png" style="width: 320px; height: auto;"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#asset-class-allocation" style="text-decoration: none;"><strong>Asset Class Distribution</strong></a></td>
+    <td align="center"><a href="#asset-class-allocation" style="text-decoration: none;"><strong>Asset Class Efficient Frontier</strong></a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Security Distribution</strong></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#asset-class-allocation" style="text-decoration: none; color: inherit;">Breakdown of portfolio by asset classes</a></td>
+    <td align="center"><a href="#asset-class-allocation" style="text-decoration: none; color: inherit;">Risk-return profile of asset class allocations</a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none; color: inherit;">Individual security weightings within the portfolio</a></td>
+  </tr>
+  
+  <!-- Row 4: Security Allocation -->
+  <tr>
+    <td align="center"><a href="#security-allocation"><img src="img/security/security_ef.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#security-allocation"><img src="img/security/equity_covariances.png" style="width: 320px; height: auto;"></a></td>
+    <td align="center"><a href="#security-allocation"><img src="img/security/bond_price_sensitivity.png" style="width: 320px; height: auto;"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Security Efficient Frontier</strong></a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Equity Covariances</strong></a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Bond Price Sensitivity</strong></a></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none; color: inherit;">Risk-return profile of individual securities</a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none; color: inherit;">Correlation analysis between equity holdings</a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none; color: inherit;">Fixed income response to interest rate changes</a></td>
+  </tr>
   </table>
 </div>
 
 ### Table {width="30%"}
 
 <div class="table-responsive">
-  <h3 class="table-title">Contents</h3>
+  <h3 class="table-title" style="margin-top: 4px;">Contents</h3>
   <table class="table table-sm table-striped">
     <thead>
       <tr style="background-color: #f1f5f9;">

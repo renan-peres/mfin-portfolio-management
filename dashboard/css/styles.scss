@@ -371,6 +371,67 @@ path {
   margin: 0 !important;
 }
 
+/* Improved sidebar hover styling */
+.callout-tip .sidebar-hover-trigger {
+  position: relative;
+  color: #1c7ed6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Container for the hover image */
+.callout-tip .sidebar-hover-trigger .hover-image {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2147483647 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  background-color: white;
+  padding: 10px;
+  pointer-events: none;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: hidden;
+}
+
+/* The actual image styling */
+.callout-tip .sidebar-hover-trigger .hover-image img {
+  max-width: 90vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  display: block !important;
+  object-fit: contain;
+}
+
+/* Dark overlay behind the image */
+.callout-tip .sidebar-hover-trigger:hover:after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85); /* More opaque background */
+  z-index: 2147483646 !important;
+  pointer-events: none;
+}
+
+/* Show the image when hovering */
+.callout-tip .sidebar-hover-trigger:hover .hover-image {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Important: prevent any other elements from showing above the overlay */
+body:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger) {
+  z-index: auto !important;
+}
+
 // ==========================================================================
 // TRANSPARENT CARD BORDER ADJUSTMENTS
 // ==========================================================================
