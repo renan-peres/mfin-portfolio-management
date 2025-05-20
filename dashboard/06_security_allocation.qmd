@@ -166,9 +166,8 @@ riskReturnColorScale = d3.scaleSequential()
 viewof riskReturnPlot = {
   // Create the plot with interactive elements
   const plot = Plot.plot({
-    marginTop: 30,
+    marginBottom: 40,
     marginRight: 40,
-    marginBottom: 80,
     marginLeft: 60,
     grid: true,
     style: {
@@ -177,7 +176,7 @@ viewof riskReturnPlot = {
       fontFamily: "system-ui, sans-serif"
     },
     x: {
-      label: "Risk (Annualized Standard Deviation)",
+      label: "Risk (Standard Deviation)",
       tickFormat: d => d3.format(".1%")(d),
       domain: [
         d3.min(risk_return_data, d => d.Risk) * 0.95, 
@@ -267,8 +266,8 @@ viewof riskReturnPlot = {
   
   // Return container with header and plot
   return html`
-    <div>
-      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Risk & Return Profile (Individual Equity Securities)</h5>
+    <div class="chart-title">
+      <h5 class="chart-title">Risk & Return Profile (Individual Equity Securities)</h5>
       ${plot}
     </div>
   `;
@@ -281,9 +280,9 @@ viewof riskReturnPlot = {
 //| echo: false
 
 html`
-  <div style="position: relative; height: 100%;">
-    <h5 class="table-title" style="margin-top: 0em; margin-left: 1em; margin-bottom: 1.2em; position: relative; z-index: 10;">Efficient Frontier (Weighted Equity Securities)</h5>
-    <iframe class="frontier-container" scrolling="no" style="width: 100%; height: 100%; position: relative; margin-block-start: -100px; z-index: 1;" src="${EFFICIENT_FRONTIER}">
+  <div class="chart-title">
+    <h5 class="chart-title" style="margin-left: 1rem;">Efficient Frontier (Weighted Equity Securities)</h5>
+    <iframe class="frontier-container" scrolling="no" style="width: 100%; height: 100%; position: relative;  overflow: clip !important; margin-block-start: -25px;" src="${EFFICIENT_FRONTIER}">
     </iframe>
   </div>`;
 // makeFullscreen(EFFICIENT_FRONTIER)
@@ -552,9 +551,8 @@ viewof bondSensitivityChart = {
   
   // Create the plot element
   const plot = Plot.plot({
-    marginTop: 40,
-    marginRight: 60,
-    marginBottom: 80,
+    marginBottom: 40,
+    marginRight: 40,
     marginLeft: 60,
     x: {
       label: "Change in YTM (%)",
@@ -643,10 +641,10 @@ viewof bondSensitivityChart = {
     }
   });
   
-  // Return both the header and the plot in a container div
+  // Return container with header and plot
   return html`
-    <div>
-      <h5 class="table-title">Bond Price Sensitivity to Changes in YTM (Yield to Maturity)</h5>
+    <div class="chart-title">
+      <h5 class="chart-title">Bond Price Sensitivity to Changes in YTM (Yield to Maturity)</h5>
       ${plot}
     </div>
   `;

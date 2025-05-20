@@ -1,9 +1,34 @@
 /*-- scss:defaults --*/
 @import '_variables.scss';
 
-// ==========================================================================
-//  PLOT.JS VISUALIZATIONS
-// ==========================================================================
+/* ========================================================================== */
+/*  CHART TYPOGRAPHY & COMMON STYLES                                          */
+/* ========================================================================== */
+
+// Chart title styling
+h5.chart-title {
+  margin-top: 1rem !important;
+  margin-bottom: .5rem !important;
+  font-size: 1.2rem;
+  position: relative; 
+  z-index: 10;
+  color: $text-dark !important;
+  font-weight: 700;
+}
+
+// Chart containers with title
+.chart-title {
+  margin-bottom: 1.5rem !important;
+  
+  // Special width for SVGs inside chart titles
+  svg[width][height][viewBox] {
+    width: 98% !important; 
+  }
+}
+
+/* ========================================================================== */
+/*  PLOT.JS VISUALIZATIONS                                                    */
+/* ========================================================================== */
 
 [class^="plot-"] {
   font-size: 12px;
@@ -11,7 +36,7 @@
   min-height: 400px;
   padding-right: -12px;
 
-  // Axis text
+  // Typography rules for different chart elements
   [aria-label="x-axis label"] text,
   [aria-label="y-axis label"] text,
   [aria-label="x-axis tick label"] text,
@@ -20,19 +45,21 @@
     font-weight: 400;
   }
 
-  // Plot title
   [aria-label="title"] text {
     font-size: 18px;
     font-weight: 500;
   }
 
-  // Legend text
   [aria-label="legend"] text {
     font-size: 12px;
   }
 }
 
-// Add a class for customizable charts
+/* ========================================================================== */
+/*  CUSTOMIZABLE CHARTS                                                       */
+/* ========================================================================== */
+
+// Customizable chart text styling
 .chart-customizable[class^="plot-"] {
   font-size: inherit;
   
@@ -46,7 +73,7 @@
   }
 }
 
-// Enhanced chart container styling
+// Customizable chart container styling
 .chart-customizable {
   height: 100% !important;
   width: 100% !important;
@@ -60,138 +87,42 @@
     flex: 1 !important;
   }
   
-  // Force height on chart containers
+  // Force height on plot containers
   &.plot-container {
     min-height: 100% !important;
     flex: 1 !important;
   }
 }
 
+/* ========================================================================== */
+/*  SVG VISUALIZATIONS                                                        */
+/* ========================================================================== */
 
-// Donut chart hover effects
-.donut-chart path {
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    opacity: 0.8;
-    transform: scale(1.03);
-    transform-origin: center center;
-    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
-  }
-}
-
-// Tooltip for donut chart
-.donut-tooltip {
-  position: absolute;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 1000;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  border-left: 3px solid;
-  
-  .tooltip-title {
-    font-weight: 600;
-    margin-bottom: 3px;
-  }
-  
-  .tooltip-value {
-    font-size: 16px;
-  }
-}
-
-// ==========================================================================
-//  SVG VISUALIZATIONS
-// ==========================================================================
-
-// SVG handling - default behavior for all SVGs
+// Base SVG styling for all charts
 svg[width][height][viewBox] {
-  width: 100% !important;
   max-width: 100%;
   min-height: 0 !important;
   display: block;
+  width: 100% !important;
 }
 
-// Special handling for bar charts only
+// Special styling for bar charts
 .bar-chart svg[width][height][viewBox] {
-  max-height: 800px !important;  // Slightly less padding in cards
-  height: calc(100% - 100px) !important;      // Explicit height calculation
+  max-height: 800px !important;
+  height: calc(100% - 120px) !important;
   min-height: 0 !important;
   overflow-block: hidden;
   overflow-x: auto !important;
   overflow-y: clip !important;
+  padding-bottom: .3em;
 }
 
-// For SVGs that need to fill the entire space with no padding
-.full-height-svg svg[width][height][viewBox] {
-  max-height: 100% !important;
-  height: 100% !important;
-}
-
-// Control overflow for elements containing SVGs inside cards
-.card .cell-output-display:not(.no-overflow-x):has(svg), 
-.card .knitsql-table:not(.no-overflow-x):has(svg) {
-    overflow-x: auto !important;
-    overflow-y: clip !important;
-}
-
-// General case for non-card contexts
-.cell-output-display:not(.no-overflow-x):has(svg), 
-.knitsql-table:not(.no-overflow-x):has(svg) {
-    overflow-x: auto;
-    overflow-y: clip;
-}
-
-// Special case for bar charts to maintain current behavior
-.bar-chart .cell-output-display:has(svg), 
-.bar-chart .knitsql-table:has(svg) {
-    overflow-block: hidden;
-    overflow-x: auto !important;
-    overflow-y: clip !important;
-}
-
-// Donut chart hover effects
-.donut-chart path {
-  transition: all 0.3s ease;
-  cursor: pointer;
-  
-  &:hover {
-    opacity: 0.8;
-    transform: scale(1.03);
-    transform-origin: center center;
-    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
-  }
-}
-
-// Tooltip for donut chart
-.donut-tooltip {
-  position: absolute;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 1000;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  border-left: 3px solid;
-  
-  .tooltip-title {
-    font-weight: 600;
-    margin-bottom: 3px;
-  }
-  
-  .tooltip-value {
-    font-size: 16px;
-  }
+// Overflow handling for SVG containers - prevents axis title clipping
+.cell-output-display:not(.no-overflow-x):has(svg),
+.knitsql-table:not(.no-overflow-x):has(svg),
+.chart-title:has(svg) {
+  overflow-x: auto;
+  overflow-y: clip !important;
+  height: calc(100% - 120px) !important;
+  padding-bottom: 2.5em;
 }

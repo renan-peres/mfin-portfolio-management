@@ -912,7 +912,7 @@ viewof portfolioValueChart = {
       </div>
     </div>
     <div>
-    <h5 class="table-title" style="position: relative; margin-bottom: 8px;">Portfolio Value Over Time (${buildPortfolioMetrics().yearsDiff.toFixed(1)} yrs)</h5>
+      <h5 class="chart-title">Portfolio Value Over Time (${buildPortfolioMetrics().yearsDiff.toFixed(1)} yrs)</h5>
     ${plotContainer}
     </div>
     <div class="hover-tooltip" style="position: absolute; display: none; background: white; 
@@ -1521,7 +1521,7 @@ viewof tickerPerformanceChart = {
         <div style="margin-top: 10px; font-weight: bold;">Updating metrics...</div>
       </div>
     </div>
-    <h5 class="table-title">Security Return Over Time (${yearsDiff.toFixed(1)} yrs)</h5>
+    <h5 class="chart-title">Security Return Over Time (${yearsDiff.toFixed(1)} yrs)</h5>
     <div style="position: relative; margin-top: 15px;">
       ${plotContainer}
       ${legendContainer}

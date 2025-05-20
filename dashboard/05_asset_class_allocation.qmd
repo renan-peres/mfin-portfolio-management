@@ -214,9 +214,8 @@ viewof efficientFrontierPlot = {
   
   // Create the plot with interactive elements
   const plot = Plot.plot({
-    marginTop: 40,
+    marginBottom: 40,
     marginLeft: 60,
-    marginBottom: 80,
     marginRight: 170, // Increased for legend/labels space
     style: {
       fontSize: "14px",
@@ -439,8 +438,8 @@ viewof efficientFrontierPlot = {
   
   // Return container with header and plot
   return html`
-    <div style="position: relative;">
-      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Efficient Frontier with Capital Allocation Line</h5>
+    <div class="chart-title">
+      <h5 class="chart-title">Efficient Frontier with Capital Allocation Line</h5>
       <div style="position: relative;">
         ${plot}
         ${legendContainer}

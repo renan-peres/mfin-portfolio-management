@@ -5,7 +5,6 @@
 //  TOOLBAR & COLLAPSIBLE COMPONENTS
 // ==========================================================================
 
-// Base toolbar styling
 .toolbar {
   display: flex;
   justify-content: flex-start;
@@ -13,26 +12,24 @@
   flex-wrap: wrap;
   background: linear-gradient(to bottom, $background-light, $background-light);
   border-right: 1px solid $border-light;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 15px rgba(0, 0, 0, .06);
   color: $text-primary;
-  
-  // Input components inside toolbar
+
+  // Inputs inside toolbar
   .ojs-in-a-box-waiting-for-module-import.observablehq,
   .ojs-inputs-container {
     width: 250px;
     min-width: 200px;
     margin-top: 10px;
   }
-  
-  > * {
-    margin-bottom: 10px;
-  }
-  
-  // Section headers
+
+  > * { margin-bottom: 10px; }
+
+  // Section header
   .quarto-dashboard & h5 {
-    color: $text-dark !important; 
+    color: $text-dark !important;
     font-weight: 600 !important;
-    border-top: solid 1px #e3e3e3;
+    border-top: solid 1px $border-light;  
     flex-wrap: wrap;
   }
 }
