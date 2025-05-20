@@ -4,7 +4,7 @@
   </a>
 </h1>
 
-This repository contains a comprehensive portfolio construction and management system designed for optimal asset allocation based on a client's risk tolerance, fundamental analysis, risk-adjusted returns, and market conditions. It provides end-to-end functionality from security selection to performance tracking and return projections.
+This repository contains an investment portfolio construction designed for optimal asset allocation based on a client's risk tolerance, fundamental analysis, risk-adjusted returns, and market conditions. It provides end-to-end functionality from security selection to performance tracking and return projections.
 
 ## Features
 - Equity Portfolio Construction using fundamental screening + Modern Portfolio Theory  
