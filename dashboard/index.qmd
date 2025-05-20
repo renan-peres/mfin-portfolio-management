@@ -6,12 +6,8 @@ format:
   dashboard:
     orientation: columns
     site-url: https://portfolio-management.renanperes.com/
-    open-graph: 
-      image: https://res.cloudinary.com/dqtnflaeh/image/upload/v1747735174/thumbnails/portfolio_construction.png
-      image-width: 1200
-      image-height: 627
-    twitter-card: 
-      image: https://res.cloudinary.com/dqtnflaeh/image/upload/v1747735174/thumbnails/portfolio_construction.png
+    open-graph: true
+    twitter-card: true
     theme:
       - css/styles.scss
       - css/sidebar.scss
@@ -31,18 +27,32 @@ include-in-header:
     <link rel="shortcut icon" href="img/logo.png"/>
     <link rel="icon" type="image/x-icon" href="img/logo.png">
     <title>Portfolio Construction: April 26, 2025</title>
-    <meta name="description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    <meta name="description" content="Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    
+    <!-- Primary Meta Tags -->
+    <meta name="author" content="Renan Peres">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:site_name" content="Portfolio Management">
     <meta property="og:url" content="https://portfolio-management.renanperes.com">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Portfolio Construction: April 26, 2025">
-    <meta property="og:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    <meta property="og:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
     <meta property="og:image" content="https://res.cloudinary.com/dqtnflaeh/image/upload/v1747735174/thumbnails/portfolio_construction.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Portfolio Construction Dashboard">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta property="twitter:domain" content="portfolio-management.renanperes.com">
     <meta property="twitter:url" content="https://portfolio-management.renanperes.com">
     <meta name="twitter:title" content="Portfolio Construction: April 26, 2025">
-    <meta name="twitter:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
+    <meta name="twitter:description" content="Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile.">
     <meta name="twitter:image" content="https://res.cloudinary.com/dqtnflaeh/image/upload/v1747735174/thumbnails/portfolio_construction.png">
+    <meta name="twitter:image:alt" content="Portfolio Construction Dashboard">
+
 execute:
   warning: false
   echo: false
