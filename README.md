@@ -4,7 +4,7 @@
   </a>
 </h1>
 
-This repository contains an investment portfolio construction designed for optimal asset allocation based on a client's risk tolerance, fundamental analysis, risk-adjusted returns, and market conditions. It provides end-to-end functionality from security selection to performance tracking and return projections.
+This repository contains a portfolio construction method designed for optimal capital allocation. This includes equity selection based on fundamental metrics along with Sharpe ratio maximization, bond selection based on it's convexity and price sensitivity to changes in interest rates, and benchmark selection based on regression analysis. The process also takes into account a client's risk tolerance and and current market conditions.
 
 ## Features
 - Equity Portfolio Construction using fundamental screening + Modern Portfolio Theory  
