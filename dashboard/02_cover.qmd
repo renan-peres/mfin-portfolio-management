@@ -12,7 +12,7 @@
 <hr>
 
 <p  style="margin-top: 0em;">
-Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile. This dashboard showcases an end-to-end process used for building and managing portfolios that supports a client with their investment decisions.
+Portfolio models designed for optimal capital allocation. The methodology includes the client’s risk tolerance, the current market conditions, and the risk–return profile of individual securities.. This dashboard showcases an end-to-end process used for building and optimizing portfolios that supports a client with their investment decisions.
 </p>
 
 ::: {.callout-note collapse="true" icon=false}
