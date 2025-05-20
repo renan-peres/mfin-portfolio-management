@@ -12,7 +12,7 @@
 <hr>
 
 <p  style="margin-top: 0em;">
-Portfolio construction designed for optimal capital allocation by incorporating a client’s risk tolerance, the current market conditions, and the asset classes' risk–return profile. This dashboard showcases an end-to-end process used for building and managing portfolios that supports a client with their investment decisions.
+Portfolio construction designed for optimal capital allocation by incorporating a client's risk tolerance, the current market conditions, and the asset classes' risk–return profile. This dashboard showcases an end-to-end process used for building and managing portfolios that supports a client with their investment decisions.
 </p>
 
 
@@ -26,7 +26,7 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
 <hr>
 
 ::: {.callout-tip}
-**Interactive <a href="#" class="sidebar-hover-trigger">sidebar<span class="hover-image"><img src="img/sidebar.png" alt="sidebar"></span></a> inputs (on the left side of the screen)** — adjust the values and every chart, table, and analysis will be updated automatically.
+**Responsive <a href="#" class="sidebar-hover-trigger">sidebar<span class="hover-image"><img src="img/sidebar.png" alt="sidebar"></span></a> inputs (located on the left side of the screen)** — adjust the values and every calculation, charts, and tables will be updated accordingly.
 :::
 
 #### Portfolio Images
@@ -91,7 +91,7 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
     <td align="center"><a href="#security-allocation"><img src="img/security/bond_price_sensitivity.png" style="width: 320px; height: auto;"></a></td>
   </tr>
   <tr>
-    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Security Efficient Frontier</strong></a></td>
+    <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Equity Efficient Frontier</strong></a></td>
     <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Equity Covariances</strong></a></td>
     <td align="center"><a href="#security-allocation" style="text-decoration: none;"><strong>Bond Price Sensitivity</strong></a></td>
   </tr>
@@ -106,7 +106,7 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
 ### Table {width="30%"}
 
 <div class="table-responsive">
-  <h3 class="table-title" style="margin-top: 4px;">Contents</h3>
+  <h3 class="table-title" style="margin-top: 12px;">Contents</h3>
   <table class="table table-sm table-striped">
     <thead>
       <tr style="background-color: #f1f5f9;">
@@ -149,7 +149,7 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
 
 #### Security Selection Notebooks
 
-<h3>Security Selection Process</h3>
+<h3 class="table-title" style="margin-top: 12px;">Security Selection Process</h3>
 
 - **Equity Selection**: [01_equity_portfolio_construction.ipynb](https://github.com/renan-peres/mfin-portfolio-management/blob/main/01_equity_portfolio_construction.ipynb)  
   Equity selection using fundamental analysis and Sharpe ratio maximization.

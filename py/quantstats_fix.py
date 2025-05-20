@@ -316,7 +316,7 @@ def fix_html_report():
                     download_js = """
                     <div style="text-align:center;margin:20px 0;position:fixed;top:20px;right:20px;z-index:1000;">
                       <button onclick="downloadHTML()" style="padding:10px 15px;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
-                        Download HTML
+                        Download Report
                       </button>
                     </div>
                     <script>

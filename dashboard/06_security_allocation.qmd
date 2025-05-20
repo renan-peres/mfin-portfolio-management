@@ -147,7 +147,7 @@ securityAllocationTable()
 
 ## Risk/Return (Equities)
 
-:::: {.columns style="height: 50%;"}
+:::: {.columns style="height: 70%;"}
 
 ### Risk & Return Plot {width=50%}
 
@@ -268,7 +268,7 @@ viewof riskReturnPlot = {
   // Return container with header and plot
   return html`
     <div>
-      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Risk & Return (Individual Equity Securities)</h5>
+      <h5 class="table-title" style="margin-top: 0em; margin-bottom: 1em;">Risk & Return Profile (Individual Equity Securities)</h5>
       ${plot}
     </div>
   `;
@@ -291,15 +291,17 @@ html`
 
 :::
 
-### Equities Optimal Return
+### Equities Optimal Weight Table
 
-<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Allocation</h5>
+<div>
+<h5 class="table-title" style="margin-top: 0em; margin-bottom: 0em;">Optimal Equity Portfolio Weights</h5>
 
 ```{python}
 optimal_portfolio_ef = equity_disp.copy() 
+optimal_portfolio_ef = optimal_portfolio_ef.drop("Sharpe Ratio", axis=1)
 
 # Order Columns
-ef_desired_order = ['Ticker', 'Weight', 'Expected Return', 'Standard Deviation', 'Sharpe Ratio']
+ef_desired_order = ['Ticker', 'Weight', 'Expected Return', 'Standard Deviation']
 all_columns = optimal_portfolio_ef.columns.tolist()
 first_columns = [col for col in ef_desired_order if col in all_columns]
 optimal_portfolio_ef = optimal_portfolio_ef[first_columns].transpose()
@@ -307,6 +309,8 @@ optimal_portfolio_ef = optimal_portfolio_ef[first_columns].transpose()
 # Display the result
 display(optimal_portfolio_ef)
 ```
+
+</div>
 
 ## Covariances (Equities)
 

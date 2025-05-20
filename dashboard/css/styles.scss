@@ -381,7 +381,7 @@ path {
 
 /* Container for the hover image */
 .callout-tip .sidebar-hover-trigger .hover-image {
-  display: none;
+  display: none;  /* Hidden by default */
   position: fixed;
   left: 50%;
   top: 50%;
@@ -415,21 +415,24 @@ path {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85); /* More opaque background */
+  background: rgba(0, 0, 0, 0.85);
   z-index: 2147483646 !important;
   pointer-events: none;
 }
 
-/* Show the image when hovering */
+/* THIS WAS MISSING - Add this rule to show the hover image when hovering */
 .callout-tip .sidebar-hover-trigger:hover .hover-image {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
+  display: block !important;
 }
 
-/* Important: prevent any other elements from showing above the overlay */
-body:has(.callout-tip .sidebar-hover-trigger:hover) *:not(.hover-image):not(.sidebar-hover-trigger) {
-  z-index: auto !important;
+/* Ensure portfolio elements aren't affected by sidebar hover */
+.portfolio-table,
+.portfolio-row,
+.portfolio-cell,
+.portfolio-link,
+.portfolio-image {
+  z-index: 1 !important;
+  position: relative !important;
 }
 
 // ==========================================================================
