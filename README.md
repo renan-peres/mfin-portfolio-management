@@ -39,7 +39,7 @@ This repository contains a comprehensive portfolio construction and management s
 
 ### **Reports** ([`reports/`](reports/)):  
   - [01_benchmark_comparison_quantstats.ipynb](reports/01_benchmark_comparison_quantstats.ipynb): Performance comparison reporting
-  - Portfolio tracking Excel files (e.g., [`portfolio-2025-04-26.xlsx`](reports/portfolio-2025-04-26.xlsx))
+  - Portfolio tracking Excel files (e.g., [`portfolio-2025-04-26.xlsx`](https://raw.githubusercontent.com/renan-peres/mfin-portfolio-management/refs/heads/main/reports/portfolio-2025-04-26.xlsx))
   - Portfolio analysis HTML reports (e.g., [`portfolio_vs_benchmark-2025-04-26.html`](reports/portfolio_vs_benchmark-2025-04-26.html))
 
 ## 2. Data Infrastructure
