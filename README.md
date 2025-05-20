@@ -174,14 +174,19 @@ This repository contains a comprehensive portfolio construction and management s
 git clone https://github.com/renan-peres/mfin-portfolio-management.git
 cd mfin-portfolio-management
 
-# Install dependencies
-pip install -r requirements.txt
+# Install Astral UV (for reproducible venvs)
+curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 sh
+uv venv                                 # or: python3 -m venv .venv
+source .venv/bin/activate               # or: source venv/bin/activate 
 
-# Launch the dashboard (requires Quarto)
-quarto preview dashboard
+# Install dependencies
+uv pip install -r requirements.txt 
 
 # Run a full portfolio update
 bash pipelines/weekly_pipeline.sh
+
+# Launch the dashboard (requires Quarto)
+quarto preview dashboard/index.qmd
 ```
 
 ## References
@@ -189,4 +194,6 @@ bash pipelines/weekly_pipeline.sh
 - [Tidy Finance: The Capital Asset Pricing Model](https://www.tidy-finance.org/python/capital-asset-pricing-model.html)
 - [Tidy Finance: Parametric Portfolio Policies](https://www.tidy-finance.org/python/parametric-portfolio-policies.html)
 - [Portfolio Optimization with Python and R](https://kenwuyang.com/posts/2021_09_15_portfolio_optimization_with_python_and_r_modern_portfolio_theory/#efficient-frontier)  
+- [Portfolio Strategies by Shashank Vemuri](https://github.com/shashankvemuri/Finance/tree/master/portfolio_strategies)  
 - [Algorithmic Portfolio Optimization by Kevin Vecmanis](https://kevinvecmanis.io/finance/optimization/2019/04/02/Algorithmic-Portfolio-Optimization.html)  
+- [Algorithmic Trading in Python by Nick McCullum](https://github.com/nickmccullum/algorithmic-trading-python)
