@@ -117,27 +117,27 @@ It supports the accompanying Investment Policy Statement (IPS) and reflects the 
     <tbody>
     <tr>
       <td style="padding:0.75em;"><a href="#portfolio" style="font-weight:bold; text-decoration:none;">Portfolio</a></td>
-      <td style="padding:0.75em;">Holdings, historical performance, expected return w/ fee structure, and benchmark comparison</td>
+      <td style="padding:0.75em;">Holdings, historical performance, expected return (with fee structure), and benchmark comparison</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#capital-allocation" style="font-weight:bold; text-decoration:none;">Capital Allocation</a></td>
-      <td style="padding:0.75em;">Allocation between risk-free and risky assets based on the client's risk tolerance</td>
+      <td style="padding:0.75em;">Split between risk-free and risky assets based on the client’s risk tolerance (with utility functions)</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#asset-class-allocation" style="font-weight:bold; text-decoration:none;">Asset Class Allocation</a></td>
-      <td style="padding:0.75em;">Portfolios comparison based on different asset classes' weights</td>
+      <td style="padding:0.75em;">Weights across major asset classes with risk–return scenarios</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#security-allocation" style="font-weight:bold; text-decoration:none;">Security Allocation</a></td>
-      <td style="padding:0.75em;">Security allocation with risk/return metrics</td>
+      <td style="padding:0.75em;">Individual securities risk–return metrics, efficient frontier, covariances, and bond-price sensitivity to YTM</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#data" style="font-weight:bold; text-decoration:none;">Data</a></td>
-      <td style="padding:0.75em;">Raw datasets used in the project</td>
+      <td style="padding:0.75em;">Raw datasets powering the dashboard</td>
     </tr>
     <tr style="background:#f8fafc;">
       <td style="padding:0.75em;"><a href="#excel-models" style="font-weight:bold; text-decoration:none;">Excel Models</a></td>
-      <td style="padding:0.75em;">Underlying portfolio models in Excel</td>
+      <td style="padding:0.75em;">Underlying portfolio-construction models</td>
     </tr>
     <tr>
       <td style="padding:0.75em;"><a href="#ips" style="font-weight:bold; text-decoration:none;">IPS</a></td>
