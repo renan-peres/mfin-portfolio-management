@@ -12,7 +12,7 @@
 <hr>
 
 <p  style="margin-top: 0em;">
-Portfolio construction models designed for optimal capital allocation. The methodology includes the client’s risk tolerance, current market conditions, and risk–return profile of individual securities. This dashboard showcases an end-to-end process used for building and optimizing portfolios that supports a client with their investment decisions.
+This dashboard showcases an end-to-end process used for building and optimizing investment portfolios to support clients with their investment decisions. The methodology takes into account the risk-free rate, current market conditions, the client’s risk tolerance, and the diversification component from the risk–return profile of individual securities.
 </p>
 
 ::: {.callout-note collapse="true" icon=false}

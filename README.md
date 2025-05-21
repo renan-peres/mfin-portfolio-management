@@ -4,19 +4,16 @@
   </a>
 </h1>
 
-This repository contains a portfolio construction method designed for optimal capital allocation. This includes equity selection based on fundamental metrics along with Sharpe ratio maximization, bond selection based on it's convexity and price sensitivity to changes in interest rates, and benchmark selection based on regression analysis. The process also takes into account a client's risk tolerance and current market conditions.
+This repository contains a portfolio construction method designed for optimal capital allocation. It includes equity selection based on fundamental metrics along with Sharpe ratio maximization, bond selection based on its convexity and price sensitivity to changes in interest rates, and benchmark selection based on regression analysis. The methodology takes into account the risk-free rate, current market conditions, the client’s risk tolerance, and the diversification component from the risk–return profile of individual securities.
 
 ## Features
 - Equity Portfolio Construction using fundamental screening + Modern Portfolio Theory  
 - Bond Portfolio Construction using Modified Duration and Convexity to determine price sensitivity to interest rate changes  
 - Benchmark Selection using Regression Analysis  
 - Index/CAPM Modeling for systematic risk assessment
-- Capital Allocation Model with Maximum Utility  
+- Capital Allocation Model with Utility functions
 - Arbitrage Pricing Theory (APT) for multi-factor modeling
-- Option Pricing Models for derivatives evaluation
-- Interactive dashboard for portfolio visualization and management
-- Fee impact analysis with multiple fee structure comparisons
-- Return projections with uncertainty bounds
+- Option Pricing Models for risk management
 
 ## 1. Core Components
 ### **Notebooks**: Sequential analysis and modeling workflows  
@@ -29,13 +26,14 @@ This repository contains a portfolio construction method designed for optimal ca
   - [07_option_pricing_models.ipynb](07_option_pricing_models.ipynb): Derivatives valuation
 
 ### **Python Utilities** ([`py/`](py/)):  
-  - [benchmark_regression.py](py/benchmark_regression.py): Implements benchmark selection algorithms
-  - [bond_selection.py](py/bond_selection.py): Fixed income security evaluation tools
-  - [fetch_fundamentals.py](py/fetch_fundamentals.py): Financial statement data acquisition
-  - [optimal_portfolio.py](py/optimal_portfolio.py): Efficient frontier calculators
-  - [portfolio_var_simulation.py](py/portfolio_var_simulation.py): Monte Carlo risk analysis
-  - [quantstats_fix.py](py/quantstats_fix.py): Patches for QuantStats library compatibility
   - [utils.py](py/utils.py): Common utility functions used across notebooks
+  - [fetch_price_history.py](py/fetch_price_history.py): Stock price data retrieval
+  - [fetch_fundamentals.py](py/fetch_fundamentals.py): Financial statement fundamental metrics acquisition
+  - [optimal_portfolio.py](py/optimal_portfolio.py): Functions for portfolio optimization
+  - [bond_selection.py](py/bond_selection.py): Fixed income security pricing and evaluation functions
+  - [benchmark_regression.py](py/benchmark_regression.py): Benchmark selection regression functions
+  - [quantstats_fix.py](py/quantstats_fix.py): Patches for QuantStats library fixes
+  - [portfolio_var_simulation.py](py/portfolio_var_simulation.py): Value at Risk analysis with Monte Carlo simulations
 
 ### **Reports** ([`reports/`](reports/)):  
   - [01_benchmark_comparison_quantstats.ipynb](reports/01_benchmark_comparison_quantstats.ipynb): Performance comparison reporting
@@ -127,7 +125,7 @@ This repository contains a portfolio construction method designed for optimal ca
 - **Risk Assessment**:
   - Volatility analysis with rolling window calculations
   - Drawdown analysis with peak-to-trough visualization
-  - Sharpe, Sortino, and Calmar ratios for risk-adjusted performance
+  - Sharpe, Treynor, Sortino, and Calmar ratios for risk-adjusted performance
 - **Component Analysis**:
   - Asset class contribution analysis with attribution metrics
   - Security-level performance tracking with weight impact
@@ -149,7 +147,6 @@ This repository contains a portfolio construction method designed for optimal ca
 - **Scenario Testing**:
   - Bull/bear market scenario analysis
   - Stress testing with historical crisis event simulations
-  - Retirement planning with withdrawal rate analysis
 
 ## 6. Getting Started
 
