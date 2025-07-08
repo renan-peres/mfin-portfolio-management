@@ -1,4 +1,2 @@
-^FVX
-^IRX
 ^TNX
 ^TYX
