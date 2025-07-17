@@ -1,4 +1,5 @@
 CUTYX
+VFIRX
 ^FVX
 ^IRX
 ^TNX
